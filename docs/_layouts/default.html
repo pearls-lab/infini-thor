@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="{{ site.lang }}">
+
+  <!-- Head -->
+  <head>
+  {%- if page.redirect -%}
+    <meta http-equiv="refresh" content="3; url={{ site.baseurl }}/" />
+  {%- endif -%}
+  {% include head.html %}
+  </head>
+
+  <!-- Body -->
+  <body class="{% if site.navbar_fixed %}fixed-top-nav{% endif %} {% unless site.footer_fixed %}sticky-bottom-footer{% endunless %}">
+
+    <!-- Content -->
+    <div class="container mt-5">
+        <div class="text-center my-5">
+          <h1 style="font-size: 2.3rem; font-weight: bold;">
+            <img src="{{site.baseurl}}/assets/img/infinity-icon.png" alt="∞" style="height: 1.4em; vertical-align: bottom;">-THOR: Beyond the Needle(s) in the Embodied Haystack
+          </h1>
+          <!-- <h1 style="font-size: 2.5rem; font-weight: bold;">
+            <span>\(\infty\)</span>-THOR: 
+            ∞-THOR:
+            Beyond the Needle(s) in the Embodied Haystack
+          </h1> -->
+        </div>
+        {{ content }}
+    </div>
+
+    <!-- <div class="container">
+      <h2>Abstract</h2>
+      <p>{{ page.abstract }}</p>
+    
+      <h2>Introduction</h2>
+      <p>{{ page.intro }}</p>
+
+    </div> -->
+
+    <!-- Footer -->
+    {%- include footer.html %}
+
+    <!-- JavaScripts -->
+    {% include scripts/jquery.html %}
+    {% include scripts/bootstrap.html %}
+    {% include scripts/masonry.html %}
+    {% include scripts/misc.html %}
+    {% include scripts/badges.html %}
+    {% include scripts/mathjax.html %}
+    {% include scripts/analytics.html %}
+    {% include scripts/progressBar.html %}
+    {% include scripts/wechatModal.html %}
+  </body>
+</html>
+<html>
+<head>
+  <style>
+  body {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6)), 
+    url('{{ site.baseurl }}/assets/img/background-t5.png');
+    background-repeat: no-repeat;
+    background-attachment: scroll;  
+    background-size: cover; 
+  }
+  </style>
+  </head>
+  <!-- background-image: linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6)),
+      url('{{ site.baseurl }}/assets/img/Background.png'); -->
+</html>

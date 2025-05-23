@@ -1,0 +1,96 @@
+/******************************************************************************
+ * Content
+ ******************************************************************************/
+
+body {
+  padding-bottom: 70px;
+  color: var(--global-text-color);
+  background-color: var(--global-bg-color);
+  font-family: 'Courier New', Courier, monospace;
+  //'typeface-mario-world-pixel-font';
+  // src: url('assets/fonts/typeface-mario-world-pixel-font/TypefaceMarioWorldPixelFilledRegular-rgVMx.ttf') format('ttf') ,
+  //      url('assets/fonts/typeface-mario-world-pixel-font/TypefaceMarioWorldPixelFilledRegular-rgVMx.otf') format('otf') ;
+
+  h1, h2, h3, h4, h5, h6 {
+    scroll-margin-top: 66px;
+    font-family: 'Press Start 2P';
+    font-weight: lighter;
+    font-style: normal;
+    src: url('assets/fonts/Press-Start-2P/regular.woff2') format('woff2'),
+        url('assets/fonts/Press-Start-2P/regular.woff') format('woff'),
+        url('assets/fonts/Press-Start-2P/regular.ttf') format('ttf')
+
+  }
+}
+
+body.fixed-top-nav {
+  // Add some padding for the nav-bar.
+  padding-top: 56px;
+}
+
+body.sticky-bottom-footer {
+  // Remove padding below footer.
+  padding-bottom: 0;
+}
+
+.container {
+  max-width: $max-content-width;
+}
+
+// Profile
+.profile {
+  img {
+    width: 100%;
+  }
+}
+
+// TODO: redefine content layout.
+
+
+/******************************************************************************
+ * Publications
+ ******************************************************************************/
+
+// TODO: redefine publications layout.
+
+
+/*****************************************************************************
+* Projects
+*****************************************************************************/
+
+// TODO: redefine projects layout.
+
+/* Abstract section */
+.abstract {
+  padding: 80px 0;
+  background-color: #f9f9f9;
+}
+
+.abstract h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.abstract p {
+  max-width: 800px;
+  margin: 0 auto;
+  font-size: 1.1rem;
+  line-height: 1.8;
+}
+
+.abstract-text {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: left;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.main-text {
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: left;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
