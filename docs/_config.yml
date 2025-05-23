@@ -8,7 +8,7 @@ first_name: PEARLS
 last_name: Lab @ UCSD
 email: bosungkim@ucsd.edu
 description: > # the ">" symbol means to ignore newlines until "footer_text:"
- Lab website for the PEARLS lab @ University of California, San Diego CSE
+  Project webpage
 footer_text: >
   Yes, we like (pearl) tea.
   Logo Credits: Youna Hoshi.
@@ -17,7 +17,7 @@ keywords: academic-website, ai-lab, ucsd, nlp, reinforcement-learning, ai, rl, g
 lang: en # the language of your site (for example: en, fr, cn, ru, etc.)
 icon: Logo-1.png #🧋  # the emoji used as the favicon (alternatively, provide image name in /assets/img/)
 lsi: true
-url: https://bosung.github.io/web_test # the base hostname & protocol for your site
+url: https://pearls-lab.github.io/infini-thor/ # the base hostname & protocol for your site
 #baseurl: / # the subpath of your site, e.g. /blog/
 last_updated: false # set to true if you want to display last updated in the footer
 impressum_path:  # set to path to include impressum link in the footer, use the same path as permalink in a page, helps to conform with EU GDPR
@@ -281,24 +281,3 @@ mdb:
 medium_zoom:
   version: "1.0.8"
   integrity: "sha256-7PhEpEWEW0XXQ0k6kQrPKwuoIomz8R8IYyuU1Qew4P8="
-
-# -----------------------------------------------------------------------------
-# Get external JSON data
-# -----------------------------------------------------------------------------
-
-jekyll_get_json:
-  - data: resume
-    json: assets/json/resume.json # it can also be an url
-jsonresume:
-  - basics
-  - work
-  - education
-  - publications
-  - projects
-  - volunteer
-  - awards
-  - certificates
-  - skills
-  - languages
-  - interests
-  - references
