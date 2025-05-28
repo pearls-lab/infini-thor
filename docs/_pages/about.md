@@ -56,7 +56,7 @@ intro: >
 </p>
 <p class="abstract-text">
 (1) a generation framework for synthesizing scalable, reproducible, and unlimited long-horizon trajectories;
-(2) a novel embodied QA task, Needle(s) in the Embodied Haystack, where multiple scattered clues across extended trajectories test agents’ long-context reasoning ability; and
+(2) a novel embodied QA task, Needle(s) in the Embodied Haystack, where multiple scattered clues across extended trajectories test agents' long-context reasoning ability; and
 (3) a long-horizon dataset and benchmark suite featuring complex tasks that span hundreds of environment steps, each paired with ground-truth action sequences.
 To enable this capability, we explore architectural adaptations, including interleaved Goal-State-Action modeling, context extension techniques, and Context Parallelism, to equip LLM-based agents for extreme long-context reasoning and interaction.
 Experimental results and analyses highlight the challenges posed by our benchmark and provide insights into training strategies and model behaviors under long-horizon conditions.
@@ -69,13 +69,28 @@ Our work provides a foundation for the next generation of embodied AI systems ca
 <div class="text-center my-5" style="margin-bottom: 5rem;">
   <h3 style="font-size: 2.0rem; font-weight: bold;">Demo Video</h3>
 
-  <video controls style="max-width: 800px; width: 100%; margin: 0 auto; display: block;">
+  <video controls autoplay style="max-width: 800px; width: 100%; margin: 0 auto; display: block;">
     <source src="assets/video/intro_vid.mp4" type="video/mp4">
     Your browser does not support the video tag.
   </video>
-  <p class="abstract-text" style="margin-top: 14px;">
+  <p class="abstract-text" style="margin-top: 20px; margin-bottom: 20px;">
   Our generation framework can generate unlimited tasks, the trajectories can be exceptionally long, exceeding 1M context tokens or beyond.
   </p>
+
+  <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+    <video controls autoplay muted loop style="max-width: 240px; width: 100%;">
+      <source src="assets/video/floorplan323_19_932.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <video controls autoplay muted loop style="max-width: 240px; width: 100%;">
+      <source src="assets/video/floorplan218_17_889.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <video controls autoplay muted loop style="max-width: 240px; width: 100%;">
+      <source src="assets/video/floorplan210_26_870.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+  </div>
 </div>
 
 <div style="margin-bottom: 10rem;"></div>
