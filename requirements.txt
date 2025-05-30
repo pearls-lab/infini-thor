@@ -2,11 +2,8 @@ transformers==4.49.0
 accelerate
 datasets
 einops
-opencv-python==4.5.3.56
-Werkzeug==2.0.3
-Flask==2.1.1
+opencv-python
 torchdata >= 0.8.0
-datasets >= 2.21.0
 tomli >= 1.1.0 ; python_version < "3.11"
 tensorboard
 tiktoken

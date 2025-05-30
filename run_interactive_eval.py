@@ -55,9 +55,8 @@ from torchtitan.models.llava_onevision import LlavaOnevisionForConditionalGenera
 from huggingface_hub import snapshot_download
 import gc
 
-#from env_utils.env.thor_env import ThorEnv
-from ai2thor_client import ThorEnv
-from ai2thor_utils import post_processing_action, get_templated_high_pddl_desc, serialize_action, setup_scene
+from env_utils.ai2thor_client import ThorEnv
+from env_utils.ai2thor_utils import post_processing_action, get_templated_high_pddl_desc, serialize_action, setup_scene
 
 # support running w/o installing as package
 wd = Path(__file__).parent.parent.resolve()

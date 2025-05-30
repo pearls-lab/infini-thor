@@ -58,7 +58,7 @@ python -c "from huggingface_hub import snapshot_download; snapshot_download(repo
 
 Download images and metadata and uncompress
 ```
-wget https://huggingface.co/PEARLS-Lab/infini-thor/resolve/main/testset.tar
+wget https://huggingface.co/PEARLS-Lab/infini-thor/resolve/main/dataset/testset.tar
 tar xvf testset.tar
 ```
 
@@ -78,18 +78,19 @@ Each CSV file should contain the following columns:
 We also need GT images and metadata to build embodied haystacks. The 
 **metadata directory structure** is:
 ```
-metadata_dir/
+metadata/
 ├── traj_id/
     ├── img/
     │   ├── *.png (image files)
     ├── metadata.json
     ├── traj.txt
+    ├── expert_log.json
 ```
 
 ### Run evaluation
 
 ```bash
-python torchtitan/run_eval_QA_NiEH.py \
+python run_eval_QA_NiEH.py \
     --qa_file_path path/to/qa_data.csv \
     --metadata_dir path/to/metadata \
     --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf
@@ -98,7 +99,7 @@ python torchtitan/run_eval_QA_NiEH.py \
 Running with a context extension method
 e.g.,
 ```bash
-python torchtitan/run_eval_QA_NiEH.py \
+python run_eval_QA_NiEH.py \
     --qa_file_path path/to/qa_data.csv \
     --metadata_dir path/to/metadata \
     --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf \
@@ -108,36 +109,41 @@ python torchtitan/run_eval_QA_NiEH.py \
 
 ## Interactive Evaluation
 
-Interactive evaluation works with the AI2THOR simulator.
+Interactive evaluation works with the [AI2THOR](https://ai2thor.allenai.org) simulator.
 Our dataset is built using an older version of AI2THOR (v2.0.1), which requires Python 3.6 to run properly.
 We recommend using the provided Dockerfile to avoid compatibility issues related to Python version and rendering.
 
-Alternative way is installing Python 3.6 env manually:
+Alternative way is installing Python 3.6 env manually (for non-docker user only):
 
 ```
-conda create -y -n thor python=3.6
-conda activate thor && \
+conda create -y -n ai2thor_env python=3.6
+conda activate ai2thor_env && \
 pip install --ignore-installed ai2thor==2.1.0 flask requests opencv-python-headless==4.5.3.56 pillow
 ```
 
 **Download checkpoints**
 
 ```
-mkdir checkpoints
-huggingface-cli download PEARLS-Lab/infini-thor --local-dir checkpoints
+python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='PEARLS-Lab/infini-thor', allow_patterns=['checkpoints/**'], local_dir='.', resume_download=True)"
 ```
 
 **Running X server**
 
 AI2THOR uses Unity3D to render scenes, which requires a graphical environment.
-Since most servers and containers run headlessly, an X server must be manually started to simulate a display.
+Since most GPU servers and containers run headlessly, X server must be manually started to simulate a display.
 Use the script below to start a virtual X server (e.g., with Xvfb) on display :0:
 ```
 # use tmux or run in background
+conda activate ai2thor_env
 python env_utils/startx.py 0
 ```
 
 **Running AI2THOR service**
+
+We use a microservices to solve the version compatibility issue between AI2THOR (python 3.6) and PyTorch (python 3.10 or later) environments.
+`ai2thor_service.py` runs the AI2THOR simulator, provides a REST API for environment interactions and handles all scene management and agent actions.
+This works over the Flask and let us communicate between the simulator and agent over TCP.
+
 ```
 # use tmux or run in background
 python env_utils/ai2thor_service.py
