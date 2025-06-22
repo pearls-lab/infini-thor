@@ -15,6 +15,15 @@ import utils.nieh_utils as nieh_utils
 
 logger = logging.getLogger(__name__)
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
 # support running w/o installing as package
 wd = Path(__file__).parent.parent.resolve()
 sys.path.append(str(wd))
