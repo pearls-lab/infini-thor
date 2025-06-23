@@ -1,4 +1,4 @@
-from game_util import get_object, get_objects_with_name_and_prop
+from gen.utils.game_util import get_object, get_objects_with_name_and_prop
 import numpy as np
 
 REWARD_MAP = {

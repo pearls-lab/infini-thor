@@ -9,7 +9,7 @@ LOG_FILE = 'logs_gen'
 
 RECORD_VIDEO_IMAGES = True
 RECORD_SMOOTHING_FACTOR = 1
-DATA_SAVE_PATH = "dataset/new_trajectories"
+DATA_SAVE_PATH = "new_trajectories"
 
 OPEN_LOOP = True
 FULL_OBSERVABLE_STATE = True

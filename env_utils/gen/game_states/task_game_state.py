@@ -1,9 +1,9 @@
 import os
 import random
-import constants
-import goal_library as glib
-from game_states.planned_game_state import PlannedGameState
-from utils import game_util
+import gen.constants as constants
+import gen.goal_library as glib
+from gen.game_states.planned_game_state import PlannedGameState
+import gen.utils.game_util as game_util
 
 
 class TaskGameState(PlannedGameState):
@@ -18,7 +18,7 @@ class TaskGameState(PlannedGameState):
         if action_space is None:
             action_space = TaskGameState.action_space
         super(TaskGameState, self).__init__(env, seed, action_space,
-                                            'put_task', 'planner/domains/PutTaskExtended_domain.pddl')
+                                            'put_task', 'gen/planner/domains/PutTaskExtended_domain.pddl')
         self.task_target = None
         self.success = False
 

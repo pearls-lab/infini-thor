@@ -6,9 +6,9 @@ import shlex
 import subprocess
 import time
 
-import constants
-from utils import game_util
-from utils import py_util
+import gen.constants as constants
+import gen.utils.game_util as game_util
+import gen.utils.py_util as py_util
 
 DEBUG = False
 
@@ -134,10 +134,9 @@ def parse_plan_from_file(self, path):
 
 def get_plan_from_file(args):
     domain, filepath, solver_type = args
-
     start_t = time.time()
     try:
-        command = ('ff_planner/ff '
+        command = ('gen/ff_planner/ff '
                    '-o %s '
                    '-s %d '
                    '-f %s ' % (domain, solver_type, filepath))
@@ -246,7 +245,7 @@ if __name__ == '__main__':
     import sys
 
     DEBUG = constants.DEBUG
-    parser = PlanParser('planner/domains/PutTaskExtended_domain.pddl')
+    parser = PlanParser('gen/planner/domains/PutTaskExtended_domain.pddl')
     parser.problem_id = sys.argv[1]
     result_plan = parser.get_plan()
     print('plan\n' + '\n'.join(['%03d: %s' % (pp, game_util.get_action_str(pl)) for pp, pl in enumerate(result_plan)]))

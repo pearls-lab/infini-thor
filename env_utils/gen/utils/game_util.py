@@ -2,10 +2,8 @@ import copy
 import random
 import cv2
 import numpy as np
-import env_utils.gen.constants as constants
-#import constants
-#import gen.goal_library as glib
-import env_utils.gen.goal_library as glib
+import gen.constants as constants
+import gen.goal_library as glib
 
 
 def get_pose(event):

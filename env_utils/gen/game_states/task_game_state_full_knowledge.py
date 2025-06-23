@@ -1,12 +1,12 @@
 import copy
 import sys
-import constants
 import numpy as np
-from game_states.game_state_base import GameStateBase
-from game_states.planned_game_state import PlannedGameState
-from game_states.task_game_state import TaskGameState
-from utils import bb_util
-from utils import game_util
+import gen.constants as constants
+from gen.game_states.game_state_base import GameStateBase
+from gen.game_states.planned_game_state import PlannedGameState
+from gen.game_states.task_game_state import TaskGameState
+import gen.utils.bb_util as bb_util
+import gen.utils.game_util as game_util
 
 
 class TaskGameStateFullKnowledge(TaskGameState):

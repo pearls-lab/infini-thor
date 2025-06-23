@@ -1,4 +1,4 @@
-from agents.semantic_map_planner_agent import SemanticMapPlannerAgent
+from semantic_map_planner_agent import SemanticMapPlannerAgent
 
 
 class DeterministicPlannerAgent(SemanticMapPlannerAgent):

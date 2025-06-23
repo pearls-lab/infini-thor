@@ -3,14 +3,14 @@ import copy
 import numpy as np
 from collections import Counter, OrderedDict
 
-import env_utils.gen.constants as constants
-import env_utils.gen.utils.image_util as image_util
-from env_utils.gen.utils import game_util
-from env_utils.gen.utils.game_util import get_objects_of_type, get_obj_of_type_closest_to_obj
-from env_utils.env.tasks import get_task
+import gen.constants as constants
+import gen.utils.image_util as image_util
+from gen.utils import game_util
+from gen.utils.game_util import get_objects_of_type, get_obj_of_type_closest_to_obj
+from env.tasks import get_task
 
 from ai2thor.controller import Controller
-import ai2thor.platform
+
 
 DEFAULT_RENDER_SETTINGS = {'renderImage': True,
                            'renderDepthImage': False,
@@ -28,8 +28,11 @@ class ThorEnv(Controller):
                  quality='MediumCloseFitShadows',
                  build_path=constants.BUILD_PATH):
 
-        super().__init__(platform=ai2thor.platform.CloudRendering)
-        
+        super().__init__(quality=quality)
+        self.local_executable_path = build_path
+        self.start(x_display=x_display,
+                   player_screen_height=player_screen_height,
+                   player_screen_width=player_screen_width)
         self.task = None
 
         # internal states

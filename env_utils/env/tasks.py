@@ -1,9 +1,9 @@
 import os
 import json
 import numpy as np
-from env_utils.gen.graph import graph_obj
-from env_utils.env.game_util import get_objects_with_name_and_prop
-from env_utils.env.reward import get_action, REWARD_MAP
+from gen.graph import graph_obj
+from gen.utils.game_util import get_objects_with_name_and_prop
+from env.reward import get_action, REWARD_MAP
 
 
 class BaseTask(object):

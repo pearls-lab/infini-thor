@@ -1,5 +1,5 @@
 import numpy as np
-import env_utils.gen.constants as constants
+import gen.constants as constants
 
 def bbox_to_mask(bbox):
     '''
