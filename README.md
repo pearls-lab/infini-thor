@@ -131,10 +131,9 @@ python -c "from huggingface_hub import snapshot_download; snapshot_download(repo
 
 AI2THOR uses Unity3D to render scenes, which requires a graphical environment.
 Since most GPU servers and containers run headlessly, X server must be manually started to simulate a display.
-Use the script below to start a virtual X server (e.g., with Xvfb) on display :0:
+Use the script below to start a virtual X server on display 0:
 ```
 # use tmux or run in background
-conda activate ai2thor_env
 python env_utils/startx.py 0
 ```
 
@@ -158,6 +157,23 @@ python run_interactive_eval.py \
   --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf \
   --flash_attn
 ```
+
+## Generating $\infty$ trajectories
+1. Start X Server
+```
+# use tmux or run in background
+python env_utils/startx.py 0
+```
+
+2. Run the trajectory generation script
+```
+conda activate ai2thor_env
+cd env_utils
+python generate_traj.py --min_step 500
+```
+`--min_step`: Minimum number of steps required for each trajectory; the script continues running until it generates trajectories meeting the minimum step requirement
+
+Output: Generated trajectories are saved to the `new_trajectories/` directory.
 
 ## Fine-tuning VLA
 (coming soon!)
