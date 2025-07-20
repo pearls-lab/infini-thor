@@ -173,6 +173,8 @@ python generate_traj.py --min_step 500
 ```
 `--min_step`: Minimum number of steps required for each trajectory; the script continues running until it generates trajectories meeting the minimum step requirement
 
+`--testset`: Test examples include the synthetic task at the end of the trajectory. Run an additional loop to create final synthetic tasks. Use this flag to generate valid or test sets. 
+
 Output: Generated trajectories are saved to the `new_trajectories/` directory.
 
 ## Fine-tuning VLA

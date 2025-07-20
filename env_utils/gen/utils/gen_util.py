@@ -591,16 +591,9 @@ class TrajManager:
 
         with open(json_save_path, "w") as fp:
             json.dump(data_dict, fp, sort_keys=True, indent=4)
-
-        # push to HF
-        filename = json_save_path.parts[-1]
-        floorplan = json_save_path.parts[-2]
-
-        s3_object_name = f"long_alfred_extra/{filename}"
-
-        s3_client.upload_file(str(json_save_path), bucket_name, s3_object_name)
     
     def replay_and_fix_objectIds(self, env):
+        print("Replaying ...")
         env.reset(self.scene_id)
         env.step(self.init_action)
 

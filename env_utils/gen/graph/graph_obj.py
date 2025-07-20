@@ -272,7 +272,8 @@ class Graph(object):
         path = path[:max_point]
 
         actions = [Graph.get_plan_move(path[ii], path[ii + 1]) for ii in range(len(path) - 1)]
-        Graph.horizon_adjust(actions, path, curr_horizon, goal_horizon)
+        if abs(curr_horizon-goal_horizon) % 30 == 0:
+            Graph.horizon_adjust(actions, path, curr_horizon, goal_horizon)
 
         return actions, path
 
@@ -301,7 +302,8 @@ class Graph(object):
         path = self.shortest_paths_unweighted[(pose, goal_pose)]
 
         actions = [Graph.get_plan_move(path[ii], path[ii + 1]) for ii in range(len(path) - 1)]
-        Graph.horizon_adjust(actions, path, curr_horizon, goal_horizon)
+        if abs(curr_horizon-goal_horizon) % 30 == 0:
+            Graph.horizon_adjust(actions, path, curr_horizon, goal_horizon)
         return actions, path
 
     def update_map(self, env):
@@ -365,7 +367,7 @@ class Graph(object):
     def horizon_adjust(actions, path, hor0, hor1):
         if hor0 < hor1:
             for _ in range((hor1 - hor0) // constants.AGENT_HORIZON_ADJ):
-                actions.append({'action': 'LookDown'})
+                actions.append({'action': 'LookDown',})
                 path.append(path[-1])
         elif hor0 > hor1:
             for _ in range((hor0 - hor1) // constants.AGENT_HORIZON_ADJ):
