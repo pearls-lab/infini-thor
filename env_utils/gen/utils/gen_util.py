@@ -623,17 +623,17 @@ class TrajManager:
                         if traj_api_cmd['action'] == "PickupObject":
                             # Pick the first one -- most cases are covered. exception is sliced thing
                             # This will pick random spliced object. e.g., 'Tomato|+00.32|+00.95|-02.41|TomatoSliced_4'
-                            correct_obj = get_objects_with_name_and_prop(obj_name, 'pickupable', env.last_event.metadata)[0]  
+                            correct_obj = get_objects_with_name_and_prop(obj_name, 'pickupable', env.last_event.metadata['objects'])[0]  
                         elif traj_api_cmd['action'] == "SliceObject":
-                            correct_obj = get_objects_with_name_and_prop(obj_name, 'sliceable', env.last_event.metadata)[0]    
+                            correct_obj = get_objects_with_name_and_prop(obj_name, 'sliceable', env.last_event.metadata['objects'])[0]    
                         elif traj_api_cmd['action'] == "PutObject":
                             correct_obj = env.last_event.metadata['inventoryObjects'][0]
                         elif "ToggleObject" in traj_api_cmd['action']:
-                            correct_obj = get_objects_with_name_and_prop(obj_name, 'Toggleable', env.last_event.metadata)[0]
+                            correct_obj = get_objects_with_name_and_prop(obj_name, 'Toggleable', env.last_event.metadata['objects'])[0]
                         elif traj_api_cmd['action'] == "OpenObject":
-                            correct_obj = get_objects_with_name_and_prop(obj_name, 'openable', env.last_event.metadata)[0]
+                            correct_obj = get_objects_with_name_and_prop(obj_name, 'openable', env.last_event.metadata['objects'])[0]
                         elif traj_api_cmd['action'] == "CloseObject":
-                            correct_obj = get_objects_with_name_and_prop(obj_name, 'isOpen', env.last_event.metadata)[0]
+                            correct_obj = get_objects_with_name_and_prop(obj_name, 'isOpen', env.last_event.metadata['objects'])[0]
                         else:
                             return False, lidx
 
