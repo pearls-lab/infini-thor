@@ -1,0 +1,49 @@
+/*******************************************************************************
+ * Variables used throughout the theme.
+ * To adjust anything, simply edit the variables below and rebuild the theme.
+ ******************************************************************************/
+
+// Colors
+$red-color:           #FF3636 !default;
+$red-color-dark:      #B71C1C !default;
+$orange-color:        #F29105 !default;
+$blue-color:          #0076df !default;
+$blue-color-dark:     #00369f !default;
+$cyan-color:          #2698BA !default;
+$light-cyan-color:    lighten($cyan-color, 50%);
+$pearl-color-top:     #b9cde8;
+//$pearl-color-top: #aac1e2;
+$pearl-color-top-1:   darken($pearl-color-top, 2.5%);
+$pearl-color-bottom: #c8d9f0;
+//$pearl-color-bottom: #bad1ee;
+$pearl-color-bottom-1: lighten($pearl-color-bottom, 2.5%);
+$pearl-color:         #8eb3e7 !default; 
+$pearl-color-light:   lighten($pearl-color, 15%);
+$pearl-color-lighter:   lighten($pearl-color, 20%);
+$pearl-color-darker:    #1e3b5b !default;
+$green-color:         #00ab37 !default;
+$green-color-lime:    #B7D12A !default;
+$green-color-dark:    #009f06 !default;
+$green-color-light:   #ddffdd !default;
+$green-color-bright:  #11D68B !default;
+$purple-color:        #B509AC !default;
+$light-purple-color:  lighten($purple-color, 25%);
+$pink-color:          #f92080 !default;
+$pink-color-light:    #ffdddd !default;
+$yellow-color:        #efcc00 !default;
+
+$grey-color:          #828282 !default;
+$grey-color-light:    lighten($grey-color, 40%);
+$grey-color-dark:     #1C1C1D;
+$grey-900:            #212529;
+
+$white-color: #ffffff !default;
+$black-color: #000000 !default;
+
+// Theme colors
+
+$code-bg-color-light:     rgba($purple-color, 0.05);
+$code-bg-color-dark:      #2c3237 !default;
+
+// Font awesome location
+$fa-font-path: "../webfonts";

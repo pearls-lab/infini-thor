@@ -1,0 +1,44 @@
+// Essential variables for the site
+$max-content-width: 1200px;
+
+// Colors
+$red-color: #FF3636;
+$red-color-dark: #B71C1C;
+$orange-color: #F29105;
+$blue-color: #0076df;
+$blue-color-dark: #00369f;
+$cyan-color: #2698BA;
+$light-cyan-color: lighten($cyan-color, 50%);
+$pearl-color-top: #b9cde8;
+$pearl-color-top-1: darken($pearl-color-top, 2.5%);
+$pearl-color-bottom: #c8d9f0;
+$pearl-color-bottom-1: lighten($pearl-color-bottom, 2.5%);
+$pearl-color: #8eb3e7;
+$pearl-color-light: lighten($pearl-color, 15%);
+$pearl-color-lighter: lighten($pearl-color, 20%);
+$pearl-color-darker: #1e3b5b;
+$green-color: #00ab37;
+$green-color-lime: #B7D12A;
+$green-color-dark: #009f06;
+$green-color-light: #ddffdd;
+$green-color-bright: #11D68B;
+$purple-color: #B509AC;
+$light-purple-color: lighten($purple-color, 25%);
+$pink-color: #f92080;
+$pink-color-light: #ffdddd;
+$yellow-color: #efcc00;
+
+$grey-color: #828282;
+$grey-color-light: lighten($grey-color, 40%);
+$grey-color-dark: #1C1C1D;
+$grey-900: #212529;
+
+$white-color: #ffffff;
+$black-color: #000000;
+
+// Theme colors
+$code-bg-color-light: rgba($purple-color, 0.05);
+$code-bg-color-dark: #2c3237;
+
+// Font awesome location
+$fa-font-path: "../webfonts"; 

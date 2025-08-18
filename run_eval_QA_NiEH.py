@@ -30,6 +30,8 @@ sys.path.append(str(wd))
 
 model2num_img_token = {
     'llava-hf/llava-onevision-qwen2-7b-ov-hf': 1485, # base_image_feature (27, 27) + image_feature (+ new line) (27, 28)
+    'Qwen/Qwen2.5-VL-7B-Instruct': 121, # 121 tokens (for 300x300 images)
+    'deepseek-ai/deepseek-vl-7b-chat': 576, # 576 tokens (for 300x300 images)
 }
 
 depth_map = {
@@ -82,6 +84,7 @@ def main(
     target_depths: List[int] = [0, 1, 2, 3, 4],
     ctx_extension: Optional[str] = None,
     ctx_extension_factor: Optional[float] = None,
+    full_traj: bool = False,
 ) -> None:
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -122,8 +125,12 @@ def main(
 
     n_img_token = model2num_img_token[model_name]
 
-    total_match = [0 for _ in target_depths]
-    total_count = [0 for _ in target_depths]
+    if full_traj:
+        total_match = 0.0
+        total_count = 0.0
+    else:
+        total_match = [0 for _ in target_depths]
+        total_count = [0 for _ in target_depths]
 
     for qidx, row in enumerate(qa_data):
         img_list, metadata, traj_text, img_path_list = nieh_utils.load_qa_data(row['traj_id'], metadata_dir)
@@ -135,37 +142,59 @@ def main(
         {row['question']}
         """
 
-        NiH_match = [0 for _ in target_depths]
-        NiH_count = [0 for _ in target_depths] 
+        if full_traj:
+            ctx_img_list = img_list
+            lm_response = generate(ctx_img_list, prompt, processor, model, device)
+            if lm_response:  # Only process if we got a valid response
+                score = nieh_utils.get_score(lm_response, row['answer'])
+                logger.info(
+                    f"gt_idx: {row['gt_img_idx']}, full_traj: True, "
+                    f"n_imgs: {len(ctx_img_list)}, "
+                    f"score: {score}, lm_response: {lm_response}, ans: {row['answer']}"
+                )
+                total_match += score
+                total_count += 1.0
+        else:
+            # for haystack building
+            NiH_match = [0 for _ in target_depths]
+            NiH_count = [0 for _ in target_depths] 
 
-        for di, depth in enumerate(target_depths):
-            ctx_img_list = nieh_utils.build_haystack(ctx_size, depth, row['gt_img_idx'], n_img_token, img_list)
-            
-            if len(ctx_img_list) > 0:
-                lm_response = generate(ctx_img_list, prompt, processor, model, device)
-                if lm_response:  # Only process if we got a valid response
-                    score = nieh_utils.get_score(lm_response, row['answer'])
-                    logger.info(
-                        f"gt_idx: {row['gt_img_idx']}, ctx_size: {ctx_size}K, "
-                        f"depth: {depth_map[depth]}, n_imgs: {len(ctx_img_list)}, "
-                        f"score: {score}, lm_response: {lm_response}, ans: {row['answer']}"
-                    )
-                    NiH_match[di] = score
-                    NiH_count[di] = 1
+            for di, depth in enumerate(target_depths):
+                ctx_img_list, _ = nieh_utils.build_haystack(ctx_size, depth, row['gt_img_idx'], n_img_token, img_list)
+                
+                if len(ctx_img_list) > 0:
+                    lm_response = generate(ctx_img_list, prompt, processor, model, device)
+                    if lm_response:  # Only process if we got a valid response
+                        score = nieh_utils.get_score(lm_response, row['answer'])
+                        logger.info(
+                            f"gt_idx: {row['gt_img_idx']}, ctx_size: {ctx_size}K, "
+                            f"depth: {depth_map[depth]}, n_imgs: {len(ctx_img_list)}, "
+                            f"score: {score}, lm_response: {lm_response}, ans: {row['answer']}"
+                        )
+                        NiH_match[di] = score
+                        NiH_count[di] = 1.0
 
-        total_match = [x + y for x, y in zip(total_match, NiH_match)]
-        total_count = [x + y for x, y in zip(total_count, NiH_count)]
+            total_match = [x + y for x, y in zip(total_match, NiH_match)]
+            total_count = [x + y for x, y in zip(total_count, NiH_count)]
     
-    # Print final results
     logger.info("\nFinal Results:")
-    for depth in target_depths:
-        if total_count[depth] > 0:
-            score = np.array(total_match[depth]) / np.array(total_count[depth])
+
+    if full_traj:
+        if total_count > 0:
+            score = total_match / total_count
             logger.info(
-                f"ctx_size: {ctx_size}K, depth: {depth_map[depth]}, "
-                f"score: {score:.4f}, total_match: {total_match[depth]}, "
-                f"total_count: {total_count[depth]}"
+                f"score: {score:.4f}, total_match: {total_match}, "
+                f"total_count: {total_count}"
             )
+    else:
+        for depth in target_depths:
+            if total_count[depth] > 0:
+                score = np.array(total_match[depth]) / np.array(total_count[depth])
+                logger.info(
+                    f"ctx_size: {ctx_size}K, depth: {depth_map[depth]}, "
+                    f"score: {score:.4f}, total_match: {total_match[depth]}, "
+                    f"total_count: {total_count[depth]}"
+                )
 
     
 if __name__ == "__main__":
@@ -175,6 +204,12 @@ if __name__ == "__main__":
         type=str,
         default="llava-hf/llava-onevision-qwen2-7b-ov-hf",
         help="model name",
+    )
+    parser.add_argument(
+        "--ctx_size",
+        type=int,
+        default=32,
+        help="Context size in K tokens"
     )
     parser.add_argument(
         "--ctx_extension",
@@ -199,6 +234,11 @@ if __name__ == "__main__":
         required=True,
         help="Directory containing metadata and images"
     )
+    parser.add_argument(
+        "--full_traj",
+        action="store_true",
+        help="Use the entire trajectory image list instead of building haystack"
+    )
 
     args = parser.parse_args()
 
@@ -220,6 +260,8 @@ if __name__ == "__main__":
         qa_data=qa_data,
         metadata_dir=args.metadata_dir,
         model_name=args.model_name,
+        ctx_size=args.ctx_size,
         ctx_extension=args.ctx_extension,
         ctx_extension_factor=args.ctx_extension_factor,
+        full_traj=args.full_traj,
     )

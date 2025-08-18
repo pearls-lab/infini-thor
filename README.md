@@ -62,6 +62,8 @@ wget https://huggingface.co/PEARLS-Lab/infini-thor/resolve/main/dataset/testset.
 tar xvf testset.tar
 ```
 
+---
+
 ### Data Format
 
 **NiEH Data File (CSV)**:
@@ -87,22 +89,55 @@ metadata/
     ├── expert_log.json
 ```
 
+---
+
 ### Run evaluation
 
-```bash
-python run_eval_QA_NiEH.py \
-    --qa_file_path path/to/qa_data.csv \
-    --metadata_dir path/to/metadata \
-    --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf
-```
+Run the Needle(s) in the Embodied Haystack evaluation with **a full trajectory**.
+In this setting, the model receives the entire trajectory as input and answers the question. 
 
-Running with a context extension method
-e.g.,
 ```bash
 python run_eval_QA_NiEH.py \
     --qa_file_path path/to/qa_data.csv \
     --metadata_dir path/to/metadata \
     --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf \
+    --full_traj
+```
+
+QA performance with the full trajectory as input:
+
+| Model | Single-Evidence | Multi-Evidence |
+|-------|----------------|----------------|
+| LLaVA-OV (7B) | 0% | 0% |
+| DeepSeek-VL (7B) | 0% | 0% |
+| Qwen2.5-VL (7B) | 47.35% | 36.6% |
+| Gemini 2.0 Flash | 67.36% | 30.94% |
+
+
+*LLaVA-OV and DeepSeek-VL fail to handle long contexts beyond their pretraining limits*
+
+---
+
+Run the evaluation with different input context sizes (e.g., `--ctx_size 256` means 256K tokens used as the model's input). 
+
+
+```bash
+python run_eval_QA_NiEH.py \
+    --qa_file_path path/to/qa_data.csv \
+    --metadata_dir path/to/metadata \
+    --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf \
+    --ctx_size 256
+```
+
+---
+
+Run the evaluation with a context extension method, e.g.:
+```bash
+python run_eval_QA_NiEH.py \
+    --qa_file_path path/to/qa_data.csv \
+    --metadata_dir path/to/metadata \
+    --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf \
+    --ctx_size 256 \
     --ctx_extension yarn \
     --ctx_extension_factor 4.0
 ```
@@ -139,16 +174,17 @@ python env_utils/startx.py 0
 
 **Running AI2THOR service**
 
-We use a microservices to solve the version compatibility issue between AI2THOR (python 3.6) and PyTorch (python 3.10 or later) environments.
+We use a microservice to solve the version compatibility issue between AI2THOR 2.1.0 (python 3.6) and PyTorch (python 3.10 or later) environments.
 `ai2thor_service.py` runs the AI2THOR simulator, provides a REST API for environment interactions and handles all scene management and agent actions.
 This works over the Flask and let us communicate between the simulator and agent over TCP.
 
 ```
 # use tmux or run in background
+conda activate ai2thor_env
 python env_utils/ai2thor_service.py
 ```
 
-Running the evaluation:
+Running the evaluation (need to deactivate `ai2thor_env` env if needed):
 
 ```
 export MODEL_LABEL=llava_onevison_7b_32k
