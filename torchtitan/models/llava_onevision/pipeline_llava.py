@@ -18,7 +18,7 @@ from torch.distributed.pipelining.schedules import (
     ScheduleZBVZeroBubble,
 )
 from torchtitan.config_manager import JobConfig
-from torchtitan.logging import logger
+from torchtitan.tools.logging import logger
 from torchtitan.models.llama.model import TransformerModelArgs
 from torchtitan.parallelisms import ParallelDims
 from torchtitan.parallelisms.pipeline import (

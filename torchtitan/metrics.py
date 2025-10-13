@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 
 import torch
 from torchtitan.config_manager import JobConfig
-from torchtitan.logging import logger
+from torchtitan.tools.logging import logger
 from torchtitan.parallelisms import ParallelDims
 from torchtitan.utils import device_module, device_type
 

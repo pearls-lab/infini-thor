@@ -29,7 +29,7 @@ from torch.distributed.tensor import DTensor
 from torch.utils.data import DataLoader
 
 from torchtitan.config_manager import JobConfig, TORCH_DTYPE_MAP
-from torchtitan.logging import init_logger, logger
+from torchtitan.tools.logging import init_logger, logger
 from torchtitan.optimizer import LRSchedulersContainer, OptimizersContainer
 from torchtitan.utils import GarbageCollection
 

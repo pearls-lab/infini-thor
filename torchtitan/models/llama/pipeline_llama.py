@@ -20,7 +20,7 @@ from torch.distributed.pipelining.schedules import (
 )
 
 from torchtitan.config_manager import JobConfig
-from torchtitan.logging import logger
+from torchtitan.tools.logging import logger
 from torchtitan.parallelisms import ParallelDims
 from torchtitan.parallelisms.pipeline import (
     build_pipeline_schedule,

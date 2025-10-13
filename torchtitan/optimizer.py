@@ -20,7 +20,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR, LRScheduler
 
 from torchtitan.config_manager import JobConfig
-from torchtitan.logging import logger
+from torchtitan.tools.logging import logger
 from torch.distributed.tensor import DTensor
 
 

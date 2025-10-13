@@ -5,14 +5,15 @@ import pickle
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
+import itertools
 
 import torch
 from torch.distributed.checkpoint.stateful import Stateful
 from torch.utils.data import IterableDataset
 from torchdata.stateful_dataloader import StatefulDataLoader
 
-from torchtitan.logging import logger
-#from torchtitan.datasets.hf_datasets import DPAwareDataLoader
+from torchtitan.tools.logging import logger
+from torchtitan.datasets import ParallelAwareDataloader
 
 from datasets import Dataset, load_dataset
 
@@ -21,22 +22,7 @@ import tarfile
 from io import BytesIO
 
 
-# def extract_and_convert_tar(tar_path):
-#     """Extracts a .tar file and converts all .jpg files inside to a list of PIL images."""
-#     pil_images = []
-    
-#     with tarfile.open(tar_path, 'r') as tar:
-#         for member in tar.getmembers():
-#             if member.isfile() and member.name.lower().endswith(".jpg"):
-#                 file_obj = tar.extractfile(member)
-#                 if file_obj:
-#                     image = Image.open(BytesIO(file_obj.read()))
-#                     image = image.convert("RGB")  # Ensure consistent format
-#                     pil_images.append(image)
-    
-#     return pil_images
-
-def extract_and_convert_tar(tar_path):
+def extract_and_convert_tar(tar_path, img_width, img_height):
     """Extracts a .tar file and converts all .jpg files inside to a dictionary where keys are filenames and values are PIL images."""
     image_dict = {}
     
@@ -48,6 +34,8 @@ def extract_and_convert_tar(tar_path):
                     base_filename = os.path.basename(member.name)
                     image = Image.open(BytesIO(file_obj.read()))
                     image = image.convert("RGB")  # Ensure consistent format
+                    if image.size != (img_width, img_height):
+                        image = image.resize((img_width, img_height), resample=Image.Resampling.LANCZOS)
                     image_dict[base_filename] = image
     
     return image_dict
@@ -71,11 +59,27 @@ def pad_to_max_seq(tensor, max_seq=8192, pad_token=0):
     return tensor
 
 
+def _pin_batch(obj):
+    if isinstance(obj, torch.Tensor):
+        # Only CPU tensors can be pinned
+        return obj if obj.is_cuda else obj.pin_memory()
+    if isinstance(obj, dict):
+        return {k: _pin_batch(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        t = type(obj)
+        return t(_pin_batch(v) for v in obj)
+    return obj
+
+
 class ALFREDDataset(IterableDataset, Stateful):
 
     def __init__(
         self,
         processor,
+        n_tok_per_img: int,
+        img_width: int,
+        img_height: int,
+        img_token_id: int = None,
         traj_data_dir: str = "",
         img_data_dir: str = "",
         split: str = "train",
@@ -90,15 +94,20 @@ class ALFREDDataset(IterableDataset, Stateful):
         self.dataset_name = "alfred"
        
         self.processor = processor
+        self.n_tok_per_img = n_tok_per_img
+        self.img_width = img_width
+        self.img_height = img_height
         self.max_seq_len = max_seq_len
         self.infinite = infinite
-        self.img_tok_id = processor.tokenizer('<image>').input_ids[0]
+        self.img_tok_id = img_token_id if img_token_id else processor.tokenizer('<image>').input_ids[0]
+        self.img_token = processor.tokenizer.decode([self.img_tok_id])
         self.act_tok_id = processor.tokenizer('<|act|>').input_ids[0]
         self.eos_tok_id = processor.tokenizer.eos_token_id
         self.ignore_index = ignore_index
         self.eval = eval
         self.world_size = world_size
         self.cp_degree = cp_degree
+        self.rank = rank
 
         # if not self.eval:
         #     self.max_seq_len = 131072
@@ -149,7 +158,7 @@ class ALFREDDataset(IterableDataset, Stateful):
 
     def __iter__(self):
         for traj in self._get_data_iter():
-            print(f"Loading a new example ... ")
+            logger.info(f"Loading a new example ... ")
 
             if self.eval:
                 yield json.loads(traj['text']) 
@@ -160,7 +169,7 @@ class ALFREDDataset(IterableDataset, Stateful):
                     chunks = [chunks]
 
                 for ci, chunk in enumerate(chunks[self._chunk_idx:]):
-                    n_img_token = chunk['lang_input'].count('<image>')
+                    n_img_token = chunk['lang_input'].count(self.img_token)
                     n_act_token = chunk['lang_input'].count('<|act|>')
                     if n_act_token == 0:
                         logger.warning(f"Skip this chunk - no target labels (action tokens)")
@@ -169,9 +178,27 @@ class ALFREDDataset(IterableDataset, Stateful):
                         logger.warning(f"Some images are missed -- expected {n_img_token}, but {len(chunk['img_list'])}")
                         logger.warning(f"len(chunk['img_list']): {len(chunk['img_list'])}, len(chunk['lang_input']): {len(chunk['lang_input'])}, chunk['lang_input']: {chunk['lang_input']}")
                         continue # raise ValueError()
+                    
+                    # old version
+                    # logger.info(f"n_img_token: {n_img_token}, len(chunk['img_list']): {len(chunk['img_list'])}")
+                    # output = self.processor(images=chunk['img_list'], text=chunk['lang_input'], return_tensors="pt")
 
-                    output = self.processor(images=chunk['img_list'], text=chunk['lang_input'], return_tensors="pt")
+                    messages = self.build_messages_from_interleaved(chunk['lang_input'], chunk['img_list'])
 
+                    prompt = self.processor.tokenizer.apply_chat_template(
+                        messages,
+                        tokenize=False,
+                        add_generation_prompt=False,   # set True if you plan to .generate immediately
+                    )
+
+                    output = self.processor(
+                        text=prompt,
+                        images=chunk['img_list'],      # list of PIL.Image or np arrays
+                        return_tensors="pt",
+                    )
+
+                    logger.info(f"{prompt}")
+                    
                     labels = output.input_ids.clone()
 
                     act_tok = False
@@ -197,16 +224,41 @@ class ALFREDDataset(IterableDataset, Stateful):
                         labels = pad_to_max_seq(labels, max_seq=self.max_seq_len, pad_token=self.ignore_index)[:, :self.max_seq_len]
                         
                     self._chunk_idx += 1
+
+                    # if hasattr(output, "image_sizes"):
+                    #     _ret.update({'image_sizes': output.image_sizes,})
+                    
                     yield {
                         'input_ids': input_ids,
-                        'pixel_values': output.pixel_values, 
-                        'image_sizes': output.image_sizes,
-                        'labels': labels
+                        'pixel_values': output.pixel_values,
+                        'labels': labels,
+                        'image_grid_thw': output.image_grid_thw
                     }
                     
                 # reset chunk_idx
                 self._chunk_idx = 0
             self._sample_idx += 1
+
+    def build_messages_from_interleaved(self, lang_input: str, img_list):
+        """
+        Turn:  text <|image_pad|> text <|image_pad|> ... text
+        into:  [{"role":"user","content":[{"type":"text",...},{"type":"image"}, ... ]}]
+        """
+        parts = lang_input.split(self.img_token)
+        # assert len(parts) - 1 == len(img_list), \
+        #     f"#<|image_pad|> ({len(parts)-1}) must equal #images ({len(img_list)})"
+        assert len(parts) - 1 == len(img_list), \
+            f"#<|image_pad|> ({lang_input}) \n\n parts: ({parts})"
+        
+        content = []
+        for i, chunk in enumerate(parts):
+            if chunk:
+                content.append({"type": "text", "text": chunk})
+            if i < len(img_list):
+                content.append({"type": "image"})  # image placeholder in order
+
+        messages = [{"role": "user", "content": content}]
+        return messages
 
     def load_state_dict(self, state_dict):
         logger.info(f"loading Dataloader state_dict ... : {state_dict}")
@@ -227,8 +279,8 @@ class ALFREDDataset(IterableDataset, Stateful):
         img_tar_file = filename.replace("txt", "tar")
         tar_file = os.path.join(self.img_data_dir, img_tar_file)
 
-        img_dict = extract_and_convert_tar(tar_file)
-
+        img_dict = extract_and_convert_tar(tar_file, self.img_width, self.img_height)
+        
         chunks = []
 
         if self.use_only_last_frame:
@@ -291,7 +343,11 @@ class ALFREDDataset(IterableDataset, Stateful):
         if 'turk_annotations' in traj:
             main_goal_str += traj['turk_annotations']['anns'][0]['task_desc'] + "<|goal|>"
         # else we need to use templated desc .. later
-        n_main_goal_tokens = len(self.processor(text=main_goal_str).input_ids)
+
+        # TODO: check the system prompt for Qwen -- get the # os system prompt tokens
+        # n_main_goal_tokens = len(self.processor(text=main_goal_str).input_ids)
+        # System input for Qwen
+        n_main_goal_tokens = len(self.processor(text=main_goal_str).input_ids) + 20 # additional system prompt for Qwen2.5-VL 
 
         chunk_seq_list = []
         chunk_img_file_list = []
@@ -300,8 +356,9 @@ class ALFREDDataset(IterableDataset, Stateful):
         n_chunk_tokens = n_main_goal_tokens # for chunking
 
         # initial image state
-        chunk_seq += "<image>"
-        n_chunk_tokens += 1485
+        #chunk_seq += f"<|vision_start|>{self.img_token}<|vision_end|>" # '<image>' for LLaVA-OV, '<|image_pad|>' for Qwen
+        chunk_seq += self.img_token # '<image>' for LLaVA-OV, '<|image_pad|>' for Qwen
+        n_chunk_tokens += self.n_tok_per_img
         chunk_img_files = ['000000000.png']
         n_chunk_img = 1
         img_start_idx = 1
@@ -316,43 +373,53 @@ class ALFREDDataset(IterableDataset, Stateful):
 
             low_act_last_frames = []
             #for low_idx, low_act in enumerate(low_act_list):
+            n_low_act_tok_list = []
             for _, low_act in enumerate(low_act_list):
                 low_idx = low_act['low_idx']
-                low_act_last_frames.append(low_idx_2_image[low_idx][-1])
                 action_str = self.serialize_action(low_act['api_action'])
                 low_act_seq = action_str
                 action_str_tok = self.processor(text=action_str).input_ids   
                 n_low_act_tokens = len(action_str_tok)
-
+                
                 # count tokens for images
                 n_low_img = len(low_idx_2_image[low_idx])
 
                 if self.use_only_last_frame:
-                    low_act_seq += ("<image>" * 1)
-                    n_low_act_tokens += (1485 * 1) # one frame is 1485 tokens
+                    low_act_seq += (self.img_token * 1)
+                    n_low_act_tokens += (self.n_tok_per_img * 1) # e.g., one frame is 1485 tokens in LLaVA-OV
                 else:
-                    low_act_seq += ("<image>" * n_low_img)
-                    n_low_act_tokens += (1485 * n_low_img) # one frame is 1485 tokens
+                    low_act_seq += (self.img_token * n_low_img)
+                    n_low_act_tokens += (self.n_tok_per_img * n_low_img) # one frame is 1485 tokens in LLaVA-OV
 
                 if (n_high_plan_tokens + n_low_act_tokens) >= self.max_seq_len:
-                    break # do not add this low_act and break
+                    # truncate; do not add this low_act and break
+                    break
                 else:
+                    low_act_last_frames.append(low_idx_2_image[low_idx][-1])
                     n_high_plan_tokens += n_low_act_tokens
                     high_plan_seq += low_act_seq
                     n_high_plan_img += n_low_img
 
+                n_low_act_tok_list.append(n_low_act_tokens)
+
             assert n_high_plan_tokens < self.max_seq_len
+            assert sum(n_low_act_tok_list) < self.max_seq_len, \
+                    f"This ({sum(n_low_act_tok_list)}) cannot fit into max_length limit. You need to increase max_length"
 
             if (n_chunk_tokens + n_high_plan_tokens) >= self.max_seq_len:
+                assert chunk_seq.count(self.img_token) == len(chunk_img_files), \
+                    f"chunk_seq: {chunk_seq}\nlen(chunk_img_files): {len(chunk_img_files)}\n# img tokens: {chunk_seq.count(self.img_token)}"
                 chunk_seq_list.append(chunk_seq)
                 chunk_img_file_list.append(chunk_img_files)
+                last_state_image = chunk_img_files[-1]
                 
                 # reset for next chunk
-                chunk_seq = main_goal_str + high_plan_seq
-                n_chunk_tokens = n_main_goal_tokens + n_high_plan_tokens
+                chunk_seq = main_goal_str + self.img_token + high_plan_seq
+                n_chunk_tokens = n_main_goal_tokens + self.n_tok_per_img + n_high_plan_tokens
                 img_start_idx = img_start_idx + n_chunk_img
-                n_chunk_img = n_high_plan_img
-                chunk_img_files = low_act_last_frames
+                n_chunk_img = n_high_plan_img + 1 # +1 for last state image
+                chunk_img_files = [last_state_image] + low_act_last_frames
+                #chunk_img_files = low_act_last_frames
             else:
                 chunk_seq += high_plan_seq
                 n_chunk_tokens += n_high_plan_tokens
@@ -364,7 +431,6 @@ class ALFREDDataset(IterableDataset, Stateful):
 
         if self.use_only_last_frame:
             assert len(chunk_seq_list) == len(chunk_img_file_list)
-        #logger.info(f"# of chunks: {len(chunk_seq_list)}, chunk_img_file_list: {chunk_img_file_list[-1]}")
 
         return chunk_seq_list, chunk_img_file_list
 
@@ -415,30 +481,55 @@ class ALFREDDataset(IterableDataset, Stateful):
         return templated_str
 
 
-class AlfredDataLoader(StatefulDataLoader, Stateful):
-    # TODO: Update Dataset class with DP-aware shard and remove the wrapper (ShardedDataset)
-    
-    def __init__(self, dp_rank: int, hf_ds: IterableDataset, batch_size: int, world_size: int):
-        # super().__init__(hf_ds, batch_size, collate_fn=self.collate_fn)
+class AlfredDataLoader(ParallelAwareDataloader):
+
+    def __init__(self, 
+        dp_rank: int,
+        hf_ds: IterableDataset,
+        batch_size: int,
+        world_size: int,
+        dp_enabled: bool = False,
+        pin_memory: bool = False):
+        
         # Wrap the dataset with a DP-aware shard
-        dp_sharded_dataset = self.shard_dataset(hf_ds, dp_rank, world_size)
-        super().__init__(dp_sharded_dataset, batch_size, collate_fn=self.collate_fn, drop_last=True)
+        self._pin_memory = pin_memory
+
+        # kwargs = dict(
+        #     batch_size=batch_size,
+        #     collate_fn=self._collate_and_maybe_pin,
+        #     drop_last=True,
+        # )
+
+        if dp_enabled:
+            dp_sharded_dataset = self.shard_dataset(hf_ds, dp_rank, world_size)
+            super().__init__(dp_sharded_dataset, dp_rank, world_size, batch_size, collate_fn=self.collate_fn)
+            #super().__init__(hf_ds, dp_rank, world_size, batch_size, collate_fn=self.collate_fn)
+        else:
+            super().__init__(hf_ds, batch_size, collate_fn=self.collate_fn)
+
+    # def _collate_and_maybe_pin(self, batch):
+    #     batch_dict = self.collate_fn(batch)  # your original static method below
+    #     if self._pin_memory and torch.cuda.is_available():
+    #         return _pin_batch(batch_dict)
+    #     return batch_dict
 
     def shard_dataset(self, dataset: IterableDataset, dp_rank: int, world_size: int):
         # Shard the dataset across DP ranks
         class ShardedDataset(IterableDataset):
-            def __iter__(self_inner):
-                all_data_iter = iter(dataset)
+            def __iter__(self):
+                it = iter(dataset)
+                # start at 'dp_rank', step by 'world_size'
+                return itertools.islice(it, dp_rank, None, world_size)
                 # Offset the iterator so each rank sees disjoint samples
-                return (x for i, x in enumerate(all_data_iter) if i % world_size == dp_rank)
+                # return (x for i, x in enumerate(all_data_iter) if i % world_size == dp_rank)
 
         return ShardedDataset()
 
-    def load_state_dict(self, state_dict):
-        if isinstance(self.dataset, Stateful):
-            # Resuming dataloader with: {'_index_sampler_state': None, '_sampler_iter_state': {'samples_yielded': 1480}, '_sampler_iter_yielded': 740, '_num_yielded': 740, '_IterableDataset_len_called': None, '_shared_seed': None, 'fetcher_state': {'dataset_iter_state': None, 'fetcher_ended': False}, 'dataset_state': None, '_iterator_finished': False}
-            logger.info(f"Resuming dataloader with: {state_dict}")
-            self.dataset.load_state_dict(state_dict)
+    # def load_state_dict(self, state_dict):
+    #     if isinstance(self.dataset, Stateful):
+    #         # Resuming dataloader with: {'_index_sampler_state': None, '_sampler_iter_state': {'samples_yielded': 1480}, '_sampler_iter_yielded': 740, '_num_yielded': 740, '_IterableDataset_len_called': None, '_shared_seed': None, 'fetcher_state': {'dataset_iter_state': None, 'fetcher_ended': False}, 'dataset_state': None, '_iterator_finished': False}
+    #         logger.info(f"Resuming dataloader with: {state_dict}")
+    #         self.dataset.load_state_dict(state_dict)
 
     @staticmethod
     def collate_fn(batch):
@@ -448,30 +539,45 @@ class AlfredDataLoader(StatefulDataLoader, Stateful):
         pixel_values = []
         n_image = []
         labels = []
+        image_grid_thw = []
         
-        for sample in batch:
+        for bi, sample in enumerate(batch):
             input_ids.append(sample['input_ids'])
 
             pad_len = max_img_len - sample['pixel_values'].size(0)
 
             if pad_len > 0:
                 pad_shape = (pad_len, *sample['pixel_values'].shape[1:])
-                padding = torch.zeros(pad_shape, dtype=sample['pixel_values'].dtype, 
-                                device=sample['pixel_values'].device)
+                # IMPORTANT: keep on CPU here; pinning happens after collate
+                # padding = torch.zeros(pad_shape, dtype=sample['pixel_values'].dtype, 
+                #                 device=sample['pixel_values'].device)
+                padding = torch.zeros(pad_shape, dtype=sample['pixel_values'].dtype)
                 pixel_values.append(torch.cat([sample['pixel_values'], padding], dim=0))
             else:
                 pixel_values.append(sample['pixel_values'])
-
+            
             n_image.append([sample['pixel_values'].shape[0]])
             labels.append(sample['labels'])
+            image_grid_thw.append(sample['image_grid_thw'])
 
+        # Keep everything on CPU; DataLoader (or our wrapper) will pin
         batch_dict = {
             'input_ids': torch.concat(input_ids, dim=0),
-            'pixel_values': torch.stack(pixel_values),
-            'n_image': torch.tensor(n_image, device=input_ids[0].device, dtype=input_ids[0].dtype)
+            #'pixel_values': torch.stack(pixel_values),
+            'pixel_values': torch.concat(pixel_values, dim=0),
+            'n_image': torch.tensor(n_image, device=input_ids[0].device, dtype=input_ids[0].dtype),
+            #'image_grid_thw': torch.stack(image_grid_thw),
+            'image_grid_thw': torch.concat(image_grid_thw, dim=0),
         }
         
         if labels:
             batch_dict['labels'] = torch.concat(labels, dim=0)
-            
+        
+        # logger.info(
+        #     f"input_ids: {batch_dict['input_ids'].shape} "
+        #     f"pixel_values: {batch_dict['pixel_values'].shape} "
+        #     f"n_image: {batch_dict['n_image']} "
+        #     f"labels: {batch_dict['labels'].shape} "
+        #     f"image_grid_thw: {batch_dict['image_grid_thw'].shape})"
+        # )
         return batch_dict

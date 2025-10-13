@@ -33,10 +33,10 @@ from torch.distributed.tensor.parallel import (
 
 from torchtitan.config_manager import JobConfig, TORCH_DTYPE_MAP
 from torchtitan.tools.logging import logger
-from torchtitan.parallelisms import ParallelDims
+from torchtitan.parallelisms.parallel_dims import ParallelDims
 
 
-def parallelize_llama(
+def parallelize_qwen2_5_vl(
     model: nn.Module,
     world_mesh: DeviceMesh,
     parallel_dims: ParallelDims,
@@ -63,12 +63,24 @@ def parallelize_llama(
             enable_float8=job_config.float8.enable_float8_linear,
             enable_async_tp=job_config.experimental.enable_async_tensor_parallel,
         )
+        if parallel_dims.pp_enabled and hasattr(model, "vision_tower"):
+            apply_tp_vision_tower(
+                model,
+                world_mesh["tp"],
+                enable_float8=job_config.float8.enable_float8_linear,
+                enable_async_tp=job_config.experimental.enable_async_tensor_parallel,
+            )
 
     if job_config.activation_checkpoint.mode != "none":
         apply_ac(model, job_config.activation_checkpoint)
 
     # turn on per-TransformerBlock compile after AC wrapping and before FSDP
     if job_config.training.compile:
+        if job_config.model.norm_type == "fused_rmsnorm":
+            raise NotImplementedError(
+                "fused_rmsnorm is not compatible with torch.compile yet. "
+                "Please use rmsnorm or layernorm."
+            )
         apply_compile(model)
 
     if (
@@ -86,7 +98,6 @@ def parallelize_llama(
             reduce_dtype=TORCH_DTYPE_MAP[job_config.training.mixed_precision_reduce],
             pp_enabled=parallel_dims.pp_enabled,
             cpu_offload=job_config.training.enable_cpu_offload,
-            reshard_after_forward_policy=job_config.training.fsdp_reshard_after_forward,
         )
 
         if parallel_dims.dp_replicate_enabled:
@@ -99,6 +110,8 @@ def parallelize_llama(
 
         if job_config.training.enable_cpu_offload:
             logger.info("Applied CPU Offloading to the model")
+
+
     elif parallel_dims.dp_replicate_enabled:
         if world_mesh.ndim > 1:
             raise RuntimeError("DDP has not supported > 1D parallelism")
@@ -123,20 +136,28 @@ def apply_tp(
     # 2. Parallelize the root norm layer over the sequence dim
     # 3. Parallelize the final linear output layer
     parallelize_module(
-        model,
+        model.language_model.model,
+        tp_mesh,
+        {   # cannot parallelize bc of image features
+            # "embed_tokens": RowwiseParallel( 
+            #     input_layouts=Replicate(),
+            #     output_layouts=Shard(1),
+            # ),
+            "norm": SequenceParallel(
+                #use_local_output=True
+            ),
+        },
+    )
+    parallelize_module(
+        model.language_model,
         tp_mesh,
         {
-            "tok_embeddings": RowwiseParallel(
-                input_layouts=Replicate(),
-                output_layouts=Shard(1),
-            ),
-            "norm": SequenceParallel(),
-            "output": ColwiseParallel(
+            "lm_head": ColwiseParallel(
                 input_layouts=Shard(1),
                 output_layouts=Shard(-1) if loss_parallel else Replicate(),
                 use_local_output=not loss_parallel,
             ),
-        },
+        }
     )
 
     # Parallel styles used for transformer block linear weights and their
@@ -167,26 +188,34 @@ def apply_tp(
     # NOTE: At the cost of model code change, we can accelerate Sequence Parallel
     #       by folding (and unfolding) the batch dimension and the sequence dimension.
     #       Examples can be found at https://github.com/pytorch/torchtitan/pull/437
-    for layer_id, transformer_block in model.layers.items():
+    layers = model.language_model.model.layers
+    if isinstance(layers, nn.ModuleDict):
+        layer_iterator = layers.items() # ModuleDict case - use .items()
+    else:
+        layer_iterator = enumerate(layers) # ModuleList case - use enumerate
+
+    for layer_id, transformer_block in layer_iterator:
         layer_plan = {
-            "attention_norm": SequenceParallel(),
-            "attention": prepare_module_input(
-                input_layouts=(Shard(1), None),
-                desired_input_layouts=(Replicate(), None),
+            "input_layernorm": SequenceParallel(),
+            "self_attn": prepare_module_input(
+                input_kwarg_layouts={"hidden_states": Shard(1)},
+                desired_input_kwarg_layouts={"hidden_states": Replicate()}
             ),
-            "attention.wq": colwise_parallel(),
-            "attention.wk": colwise_parallel(),
-            "attention.wv": colwise_parallel(),
-            "attention.wo": rowwise_parallel(output_layouts=Shard(1)),
-            "ffn_norm": SequenceParallel(),
-            "feed_forward": prepare_module_input(
+            "self_attn.q_proj": colwise_parallel(),
+            "self_attn.k_proj": colwise_parallel(),
+            "self_attn.v_proj": colwise_parallel(),
+            "self_attn.o_proj": rowwise_parallel(output_layouts=Shard(1)),
+            "mlp": prepare_module_input(
                 input_layouts=(Shard(1),),
                 desired_input_layouts=(Replicate(),),
             ),
-            "feed_forward.w1": colwise_parallel(),
-            "feed_forward.w2": rowwise_parallel(output_layouts=Shard(1)),
-            "feed_forward.w3": colwise_parallel(),
+            "mlp.gate_proj": colwise_parallel(),
+            "mlp.up_proj": colwise_parallel(),
+            "mlp.down_proj": rowwise_parallel(output_layouts=Shard(1)),
+            "post_attention_layernorm": SequenceParallel(),
         }
+        # if layer_id == 0:
+        #     logger.info(transformer_block)
 
         parallelize_module(
             module=transformer_block,
@@ -203,6 +232,70 @@ def apply_tp(
     logger.info(
         f"Applied {'Float8 ' if enable_float8 else ''}{'Async ' if enable_async_tp else ''}"
         "Tensor Parallelism to the model"
+    )
+
+
+def apply_tp_vision_tower(
+    model: nn.Module,
+    tp_mesh: DeviceMesh,
+    enable_float8: bool,
+    enable_async_tp: bool,
+):
+    """Apply tensor parallelism for the vision tower."""
+
+    rowwise_parallel, colwise_parallel, prepare_module_input = (
+            RowwiseParallel,
+            ColwiseParallel,
+            PrepareModuleInput,
+    )
+
+    parallelize_module(
+        model.vision_tower.vision_model,
+        tp_mesh,
+        {   # cannot parallelize bc of image features
+            # "embed_tokens": RowwiseParallel( 
+            #     input_layouts=Replicate(),
+            #     output_layouts=Shard(1),
+            # ),
+            "post_layernorm": SequenceParallel(),
+        },
+    )
+
+    for layer_id, siglip_block in enumerate(model.vision_tower.vision_model.encoder.layers):
+        layer_plan = {
+            # "self_attn": prepare_module_input(
+            #     #input_kwarg_layouts={"hidden_states": Shard(1)},
+            #     #desired_input_kwarg_layouts={"hidden_states": Replicate()}
+            # ),
+            "self_attn.q_proj": colwise_parallel(),
+            "self_attn.k_proj": colwise_parallel(),
+            "self_attn.v_proj": colwise_parallel(),
+            "self_attn.out_proj": rowwise_parallel(output_layouts=Shard(1)),
+            "layer_norm1": SequenceParallel(),
+            "mlp": prepare_module_input(
+                input_layouts=(Shard(1),),
+                desired_input_layouts=(Replicate(),),
+            ),
+            "mlp.fc1": colwise_parallel(),
+            "mlp.fc2": rowwise_parallel(output_layouts=Shard(1)),
+            "layer_norm2": SequenceParallel(),
+        }
+
+        parallelize_module(
+            module=siglip_block,
+            device_mesh=tp_mesh,
+            parallelize_plan=layer_plan,
+        )
+    
+    if enable_async_tp:
+        from torch.distributed._symmetric_memory import enable_symm_mem_for_group
+
+        torch._inductor.config._micro_pipeline_tp = True
+        enable_symm_mem_for_group(tp_mesh.get_group().group_name)
+
+    logger.info(
+        f"Applied {'Float8 ' if enable_float8 else ''}{'Async ' if enable_async_tp else ''}"
+        "Tensor Parallelism to the model.vision_tower"
     )
 
 
@@ -283,9 +376,9 @@ def _apply_ac_to_transformer_block(module: nn.Module, ac_config):
 
 def apply_ac(model: nn.Module, ac_config):
     """Apply activation checkpointing to the model."""
-    for layer_id, transformer_block in model.layers.named_children():
+    for layer_id, transformer_block in model.language_model.model.layers.named_children():
         transformer_block = _apply_ac_to_transformer_block(transformer_block, ac_config)
-        model.layers.register_module(layer_id, transformer_block)
+        model.language_model.model.layers.register_module(layer_id, transformer_block)
 
     logger.info(f"Applied {ac_config.mode} activation checkpointing to the model")
 
@@ -309,55 +402,55 @@ def apply_fsdp(
     reduce_dtype: torch.dtype,
     pp_enabled: bool,
     cpu_offload: bool = False,
-    reshard_after_forward_policy: str = "default",
 ):
     """
-    Apply data parallelism (via FSDP2) to the model.
-
-    Args:
-        model (nn.Module): The model to apply data parallelism to.
-        dp_mesh (DeviceMesh): The device mesh to use for data parallelism.
-        param_dtype (torch.dtype): The data type to use for model parameters.
-        reduce_dtype (torch.dtype): The data type to use for reduction operations.
-        pp_enabled (bool): Whether pipeline parallelism is enabled.
-        cpu_offload (bool, optional): Whether to offload model parameters to CPU. Defaults to False.
-        reshard_after_forward_policy (str, optional): The policy to use for resharding after forward pass. Defaults to "default".
-            Other options: "never", "always".
-            - "default" applies default resharding behavior, implementing "smart defaults" for known optimal scenarios.
-            - "always" will enable `reshard_after_forward` for all forward passes.
-            - "never" will disable `reshard_after_forward` for all forward passes.
-
+    Apply data parallelism to the model. FSDP2 is used here.
     """
     mp_policy = MixedPrecisionPolicy(param_dtype=param_dtype, reduce_dtype=reduce_dtype)
     fsdp_config = {"mesh": dp_mesh, "mp_policy": mp_policy}
     if cpu_offload:
         fsdp_config["offload_policy"] = CPUOffloadPolicy()
 
-    for layer_id, transformer_block in model.layers.items():
-        if reshard_after_forward_policy == "always":
-            reshard_after_forward = True
-        elif reshard_after_forward_policy == "never":
+    layers = model.language_model.model.layers
+    if isinstance(layers, nn.ModuleDict):
+        layer_iterator = layers.items() # ModuleDict case - use .items()
+    else:
+        layer_iterator = enumerate(layers) # ModuleList case - use enumerate
+
+    for layer_id, transformer_block in layer_iterator:
+        if pp_enabled:
+            # For PP, do not reshard after forward to avoid per-microbatch
+            # all-gathers, which can be expensive and non-overlapped
             reshard_after_forward = False
-        elif reshard_after_forward_policy == "default":
-            if pp_enabled:
-                # For PP, do not reshard after forward to avoid per-microbatch
-                # all-gathers, which can be expensive and non-overlapped
-                reshard_after_forward = False
-            else:
-                # As an optimization, do not reshard after forward for the last
-                # transformer block since FSDP would prefetch it immediately
-                reshard_after_forward = int(layer_id) < len(model.layers) - 1
         else:
-            raise ValueError(
-                f"Invalid reshard_after_forward_policy: {reshard_after_forward_policy}."
-            )
+            # As an optimization, do not reshard after forward for the last
+            # transformer block since FSDP would prefetch it immediately
+            reshard_after_forward = int(layer_id) < len(model.language_model.model.layers) - 1
         fully_shard(
             transformer_block,
             **fsdp_config,
             reshard_after_forward=reshard_after_forward,
         )
-    fully_shard(model, **fsdp_config, reshard_after_forward=not pp_enabled)
+    #fully_shard(model.language_model.model, **fsdp_config, reshard_after_forward=not pp_enabled)
+    fully_shard(model.language_model.model.norm, **fsdp_config, reshard_after_forward=not pp_enabled)
+    fully_shard(model.language_model.lm_head, **fsdp_config, reshard_after_forward=not pp_enabled)
+    # apply FSDP to vision_tower and multi_modal_projector
+    if hasattr(model, 'vision_tower'):
+        fully_shard(model.vision_tower,  **fsdp_config, reshard_after_forward=not pp_enabled)
+    if hasattr(model, 'multi_modal_projector'):
+        fully_shard(model.multi_modal_projector,  **fsdp_config, reshard_after_forward=not pp_enabled)
 
+
+def apply_partial_fsdp(
+    module: nn.Module,
+    dp_mesh: DeviceMesh,
+    param_dtype: torch.dtype,
+    reduce_dtype: torch.dtype,
+    pp_enabled: bool,
+    cpu_offload: bool = False):
+    mp_policy = MixedPrecisionPolicy(param_dtype=param_dtype, reduce_dtype=reduce_dtype)
+    fsdp_config = {"mesh": dp_mesh, "mp_policy": mp_policy}
+    fully_shard(module, **fsdp_config, reshard_after_forward=not pp_enabled)
 
 def apply_ddp(
     model: nn.Module,

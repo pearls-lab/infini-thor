@@ -7,7 +7,7 @@
 from torchtitan.datasets.tokenizer.tiktoken import TikTokenizer
 from torchtitan.datasets.tokenizer.tokenizer import Tokenizer
 
-from torchtitan.logging import logger
+from torchtitan.tools.logging import logger
 
 
 def build_tokenizer(tokenizer_type: str, tokenizer_path: str) -> Tokenizer:

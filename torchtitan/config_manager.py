@@ -16,7 +16,7 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib
 
-from torchtitan.logging import logger
+from torchtitan.tools.logging import logger
 
 TORCH_DTYPE_MAP = {
     "float16": torch.float16,
@@ -319,6 +319,18 @@ class JobConfig:
         self.parser.add_argument(
             "--training.rope_theta",
             type=float
+        )
+        self.parser.add_argument(
+            "--training.img_width",
+            type=int
+        )
+        self.parser.add_argument(
+            "--training.img_height",
+            type=int
+        )
+        self.parser.add_argument(
+            "--training.n_tok_per_img",
+            type=int
         )
         self.parser.add_argument(
             "--experimental.enable_async_tensor_parallel",

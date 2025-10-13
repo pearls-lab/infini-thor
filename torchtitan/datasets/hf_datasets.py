@@ -4,6 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import pickle
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
@@ -13,8 +14,9 @@ from torch.distributed.checkpoint.stateful import Stateful
 from torch.utils.data import IterableDataset
 from torchdata.stateful_dataloader import StatefulDataLoader
 
+from torchtitan.config_manager import JobConfig
 from torchtitan.datasets.tokenizer import Tokenizer
-from torchtitan.logging import logger
+from torchtitan.tools.logging import logger
 
 from datasets import Dataset, load_dataset
 from datasets.distributed import split_dataset_by_node
@@ -180,18 +182,112 @@ class DPAwareDataLoader(StatefulDataLoader, Stateful):
         super().load_state_dict(pickle.loads(state_dict[self._rank_id]))
 
 
-def build_hf_data_loader(
-    dataset_name: str,
-    dataset_path: Optional[str],
-    tokenizer: Tokenizer,
-    batch_size: int,
-    seq_len: int,
-    world_size: int,
-    rank: int,
-    infinite: bool = True,
+class ParallelAwareDataloader(StatefulDataLoader, Stateful):
+    """Dataloader that is aware of distributed data parallelism.
+
+    This dataloader is used to load data in a distributed data parallel fashion. It also
+    utilizes ``torchdata.stateful_dataloader.StatefulDataLoader`` to implement the necessary
+    methods such as ``__iter__``.
+
+    Args:
+        dataset (IterableDataset): The dataset to iterate over.
+        dp_rank: Data parallelism rank for this dataloader.
+        dp_world_size: The world size of the data parallelism.
+        batch_size: The batch size to use for each iteration.
+        collate_fn: Optional function to collate samples in a batch.
+    """
+
+    dp_rank: int
+    dp_world_size: int
+    batch_size: int
+
+    def __init__(
+        self,
+        dataset: IterableDataset,
+        dp_rank: int,
+        dp_world_size: int,
+        batch_size: int,
+        collate_fn: Callable | None = None,
+    ):
+        self.dp_world_size = dp_world_size
+        self.dp_rank = dp_rank
+        self.batch_size = batch_size
+        super().__init__(dataset, batch_size, collate_fn=collate_fn)
+        self._rank_id = f"dp_rank_{dp_rank}"
+
+    def state_dict(self) -> dict[str, Any]:
+        # Store state only for dp rank to avoid replicating the same state across other dimensions.
+        return {
+            # We don't have to use pickle as DCP will serialize the state_dict. However,
+            # we have to keep this for backward compatibility.
+            self._rank_id: pickle.dumps(super().state_dict()),
+            "world_size": self.dp_world_size,
+        }
+
+    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
+        # State being empty is valid.
+        if not state_dict:
+            return
+
+        if self._rank_id not in state_dict:
+            logger.warning(
+                f"DataLoader state is empty for dp rank {self.dp_rank}, "
+                "expected key {self._rank_id}"
+            )
+            return
+
+        assert self.dp_world_size == state_dict["world_size"], (
+            "dp_degree is inconsistent before and after checkpoint, "
+            "dataloader resharding is not supported yet."
+        )
+        # We don't have to use pickle as DCP will serialize the state_dict. However, we have to
+        # keep this for backward compatibility.
+        super().load_state_dict(pickle.loads(state_dict[self._rank_id]))
+
+
+def build_data_loader(
+    job_config: JobConfig,
+    processor: Any,
+    dp_mesh = None,
+    split: str = "train",
+    world_size: int = None,
+    rank: int = None,
+    img_token_id: int = None,
+    #infinite: bool = None,
 ):
-    """Build a data loader for HuggingFace datasets."""
-    hf_ds = HuggingFaceDataset(
-        dataset_name, dataset_path, tokenizer, seq_len, world_size, rank, infinite
-    )
-    return DPAwareDataLoader(rank, hf_ds, batch_size=batch_size, world_size=world_size)
+    if job_config.training.dataset == "alfred":
+        from torchtitan.datasets.alfred_dataset import ALFREDDataset, AlfredDataLoader
+        traj_data_dir = os.environ['TRAJ_DATA_DIR'] 
+        img_data_dir = os.environ['IMG_DATA_DIR']
+        tokenizer = processor.tokenizer
+        tokenizer.add_special_tokens({"additional_special_tokens": ['<|act|>', '<|plan|>', '<|goal|>']})
+        
+        if job_config.training.seq_len > 131072:
+            from torchtitan.datasets.alfred_dataset_long_ctx import ALFREDDataset, AlfredDataLoader
+        else:
+            from torchtitan.datasets.alfred_dataset import ALFREDDataset, AlfredDataLoader
+
+        dataset = ALFREDDataset(
+            processor=processor,
+            n_tok_per_img=job_config.training.n_tok_per_img,
+            img_width=job_config.training.img_width,
+            img_height=job_config.training.img_height,
+            img_token_id=img_token_id,
+            traj_data_dir=traj_data_dir,
+            img_data_dir=img_data_dir,
+            max_seq_len=job_config.training.seq_len, world_size=world_size,
+            cp_degree=job_config.experimental.context_parallel_degree)
+
+        dp_enabled = True if dp_mesh is not None else False
+        
+        data_loader = AlfredDataLoader(rank, dataset, 
+                                        batch_size=job_config.training.batch_size,
+                                        world_size=world_size,
+                                        dp_enabled=dp_enabled)
+        return data_loader
+    else:
+        """Build a data loader for HuggingFace datasets."""
+        hf_ds = HuggingFaceDataset(
+            job_config.training.dataset, job_config.training.dataset_path, tokenizer, job_config.training.seq_len, world_size, rank, infinite
+        )
+        return DPAwareDataLoader(rank, hf_ds, batch_size=batch_size, world_size=world_size)
