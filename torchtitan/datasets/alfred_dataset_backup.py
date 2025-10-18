@@ -28,7 +28,7 @@ def extract_and_convert_tar(tar_path, img_width, img_height):
     
     with tarfile.open(tar_path, 'r') as tar:
         for member in tar.getmembers():
-            if member.isfile() and (member.name.lower().endswith(".jpg") or member.name.lower().endswith(".png")):
+            if member.isfile() and member.name.lower().endswith(".jpg"):
                 file_obj = tar.extractfile(member)
                 if file_obj:
                     base_filename = os.path.basename(member.name)
@@ -75,7 +75,6 @@ class ALFREDDataset(IterableDataset, Stateful):
 
     def __init__(
         self,
-        dataset_name: str,
         processor,
         n_tok_per_img: int,
         img_width: int,
@@ -92,7 +91,7 @@ class ALFREDDataset(IterableDataset, Stateful):
         ignore_index: int = -100,
         eval: bool = False
     ) -> None:
-        self.dataset_name = dataset_name
+        self.dataset_name = "alfred"
        
         self.processor = processor
         self.n_tok_per_img = n_tok_per_img
@@ -141,9 +140,6 @@ class ALFREDDataset(IterableDataset, Stateful):
 
         self.use_only_last_frame = True
 
-        self.system_prompt = "You are an embodied AI agent operating in a simulated 3D environment. " + \
-                            "Perceive the scene (image inputs), and predict the next action to complete the task."
-
         if len(self.traj_data) == 0:
             self._load_traj_data()
 
@@ -161,120 +157,87 @@ class ALFREDDataset(IterableDataset, Stateful):
         return it
 
     def __iter__(self):
-
-        # Per-rank sharding
-        dp_rank = int(getattr(self, "rank", 0))
-        dp_world = max(1, int(getattr(self, "world_size", 1)))
-
-        # Per-worker sharding (if using num_workers > 0)
-        wi = get_worker_info()
-        if wi is None:
-            worker_id, num_workers = 0, 1
-        else:
-            worker_id, num_workers = wi.id, wi.num_workers
-
-        # Combine rank and worker into one global shard
-        shard_idx = dp_rank * num_workers + worker_id
-        shard_den = dp_world * num_workers
-
-        # Resume offsets
-        start_traj = self._sample_idx
-        start_chunk = self._chunk_idx
-
-        # Iterate trajectories; select only those belonging to this shard
-        for ti, traj in enumerate(self._get_data_iter(), start=start_traj):
-            # Skip until resume point in trajectory space
-            if ti < start_traj:
-                continue
-
-            # Keep only trajectories owned by this shard
-            if (ti % shard_den) != shard_idx:
-                # if we skip a traj, and we were resuming inside it, reset chunk cursor
-                if ti == start_traj:
-                    self._chunk_idx = 0
-                continue
+        for traj in self._get_data_iter():
+            logger.info(f"Loading a new example ... ")
 
             if self.eval:
-                yield json.loads(traj['text'])
-                self._sample_idx = ti + 1
-                self._chunk_idx = 0
-                continue
+                yield json.loads(traj['text']) 
+            else:
+                chunks = self._load_sample(traj, chunk=True)
 
-            filename = traj['filename']
-            img_tar_file = filename.replace("txt", "tar")
-            tar_file = os.path.join(self.img_data_dir, img_tar_file)
+                if not isinstance(chunks, list):
+                    chunks = [chunks]
 
-            if not os.path.exists(tar_file):
-                continue
-
-            # Heavy work happens ONLY for this shard's trajectories
-            chunks = self._load_sample(traj, chunk=True)
-            if not isinstance(chunks, list):
-                chunks = [chunks]
-
-            # Resume inside the first selected trajectory if needed
-            first_chunk_idx = start_chunk if ti == start_traj else 0
-
-            for ci, chunk in enumerate(chunks[first_chunk_idx:], start=first_chunk_idx):
-                n_img_token = chunk['lang_input'].count(self.img_token)
-                n_act_token = chunk['lang_input'].count('<|act|>')
-                if n_act_token == 0:
-                    logger.warning(f"Skip this chunk - no target labels (action tokens)")
-                    continue
-                if not self.use_only_last_frame and len(chunk['img_list']) != n_img_token:
-                    logger.warning(f"Some images are missed -- expected {n_img_token}, but {len(chunk['img_list'])}")
-                    logger.warning(f"len(chunk['img_list']): {len(chunk['img_list'])}, len(chunk['lang_input']): {len(chunk['lang_input'])}, chunk['lang_input']: {chunk['lang_input']}")
-                    continue # raise ValueError()
-                
-                # old version
-                # logger.info(f"n_img_token: {n_img_token}, len(chunk['img_list']): {len(chunk['img_list'])}")
-                # output = self.processor(images=chunk['img_list'], text=chunk['lang_input'], return_tensors="pt")
-                # print(chunk['lang_input'])
-                messages = self.build_messages_from_interleaved(chunk['lang_input'], chunk['img_list'])
-
-                prompt = self.processor.tokenizer.apply_chat_template(
-                    messages, tokenize=False, add_generation_prompt=False,   # set True if you plan to .generate immediately
-                )
-
-                output = self.processor(
-                    text=prompt, images=chunk['img_list'], return_tensors="pt"
-                )
-
-                logger.info(f"n_img: {len(chunk['img_list'])}\nprompt: {prompt}")
-                
-                labels = output.input_ids.clone()
-
-                act_tok = False
-                for i, l in enumerate(labels[0]):
-                    if (not act_tok) and l == self.act_tok_id: # 151648
-                        act_tok = True
+                for ci, chunk in enumerate(chunks[self._chunk_idx:]):
+                    n_img_token = chunk['lang_input'].count(self.img_token)
+                    n_act_token = chunk['lang_input'].count('<|act|>')
+                    if n_act_token == 0:
+                        logger.warning(f"Skip this chunk - no target labels (action tokens)")
                         continue
+                    if not self.use_only_last_frame and len(chunk['img_list']) != n_img_token:
+                        logger.warning(f"Some images are missed -- expected {n_img_token}, but {len(chunk['img_list'])}")
+                        logger.warning(f"len(chunk['img_list']): {len(chunk['img_list'])}, len(chunk['lang_input']): {len(chunk['lang_input'])}, chunk['lang_input']: {chunk['lang_input']}")
+                        continue # raise ValueError()
                     
-                    if (not act_tok) and l != self.act_tok_id:
-                        labels[0][i] = self.ignore_index
+                    # old version
+                    # logger.info(f"n_img_token: {n_img_token}, len(chunk['img_list']): {len(chunk['img_list'])}")
+                    # output = self.processor(images=chunk['img_list'], text=chunk['lang_input'], return_tensors="pt")
 
-                    if act_tok and l == self.act_tok_id:
-                        act_tok = False
-                
-                input_ids = output.input_ids[:, :-1]
-                labels = labels[:, 1:]
+                    messages = self.build_messages_from_interleaved(chunk['lang_input'], chunk['img_list'])
 
-                input_ids = pad_to_multiple(input_ids, 4, pad_token=self.eos_tok_id)
-                labels = pad_to_multiple(labels, 4, pad_token=self.ignore_index)
+                    prompt = self.processor.tokenizer.apply_chat_template(
+                        messages,
+                        tokenize=False,
+                        add_generation_prompt=False,   # set True if you plan to .generate immediately
+                    )
 
-                self._chunk_idx = ci + 1
+                    output = self.processor(
+                        text=prompt,
+                        images=chunk['img_list'],      # list of PIL.Image or np arrays
+                        return_tensors="pt",
+                    )
 
-                yield {
-                    'input_ids': input_ids,
-                    'pixel_values': output.pixel_values,
-                    'labels': labels,
-                    'image_grid_thw': output.image_grid_thw
-                }
+                    logger.info(f"{prompt}")
+                    
+                    labels = output.input_ids.clone()
 
-            # reset chunk_idx
-            self._chunk_idx = 0
-            self._sample_idx = ti + 1
+                    act_tok = False
+                    for i, l in enumerate(labels[0]):
+                        if (not act_tok) and l == self.act_tok_id: # 151648
+                            act_tok = True
+                            continue
+                        
+                        if (not act_tok) and l != self.act_tok_id:
+                            labels[0][i] = self.ignore_index
 
+                        if act_tok and l == self.act_tok_id:
+                            act_tok = False
+                    
+                    input_ids = output.input_ids[:, :-1]
+                    labels = labels[:, 1:]
+                    
+                    # if self.cp_degree > 1:
+                    #     input_ids = pad_to_multiple(input_ids, self.cp_degree * 2, pad_token=self.eos_tok_id)
+                    #     labels = pad_to_multiple(labels, self.cp_degree * 2, pad_token=self.ignore_index)
+                    # else:
+                    #     input_ids = pad_to_max_seq(input_ids, max_seq=self.max_seq_len, pad_token=self.eos_tok_id)[:, :self.max_seq_len]
+                    #     labels = pad_to_max_seq(labels, max_seq=self.max_seq_len, pad_token=self.ignore_index)[:, :self.max_seq_len]
+                        
+                    self._chunk_idx += 1
+
+                    # if hasattr(output, "image_sizes"):
+                    #     _ret.update({'image_sizes': output.image_sizes,})
+                    
+                    yield {
+                        'input_ids': input_ids,
+                        'pixel_values': output.pixel_values,
+                        'labels': labels,
+                        'image_grid_thw': output.image_grid_thw
+                    }
+                    
+                # reset chunk_idx
+                self._chunk_idx = 0
+            self._sample_idx += 1
 
     def build_messages_from_interleaved(self, lang_input: str, img_list):
         """
@@ -294,10 +257,7 @@ class ALFREDDataset(IterableDataset, Stateful):
             if i < len(img_list):
                 content.append({"type": "image"})  # image placeholder in order
 
-        messages = [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": content}
-        ]
+        messages = [{"role": "user", "content": content}]
         return messages
 
     def load_state_dict(self, state_dict):
@@ -325,13 +285,9 @@ class ALFREDDataset(IterableDataset, Stateful):
 
         if self.use_only_last_frame:
             for input_seq, cimgs in zip(chunk_seq_list, chunk_img_list):
-                if self.dataset_name == "alfred":
-                    _img_list = [img_dict[fname.replace("png", "jpg")] for fname in cimgs]
-                else:
-                    _img_list = [img_dict[fname] for fname in cimgs]
                 chunks.append({
                     'lang_input': input_seq,
-                    'img_list': _img_list,
+                    'img_list': [img_dict[fname.replace("png", "jpg")] for fname in cimgs],
                     'task_goal': traj['turk_annotations']['anns'][0]['task_desc'],
                     'traj': traj,
                 })
@@ -391,14 +347,13 @@ class ALFREDDataset(IterableDataset, Stateful):
         # TODO: check the system prompt for Qwen -- get the # os system prompt tokens
         # n_main_goal_tokens = len(self.processor(text=main_goal_str).input_ids)
         # System input for Qwen
-        n_system_prompt_tokens = len(self.processor(text=self.system_prompt).input_ids) + 8 # additional speical tokens such as '<|im_start|>', '<|im_end|>'
-        n_main_goal_tokens = len(self.processor(text=main_goal_str).input_ids)
+        n_main_goal_tokens = len(self.processor(text=main_goal_str).input_ids) + 20 # additional system prompt for Qwen2.5-VL 
 
         chunk_seq_list = []
         chunk_img_file_list = []
 
         chunk_seq = main_goal_str
-        n_chunk_tokens = n_system_prompt_tokens + n_main_goal_tokens # for chunking
+        n_chunk_tokens = n_main_goal_tokens # for chunking
 
         # initial image state
         #chunk_seq += f"<|vision_start|>{self.img_token}<|vision_end|>" # '<image>' for LLaVA-OV, '<|image_pad|>' for Qwen
@@ -409,16 +364,11 @@ class ALFREDDataset(IterableDataset, Stateful):
         img_start_idx = 1
 
         for high_idx, low_act_list in high_idx_2_low_act_list.items():
-            if high_idx >= len(traj['plan']['high_pddl']):
-                continue
+            plan_str = f"<|plan|>Plan: {self.get_templated_high_pddl_desc(traj['plan']['high_pddl'][high_idx])}<|plan|>"
             
-            #plan_str = f"<|plan|>Plan: {self.get_templated_high_pddl_desc(traj['plan']['high_pddl'][high_idx])}<|plan|>"
-            plan_str = ""
-
             high_plan_seq = ""
-            #high_plan_seq += plan_str
-            #n_high_plan_tokens = len(self.processor(text=plan_str).input_ids)
-            n_high_plan_tokens = 0
+            high_plan_seq += plan_str
+            n_high_plan_tokens = len(self.processor(text=plan_str).input_ids)
             n_high_plan_img = 0
 
             low_act_last_frames = []
@@ -534,15 +484,52 @@ class ALFREDDataset(IterableDataset, Stateful):
 class AlfredDataLoader(ParallelAwareDataloader):
 
     def __init__(self, 
-        hf_ds: IterableDataset,
         dp_rank: int,
-        dp_world_size: int,
+        hf_ds: IterableDataset,
         batch_size: int,
-        #dp_enabled: bool = False,
-        #num_workers: int = 4,
-        pin_memory: bool = True):
+        world_size: int,
+        dp_enabled: bool = False,
+        pin_memory: bool = False):
         
-        super().__init__(hf_ds, dp_rank, dp_world_size, batch_size, collate_fn=self.collate_fn)    
+        # Wrap the dataset with a DP-aware shard
+        self._pin_memory = pin_memory
+
+        # kwargs = dict(
+        #     batch_size=batch_size,
+        #     collate_fn=self._collate_and_maybe_pin,
+        #     drop_last=True,
+        # )
+
+        if dp_enabled:
+            dp_sharded_dataset = self.shard_dataset(hf_ds, dp_rank, world_size)
+            super().__init__(dp_sharded_dataset, dp_rank, world_size, batch_size, collate_fn=self.collate_fn)
+            #super().__init__(hf_ds, dp_rank, world_size, batch_size, collate_fn=self.collate_fn)
+        else:
+            super().__init__(hf_ds, batch_size, collate_fn=self.collate_fn)
+
+    # def _collate_and_maybe_pin(self, batch):
+    #     batch_dict = self.collate_fn(batch)  # your original static method below
+    #     if self._pin_memory and torch.cuda.is_available():
+    #         return _pin_batch(batch_dict)
+    #     return batch_dict
+
+    def shard_dataset(self, dataset: IterableDataset, dp_rank: int, world_size: int):
+        # Shard the dataset across DP ranks
+        class ShardedDataset(IterableDataset):
+            def __iter__(self):
+                it = iter(dataset)
+                # start at 'dp_rank', step by 'world_size'
+                return itertools.islice(it, dp_rank, None, world_size)
+                # Offset the iterator so each rank sees disjoint samples
+                # return (x for i, x in enumerate(all_data_iter) if i % world_size == dp_rank)
+
+        return ShardedDataset()
+
+    # def load_state_dict(self, state_dict):
+    #     if isinstance(self.dataset, Stateful):
+    #         # Resuming dataloader with: {'_index_sampler_state': None, '_sampler_iter_state': {'samples_yielded': 1480}, '_sampler_iter_yielded': 740, '_num_yielded': 740, '_IterableDataset_len_called': None, '_shared_seed': None, 'fetcher_state': {'dataset_iter_state': None, 'fetcher_ended': False}, 'dataset_state': None, '_iterator_finished': False}
+    #         logger.info(f"Resuming dataloader with: {state_dict}")
+    #         self.dataset.load_state_dict(state_dict)
 
     @staticmethod
     def collate_fn(batch):
@@ -574,15 +561,23 @@ class AlfredDataLoader(ParallelAwareDataloader):
             image_grid_thw.append(sample['image_grid_thw'])
 
         # Keep everything on CPU; DataLoader (or our wrapper) will pin
-        # TODO: visual pad mask ?
         batch_dict = {
             'input_ids': torch.concat(input_ids, dim=0),
+            #'pixel_values': torch.stack(pixel_values),
             'pixel_values': torch.concat(pixel_values, dim=0),
             'n_image': torch.tensor(n_image, device=input_ids[0].device, dtype=input_ids[0].dtype),
+            #'image_grid_thw': torch.stack(image_grid_thw),
             'image_grid_thw': torch.concat(image_grid_thw, dim=0),
         }
         
         if labels:
             batch_dict['labels'] = torch.concat(labels, dim=0)
-
+        
+        # logger.info(
+        #     f"input_ids: {batch_dict['input_ids'].shape} "
+        #     f"pixel_values: {batch_dict['pixel_values'].shape} "
+        #     f"n_image: {batch_dict['n_image']} "
+        #     f"labels: {batch_dict['labels'].shape} "
+        #     f"image_grid_thw: {batch_dict['image_grid_thw'].shape})"
+        # )
         return batch_dict

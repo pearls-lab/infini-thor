@@ -268,6 +268,7 @@ def build_data_loader(
             from torchtitan.datasets.alfred_dataset import ALFREDDataset, AlfredDataLoader
 
         dataset = ALFREDDataset(
+            dataset_name="alfred",
             processor=processor,
             n_tok_per_img=job_config.training.n_tok_per_img,
             img_width=job_config.training.img_width,
@@ -276,14 +277,11 @@ def build_data_loader(
             traj_data_dir=traj_data_dir,
             img_data_dir=img_data_dir,
             max_seq_len=job_config.training.seq_len, world_size=world_size,
-            cp_degree=job_config.experimental.context_parallel_degree)
-
-        dp_enabled = True if dp_mesh is not None else False
+            cp_degree=job_config.experimental.context_parallel_degree,
+            rank=rank)
         
-        data_loader = AlfredDataLoader(rank, dataset, 
-                                        batch_size=job_config.training.batch_size,
-                                        world_size=world_size,
-                                        dp_enabled=dp_enabled)
+        data_loader = AlfredDataLoader(dataset, rank, world_size,
+                                        batch_size=job_config.training.batch_size)
         return data_loader
     else:
         """Build a data loader for HuggingFace datasets."""

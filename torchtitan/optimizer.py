@@ -189,10 +189,9 @@ class LMOnlyOptimizersContainer(OptimizersContainer):
         self.model_parts = model_parts
 
         exclusion_patterns = [
-            'vision_tower',
-            'multi_modal_projector',
+            'visual',
             'image_newline',
-            'language_model.model.embed_tokens'
+            'model.embed_tokens'
         ]
 
         for model in self.model_parts:
@@ -252,7 +251,7 @@ def build_optimizers(
     )
 
 
-def build_llava_optimizers(
+def build_lm_only_optimizers(
     model_parts: List[nn.Module], job_config: JobConfig
 ) -> OptimizersContainer:
     """Create a OptimizersContainer for the given model parts and job config.

@@ -35,10 +35,6 @@ from huggingface_hub import snapshot_download, upload_folder, create_repo
 AWS_S3_PATH = os.environ.get('AWS_S3_PATH', None)
 
 
-# -----------------------------
-# Helpers preserved from originals
-# -----------------------------
-
 def get_local_rank():
     return int(os.environ.get("LOCAL_RANK", "0"))
 
@@ -216,13 +212,24 @@ def main(job_config: JobConfig):
         buffers_dict = {k: v.clone() for k, v in model_tmp.named_buffers()}
         del model_tmp
         torch.cuda.empty_cache()
+    elif "qwen" in model_name.lower():
+        with torch.no_grad():
+            model = model_cls.from_pretrained(model_name, config=model_config)
+            buffers_dict = {k: v.clone() for k, v in model.named_buffers()}
+        del model
+        torch.cuda.empty_cache()
 
     # --- meta init to control placement with TP/PP/CP ---
     with torch.device("meta"):
         if "llava" in model_name.lower() or "qwen" in model_name.lower():
             # use from_pretrained on real device later to ensure lm_head sizing vs tokenizer
-            model = model_cls.from_pretrained(model_name, config=model_config, attn_implementation=job_config.training.attn_impl)
-            buffers_dict = {k: v.clone() for k, v in model.named_buffers()}
+            # model = model_cls.from_pretrained(model_name, 
+            #     config=model_config,
+            #     attn_implementation=job_config.training.attn_impl,
+            #     torch_dtype=torch.bfloat16
+            # )
+            model_config._attn_implementation = job_config.training.attn_impl 
+            model = model_cls(model_config)
         else:
             model = model_cls.from_model_args(model_config)
 
@@ -237,17 +244,29 @@ def main(job_config: JobConfig):
     # --- distribute model by PP/TP as requested ---
     model_parts = [model]
 
-    if parallel_dims.tp_enabled or parallel_dims.pp_enabled:
+    if parallel_dims.pp_enabled:
         # Distribute the module across parallel meshes as your originals do
         placements = [Replicate()]
         if parallel_dims.tp_enabled and tp_mesh is not None:
             placements = [Shard(0)]  # shard head/hidden or per your layout; placeholder kept minimal
         model = distribute_module(model, world_mesh["tp"] if parallel_dims.tp_enabled else world_mesh["dp"], placements=placements)
         model_parts = [model]
-    else:
+    elif parallel_dims.tp_enabled:
+        # apply PT-D Tensor Parallel, activation checkpointing, torch.compile, Data Parallel
+        train_spec.parallelize_fn(model, world_mesh, parallel_dims, job_config)
+        
         model.to_empty(device=device_type)
         with torch.no_grad():
             model.init_buffers(buffer_device=device_type, buffers_dict=buffers_dict)
+        model.to(dtype=torch.bfloat16)
+        model.train()
+        model_parts = [model]
+    else:
+        #model.to_empty(device=device_type, dtype=torch.bfloat16)
+        model.to_empty(device=device_type)
+        with torch.no_grad():
+            model.init_buffers(buffer_device=device_type, buffers_dict=buffers_dict)
+        model.to(dtype=torch.bfloat16)
         model.train()
         model_parts = [model]
         # ?
@@ -257,8 +276,8 @@ def main(job_config: JobConfig):
     # --- optimizer/scheduler/checkpoint ---
     optimizers = train_spec.build_optimizers_fn(model_parts, job_config)
     lr_schedulers = train_spec.build_lr_schedulers_fn(optimizers, job_config)
-    start_step = 0
-    train_state = TrainState(step=start_step)
+    
+    train_state = TrainState()
 
     # load initial checkpoint
     checkpoint = CheckpointManager(
@@ -322,20 +341,24 @@ def main(job_config: JobConfig):
     # basic iterator over train dataloader
     # Each batch should contain already-preprocessed tensors from build_hf_data_loader
     #for micro_step, batch in enumerate(train_loader):
+    in_ids = []
+    in_embeds = []
+    import numpy as np
     while train_state.step < job_config.training.steps:
         train_state.step += 1
 
         try:
             batch = next(data_iterator)
         except StopIteration:
+            checkpoint.save(train_state.step, force=True)
             data_iterator = iter(data_loader)
             batch = next(data_iterator)
         
         # unpack common fields expected by your graphs
         input_ids = batch["input_ids"].to(device, non_blocking=True) # check `pin_memory`; it starts the transfer and immediately move on to the next operation, overlapping computation and data transfer.
-        labels = batch.get("labels", batch["input_ids"]).to(device, non_blocking=True)
-        pixel_values = batch.get("pixel_values", batch["pixel_values"]).to(device, non_blocking=True)
-        n_image = batch.get("n_image", batch["n_image"]).to(device, non_blocking=True)
+        labels       = batch["labels"].to(device, non_blocking=True)
+        pixel_values = batch["pixel_values"].to(device, non_blocking=True)
+        n_image      = batch["n_image"].to(device, non_blocking=True)
 
         # TODO: enable_embed_batch
         enable_embed_batch = True if (job_config.training.seq_len >= 16384 and job_config.training.batch_size > 1) else False
@@ -372,19 +395,25 @@ def main(job_config: JobConfig):
                 inputs_embeds = model.embed(input_ids=input_ids,
                                             pixel_values=pixel_values)
 
-        logger.info(f"[rank{dp_rank}] input_embeds: {inputs_embeds.shape}")
-        
+        logger.info(f"[rank{dp_rank}] input_ids.shape: {input_ids.shape}, inputs_embeds: {inputs_embeds.shape}, world_mesh: {world_mesh}")
+        logger.info(f"[rank{dp_rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.device}")
+        in_ids.append(input_ids.shape[1])
+        in_embeds.append(inputs_embeds.shape[1])
+
         position_ids = batch.get("position_ids", None)
         if position_ids is not None:
             position_ids = position_ids.to(device, non_blocking=True)
 
         # TODO zero_grad() here ?
         #optimizers.zero_grad()
-
+        rank = get_local_rank()
         # Optional: redistribute inputs for TP if CP is off (as in your code)
         if parallel_dims.tp_enabled and (not parallel_dims.cp_enabled) and inputs_embeds is not None:
             if not (parallel_dims.pp_enabled and False):  # if not first stage etc., simplified
+                # Shard(1) since input_layernorm is applied SequenceParallel()
                 inputs_embeds = distribute_tensor(inputs_embeds, world_mesh['tp'], placements=[Shard(1)]).to_local()
+                
+        logger.info(f"[rank{rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.shape}")
 
         # --- Context Parallel context ---
         optional_context_parallel_ctx = (
@@ -417,9 +446,12 @@ def main(job_config: JobConfig):
                 if hasattr(model, "language_model"): # Llava family
                     logits = model.language_model(inputs_embeds=inputs_embeds, position_ids=position_ids, use_cache=False)
                 elif hasattr(model, "model"): # others such as qwen
-                    logger.info(f"Training starts at step {train_state.step + 1}")
-                    logits = model(input_ids=input_ids,
-                                    inputs_embeds=inputs_embeds, position_ids=position_ids, use_cache=False)
+                    #logger.info(f"input_ids.shape: {input_ids.shape}, input_embeds.shape: {inputs_embeds.shape}")
+                    output = model(input_ids=input_ids,
+                                    inputs_embeds=inputs_embeds,
+                                    position_ids=position_ids,
+                                    use_cache=False)
+                    logits = output if isinstance(output, torch.Tensor) else output.logits
                 else:
                     logits = model(input_ids=input_ids, use_cache=False)
                 # CP hack parity
@@ -443,18 +475,61 @@ def main(job_config: JobConfig):
             opt.zero_grad(set_to_none=True)
 
         # --- logging / checkpoint ---
-        if train_state.step % job_config.logging.log_interval == 0:
-            logger.info(f"step {train_state.step:6d} | loss {color.yellow}{loss.item():.4f}{color.reset}")
+        if train_state.step % job_config.metrics.log_freq == 0:
+            # logger.info(f"step {train_state.step:6d} | loss {color.yellow}{loss.item():.4f}{color.reset}")
+            if (
+                parallel_dims.dp_replicate_enabled
+                or parallel_dims.dp_shard_enabled
+                or parallel_dims.cp_enabled
+            ):
+                loss = loss.detach()
+                global_avg_loss, global_max_loss = (
+                    utils.dist_mean(loss, world_mesh["dp_cp"]),
+                    utils.dist_max(loss, world_mesh["dp_cp"]),
+                )
+            else:
+                global_avg_loss = global_max_loss = loss.item()
+
+            # update train state
+            train_state.log_steps.append(train_state.step)
+            train_state.global_avg_losses.append(global_avg_loss)
+            train_state.global_max_losses.append(global_max_loss)
+
+            device_mem_stats = device_memory_monitor.get_peak_stats()
+
+            metrics = {
+                    "loss_metrics/global_avg_loss": global_avg_loss,
+                    "loss_metrics/global_max_loss": global_max_loss,
+                    "memory/max_active(GiB)": device_mem_stats.max_active_gib,
+                    "memory/max_active(%)": device_mem_stats.max_active_pct,
+                    "memory/max_reserved(GiB)": device_mem_stats.max_reserved_gib,
+                    "memory/max_reserved(%)": device_mem_stats.max_reserved_pct,
+                    "memory/num_alloc_retries": device_mem_stats.num_alloc_retries,
+                    "memory/num_ooms": device_mem_stats.num_ooms,
+                }
+            metric_logger.log(metrics, step=train_state.step)
+
+            logger.info(
+                f"{color.cyan}step: {train_state.step:2}  "
+                f"{color.green}loss: {global_avg_loss:7.4f}  "
+                f"{color.yellow}memory: {device_mem_stats.max_reserved_gib:5.2f}GiB"
+                f"({device_mem_stats.max_reserved_pct:.2f}%){color.reset}"
+                # f"{color.magenta}mfu: {mfu:.2f}%{color.reset}"
+            )
 
         if job_config.checkpoint.interval > 0 and train_state.step % job_config.checkpoint.interval == 0:
-            save_dir = Path(job_config.checkpoint.save_dir) / f"step-{train_state.step}"
-            save_dir.mkdir(parents=True, exist_ok=True)
-            states = {"model": combine_model_parts_state(model_parts)}
-            dcp.save_state_dict(states, storage_writer=dcp.FileSystemWriter(str(save_dir)))
-            save_checkpoint_s3(states, train_state.step, str(save_dir))
+            # save_dir = Path(job_config.checkpoint.folder) / f"step-{train_state.step}"
+            # save_dir.mkdir(parents=True, exist_ok=True)
+            # states = {"model": combine_model_parts_state(model_parts)}
+            # dcp.save(states, storage_writer=dcp.FileSystemWriter(str(save_dir)))
+            checkpoint.save(
+                train_state.step, force=(train_state.step == job_config.checkpoint.interval)
+            )
 
-        gc_handler.maybe_collect()
-
+    logger.info(f"avg input_ids length: {np.array(in_ids).mean()}")
+    logger.info(f"avg input_embeds length: {np.array(in_embeds).mean()}")
+    
+    checkpoint.save(train_state.step, force=True)
     logger.info("Training finished.")
 
 

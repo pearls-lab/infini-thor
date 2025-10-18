@@ -90,10 +90,11 @@ def parallelize_qwen2_5_vl(
             dp_mesh_dim_names = ("dp_replicate", "dp_shard_cp")
         else:
             dp_mesh_dim_names = ("dp_shard_cp",)
+        dp_mesh = world_mesh[tuple(dp_mesh_dim_names)]
 
         apply_fsdp(
             model,
-            world_mesh[tuple(dp_mesh_dim_names)],
+            dp_mesh,
             param_dtype=TORCH_DTYPE_MAP[job_config.training.mixed_precision_param],
             reduce_dtype=TORCH_DTYPE_MAP[job_config.training.mixed_precision_reduce],
             pp_enabled=parallel_dims.pp_enabled,
@@ -136,20 +137,20 @@ def apply_tp(
     # 2. Parallelize the root norm layer over the sequence dim
     # 3. Parallelize the final linear output layer
     parallelize_module(
-        model.language_model.model,
+        model.model,
         tp_mesh,
-        {   # cannot parallelize bc of image features
+        {   # we don't parallelize for the CP later
             # "embed_tokens": RowwiseParallel( 
             #     input_layouts=Replicate(),
             #     output_layouts=Shard(1),
             # ),
             "norm": SequenceParallel(
                 #use_local_output=True
-            ),
+            )
         },
     )
     parallelize_module(
-        model.language_model,
+        model,
         tp_mesh,
         {
             "lm_head": ColwiseParallel(
@@ -188,7 +189,7 @@ def apply_tp(
     # NOTE: At the cost of model code change, we can accelerate Sequence Parallel
     #       by folding (and unfolding) the batch dimension and the sequence dimension.
     #       Examples can be found at https://github.com/pytorch/torchtitan/pull/437
-    layers = model.language_model.model.layers
+    layers = model.model.layers
     if isinstance(layers, nn.ModuleDict):
         layer_iterator = layers.items() # ModuleDict case - use .items()
     else:
@@ -376,9 +377,9 @@ def _apply_ac_to_transformer_block(module: nn.Module, ac_config):
 
 def apply_ac(model: nn.Module, ac_config):
     """Apply activation checkpointing to the model."""
-    for layer_id, transformer_block in model.language_model.model.layers.named_children():
+    for layer_id, transformer_block in model.model.layers.named_children():
         transformer_block = _apply_ac_to_transformer_block(transformer_block, ac_config)
-        model.language_model.model.layers.register_module(layer_id, transformer_block)
+        model.model.layers.register_module(layer_id, transformer_block)
 
     logger.info(f"Applied {ac_config.mode} activation checkpointing to the model")
 
@@ -411,7 +412,7 @@ def apply_fsdp(
     if cpu_offload:
         fsdp_config["offload_policy"] = CPUOffloadPolicy()
 
-    layers = model.language_model.model.layers
+    layers = model.model.layers
     if isinstance(layers, nn.ModuleDict):
         layer_iterator = layers.items() # ModuleDict case - use .items()
     else:
@@ -425,20 +426,20 @@ def apply_fsdp(
         else:
             # As an optimization, do not reshard after forward for the last
             # transformer block since FSDP would prefetch it immediately
-            reshard_after_forward = int(layer_id) < len(model.language_model.model.layers) - 1
+            reshard_after_forward = int(layer_id) < len(model.model.layers) - 1
         fully_shard(
             transformer_block,
             **fsdp_config,
             reshard_after_forward=reshard_after_forward,
         )
     #fully_shard(model.language_model.model, **fsdp_config, reshard_after_forward=not pp_enabled)
-    fully_shard(model.language_model.model.norm, **fsdp_config, reshard_after_forward=not pp_enabled)
-    fully_shard(model.language_model.lm_head, **fsdp_config, reshard_after_forward=not pp_enabled)
+    fully_shard(model.model.norm, **fsdp_config, reshard_after_forward=not pp_enabled)
+    fully_shard(model.lm_head, **fsdp_config, reshard_after_forward=not pp_enabled)
     # apply FSDP to vision_tower and multi_modal_projector
-    if hasattr(model, 'vision_tower'):
-        fully_shard(model.vision_tower,  **fsdp_config, reshard_after_forward=not pp_enabled)
-    if hasattr(model, 'multi_modal_projector'):
-        fully_shard(model.multi_modal_projector,  **fsdp_config, reshard_after_forward=not pp_enabled)
+    if hasattr(model, 'visual'):
+        fully_shard(model.visual,  **fsdp_config, reshard_after_forward=not pp_enabled)
+    # if hasattr(model, 'multi_modal_projector'):
+    #     fully_shard(model.multi_modal_projector,  **fsdp_config, reshard_after_forward=not pp_enabled)
 
 
 def apply_partial_fsdp(

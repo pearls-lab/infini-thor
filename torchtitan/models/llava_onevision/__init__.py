@@ -1,5 +1,5 @@
 from torchtitan.models.llava_onevision.model import LlavaOnevisionForConditionalGeneration
-from torchtitan.optimizer import build_lr_schedulers, build_llava_optimizers, build_optimizers
+from torchtitan.optimizer import build_lr_schedulers, build_lm_only_optimizers, build_optimizers
 from transformers import AutoConfig
 from torchtitan.train_spec import register_train_spec, TrainSpec
 
@@ -28,7 +28,7 @@ register_train_spec(
         config=llava_onevision_configs,
         parallelize_fn=parallelize_llava,
         pipelining_fn=pipeline_llava,
-        build_optimizers_fn=build_llava_optimizers,
+        build_optimizers_fn=build_lm_only_optimizers,
         build_lr_schedulers_fn=build_lr_schedulers,
     )
 )

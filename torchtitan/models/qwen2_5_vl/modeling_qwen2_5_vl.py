@@ -63,7 +63,7 @@ else:
 
 
 if is_flash_attn_2_available():
-    from ...modeling_flash_attention_utils import _flash_attention_forward
+    from transformers.modeling_flash_attention_utils import _flash_attention_forward
 else:
     flash_attn_varlen_func = None
 
@@ -833,11 +833,11 @@ class Qwen2_5_VLFlashAttention2(Qwen2_5_VLAttention):
         position_embeddings: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,  # necessary, but kept here for BC
     ):
         bsz, q_len, _ = hidden_states.size()
-
+        
         query_states = self.q_proj(hidden_states)
         key_states = self.k_proj(hidden_states)
         value_states = self.v_proj(hidden_states)
-
+        
         query_states = query_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
         key_states = key_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
         value_states = value_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
@@ -906,7 +906,8 @@ class Qwen2_5_VLFlashAttention2(Qwen2_5_VLAttention):
             use_top_left_mask=self._flash_attn_uses_top_left_mask,
         )
 
-        attn_output = attn_output.reshape(bsz, q_len, self.hidden_size).contiguous()
+        #attn_output = attn_output.reshape(bsz, q_len, self.hidden_size).contiguous()
+        attn_output = attn_output.reshape(bsz, q_len, -1)
         attn_output = self.o_proj(attn_output)
 
         if not output_attentions:
@@ -956,7 +957,7 @@ class Qwen2_5_VLSdpaAttention(Qwen2_5_VLAttention):
         query_states = self.q_proj(hidden_states)
         key_states = self.k_proj(hidden_states)
         value_states = self.v_proj(hidden_states)
-
+        
         query_states = query_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
         key_states = key_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
         value_states = value_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
@@ -2113,11 +2114,11 @@ class Qwen2_5_VLForConditionalGeneration(Qwen2_5_VLPreTrainedModel, GenerationMi
 class Qwen2_5_VLForActionPrediction(Qwen2_5_VLForConditionalGeneration):
     def __init__(self, config):
         super().__init__(config)
-        self.action_head = nn.Linear(config.hidden_size, config.vocab_size)
-        self.post_init()
+        #self.action_head = nn.Linear(config.hidden_size, config.vocab_size)
+        #self.post_init()
 
-    def forward(self, *args, **kwargs):
-        return super().forward(*args, **kwargs)
+    # def forward(self, *args, **kwargs):
+    #     return super().forward(*args, **kwargs)
 
     def embed(self, input_ids: torch.LongTensor = None,
                     pixel_values: torch.FloatTensor = None,
@@ -2142,15 +2143,15 @@ class Qwen2_5_VLForActionPrediction(Qwen2_5_VLForConditionalGeneration):
             inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds)
         return inputs_embeds
 
-    @torch.inference_mode()
-    def predict_action(
-        self,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
-        labels: Optional[torch.LongTensor] = None,
-        **kwargs: str
-    ) -> np.ndarray:
-        super().forward(inputs_embeds=inputs_embeds, labels=labels, **kwargs)
-        return self.action_head(hidden_states)
+    # @torch.inference_mode()
+    # def predict_action(
+    #     self,
+    #     inputs_embeds: Optional[torch.FloatTensor] = None,
+    #     labels: Optional[torch.LongTensor] = None,
+    #     **kwargs: str
+    # ) -> np.ndarray:
+    #     super().forward(inputs_embeds=inputs_embeds, labels=labels, **kwargs)
+    #     return self.action_head(hidden_states)
 
     def init_buffers(self, buffer_device, buffers_dict=None):
         # following the protocol of the original torchtitan repo,
