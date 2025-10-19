@@ -9,7 +9,7 @@ import itertools
 
 import torch
 from torch.distributed.checkpoint.stateful import Stateful
-from torch.utils.data import IterableDataset, get_worker_info
+from torch.utils.data import IterableDataset
 from torchdata.stateful_dataloader import StatefulDataLoader
 
 from torchtitan.tools.logging import logger
@@ -85,9 +85,11 @@ class ALFREDDataset(IterableDataset, Stateful):
         img_data_dir: str = "",
         split: str = "train",
         max_seq_len: int = 131072,
-        world_size: int = 1,
+        #world_size: int = 1,
         cp_degree: int = 1,
         rank: int = 0,
+        dp_rank: int = 0,
+        dp_world_size: int = 1,
         infinite: bool = False,
         ignore_index: int = -100,
         eval: bool = False
@@ -106,9 +108,11 @@ class ALFREDDataset(IterableDataset, Stateful):
         self.eos_tok_id = processor.tokenizer.eos_token_id
         self.ignore_index = ignore_index
         self.eval = eval
-        self.world_size = world_size
+        #self.world_size = world_size
         self.cp_degree = cp_degree
         self.rank = rank
+        self.dp_rank = dp_rank
+        self.dp_world_size = dp_world_size
 
         # if not self.eval:
         #     self.max_seq_len = 131072
@@ -151,7 +155,7 @@ class ALFREDDataset(IterableDataset, Stateful):
         return len(self.traj_data)
 
     def _get_data_iter(self):
-        if self._sample_idx == len(self.traj_data):
+        if self._sample_idx >= len(self.traj_data): # reset 
             self._sample_idx = 0
             self._chunk_idx = 0
 
@@ -163,19 +167,11 @@ class ALFREDDataset(IterableDataset, Stateful):
     def __iter__(self):
 
         # Per-rank sharding
-        dp_rank = int(getattr(self, "rank", 0))
-        dp_world = max(1, int(getattr(self, "world_size", 1)))
+        dp_rank = self.dp_rank
+        dp_world = max(1, self.dp_world_size)
 
-        # Per-worker sharding (if using num_workers > 0)
-        wi = get_worker_info()
-        if wi is None:
-            worker_id, num_workers = 0, 1
-        else:
-            worker_id, num_workers = wi.id, wi.num_workers
-
-        # Combine rank and worker into one global shard
-        shard_idx = dp_rank * num_workers + worker_id
-        shard_den = dp_world * num_workers
+        N = len(self.traj_data)
+        usable = (N // dp_world) * dp_world  # drop the tail so every rank has equal count
 
         # Resume offsets
         start_traj = self._sample_idx
@@ -183,12 +179,16 @@ class ALFREDDataset(IterableDataset, Stateful):
 
         # Iterate trajectories; select only those belonging to this shard
         for ti, traj in enumerate(self._get_data_iter(), start=start_traj):
-            # Skip until resume point in trajectory space
-            if ti < start_traj:
-                continue
+        #for ti, traj in enumerate(self.traj_data, start=start_traj): -> this doens't work when len(self.traj_data) % dp_world_size != 0
+            # Stop exactly at the dropped tail boundary
+            if ti >= usable:
+                break
 
+            # Always advance sample cursor so we can't get stuck if we skip
+            self._sample_idx = ti + 1
+            
             # Keep only trajectories owned by this shard
-            if (ti % shard_den) != shard_idx:
+            if (ti % dp_world) != dp_rank:
                 # if we skip a traj, and we were resuming inside it, reset chunk cursor
                 if ti == start_traj:
                     self._chunk_idx = 0
@@ -203,8 +203,8 @@ class ALFREDDataset(IterableDataset, Stateful):
             filename = traj['filename']
             img_tar_file = filename.replace("txt", "tar")
             tar_file = os.path.join(self.img_data_dir, img_tar_file)
-
             if not os.path.exists(tar_file):
+                self._chunk_idx = 0
                 continue
 
             # Heavy work happens ONLY for this shard's trajectories
@@ -240,7 +240,7 @@ class ALFREDDataset(IterableDataset, Stateful):
                     text=prompt, images=chunk['img_list'], return_tensors="pt"
                 )
 
-                logger.info(f"n_img: {len(chunk['img_list'])}\nprompt: {prompt}")
+                logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] sample_idx: {self._sample_idx} chunk_idx: {self._chunk_idx} n_img: {len(chunk['img_list'])}\nprompt: {prompt}")
                 
                 labels = output.input_ids.clone()
 
@@ -271,10 +271,13 @@ class ALFREDDataset(IterableDataset, Stateful):
                     'image_grid_thw': output.image_grid_thw
                 }
 
+            # end of one traj
             # reset chunk_idx
             self._chunk_idx = 0
-            self._sample_idx = ti + 1
-
+            
+        # end of epoch
+        self._sample_idx = len(self.traj_data)
+        self._chunk_idx = 0
 
     def build_messages_from_interleaved(self, lang_input: str, img_list):
         """
@@ -388,9 +391,6 @@ class ALFREDDataset(IterableDataset, Stateful):
             main_goal_str += traj['turk_annotations']['anns'][0]['task_desc'] + "<|goal|>"
         # else we need to use templated desc .. later
 
-        # TODO: check the system prompt for Qwen -- get the # os system prompt tokens
-        # n_main_goal_tokens = len(self.processor(text=main_goal_str).input_ids)
-        # System input for Qwen
         n_system_prompt_tokens = len(self.processor(text=self.system_prompt).input_ids) + 8 # additional speical tokens such as '<|im_start|>', '<|im_end|>'
         n_main_goal_tokens = len(self.processor(text=main_goal_str).input_ids)
 
@@ -538,10 +538,7 @@ class AlfredDataLoader(ParallelAwareDataloader):
         dp_rank: int,
         dp_world_size: int,
         batch_size: int,
-        #dp_enabled: bool = False,
-        #num_workers: int = 4,
         pin_memory: bool = True):
-        
         super().__init__(hf_ds, dp_rank, dp_world_size, batch_size, collate_fn=self.collate_fn)    
 
     @staticmethod

@@ -248,10 +248,11 @@ class ParallelAwareDataloader(StatefulDataLoader, Stateful):
 def build_data_loader(
     job_config: JobConfig,
     processor: Any,
-    dp_mesh = None,
+    #dp_mesh = None,
     split: str = "train",
-    world_size: int = None,
     rank: int = None,
+    dp_world_size: int = None,
+    dp_rank: int = None,
     img_token_id: int = None,
     #infinite: bool = None,
 ):
@@ -276,11 +277,14 @@ def build_data_loader(
             img_token_id=img_token_id,
             traj_data_dir=traj_data_dir,
             img_data_dir=img_data_dir,
-            max_seq_len=job_config.training.seq_len, world_size=world_size,
+            max_seq_len=job_config.training.seq_len, 
+            #world_size=world_size,
             cp_degree=job_config.experimental.context_parallel_degree,
-            rank=rank)
+            rank=rank,
+            dp_rank=dp_rank,
+            dp_world_size=dp_world_size)
         
-        data_loader = AlfredDataLoader(dataset, rank, world_size,
+        data_loader = AlfredDataLoader(dataset, dp_rank, dp_world_size,
                                         batch_size=job_config.training.batch_size)
         return data_loader
     else:

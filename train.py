@@ -151,6 +151,8 @@ def main(job_config: JobConfig):
     pp_mesh = world_mesh["pp"] if parallel_dims.pp_enabled else None
     tp_mesh = world_mesh["tp"] if parallel_dims.tp_enabled else None
 
+    rank = get_local_rank()
+
     # --- model spec & config ---
     model_name = job_config.model.name  # Expect user to set a HF ckpt (llava or qwen2-vl family)
     train_spec = get_train_spec(model_name)  # returns spec with .cls and .config mapping
@@ -180,10 +182,11 @@ def main(job_config: JobConfig):
     data_loader = build_data_loader(
         job_config,
         processor, 
-        dp_mesh=dp_mesh if parallel_dims.dp_enabled else None,
+        #dp_mesh=dp_mesh if parallel_dims.dp_enabled else None,
         split="train",
-        world_size=world_size,
-        rank=dp_rank,
+        rank=rank,
+        dp_world_size=dp_degree,
+        dp_rank=dp_rank,
         img_token_id=model_config.image_token_id
     )
 
@@ -353,7 +356,7 @@ def main(job_config: JobConfig):
             checkpoint.save(train_state.step, force=True)
             data_iterator = iter(data_loader)
             batch = next(data_iterator)
-        
+
         # unpack common fields expected by your graphs
         input_ids = batch["input_ids"].to(device, non_blocking=True) # check `pin_memory`; it starts the transfer and immediately move on to the next operation, overlapping computation and data transfer.
         labels       = batch["labels"].to(device, non_blocking=True)
@@ -406,7 +409,7 @@ def main(job_config: JobConfig):
 
         # TODO zero_grad() here ?
         #optimizers.zero_grad()
-        rank = get_local_rank()
+        
         # Optional: redistribute inputs for TP if CP is off (as in your code)
         if parallel_dims.tp_enabled and (not parallel_dims.cp_enabled) and inputs_embeds is not None:
             if not (parallel_dims.pp_enabled and False):  # if not first stage etc., simplified
