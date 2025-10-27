@@ -33,13 +33,18 @@ docker pull bosung17/infini-thor
 Then clone the code and install packages:
 
 ```bash
-git clone https://github.com/pearls-lab/infini-thor.git
+git clone https://github.com/pearls-lab/infini-thor.gitmodel_name_or_path
 cd infini-thor
 ```
 
 If you're not using Docker, need to install packages
 ```
 pip install -r requirements.txt
+```
+
+Note: We highly recommend using FlashAttention 2 for faster training and evaluation. Use the following command to install:
+```
+pip install --no-build-isolation flash-attn
 ```
 
 ## Static Evaluation: Needle(s) in the Embodied Haystack (NiEH)
@@ -100,7 +105,7 @@ In this setting, the model receives the entire trajectory as input and answers t
 python run_eval_QA_NiEH.py \
     --qa_file_path path/to/qa_data.csv \
     --metadata_dir path/to/metadata \
-    --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf \
+    --model_name_or_path llava-hf/llava-onevision-qwen2-7b-ov-hf \
     --full_traj
 ```
 
@@ -116,6 +121,8 @@ QA performance with the full trajectory as input:
 
 *LLaVA-OV and DeepSeek-VL fail to handle long contexts beyond their pretraining limits*
 
+Note: To run the DeepSeek-VL model, follow the instruction [here](https://github.com/deepseek-ai/DeepSeek-VL).
+
 ---
 
 Run the evaluation with different input context sizes (e.g., `--ctx_size 256` means 256K tokens used as the model's input). 
@@ -125,7 +132,7 @@ Run the evaluation with different input context sizes (e.g., `--ctx_size 256` me
 python run_eval_QA_NiEH.py \
     --qa_file_path path/to/qa_data.csv \
     --metadata_dir path/to/metadata \
-    --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf \
+    --model_name_or_path llava-hf/llava-onevision-qwen2-7b-ov-hf \
     --ctx_size 256
 ```
 
@@ -136,7 +143,7 @@ Run the evaluation with a context extension method, e.g.:
 python run_eval_QA_NiEH.py \
     --qa_file_path path/to/qa_data.csv \
     --metadata_dir path/to/metadata \
-    --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf \
+    --model_name_or_path llava-hf/llava-onevision-qwen2-7b-ov-hf \
     --ctx_size 256 \
     --ctx_extension yarn \
     --ctx_extension_factor 4.0
