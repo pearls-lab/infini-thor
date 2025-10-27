@@ -2126,7 +2126,8 @@ class Qwen2_5_VLForActionPrediction(Qwen2_5_VLForConditionalGeneration):
         inputs_embeds = self.model.embed_tokens(input_ids)
         if pixel_values is not None:
             pixel_values = pixel_values.type(self.visual.dtype)
-            image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw)
+            with torch.no_grad():
+                image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw)
             n_image_tokens = (input_ids == self.config.image_token_id).sum().item()
             n_image_features = image_embeds.shape[0]
             if n_image_tokens != n_image_features:

@@ -177,7 +177,7 @@ def main(job_config: JobConfig):
     # --- tokenizer/processor/dataloaders ---
     processor = build_hf_processor(model_name)
     tokenizer = processor.tokenizer
-    tokenizer.add_special_tokens({"additional_special_tokens": ['<|act|>', '<|plan|>', '<|goal|>']})
+    tokenizer.add_special_tokens({"additional_special_tokens": ['<|act|>', '<|goal|>']})
 
     data_loader = build_data_loader(
         job_config,
@@ -347,15 +347,17 @@ def main(job_config: JobConfig):
     in_ids = []
     in_embeds = []
     import numpy as np
+    N = len(data_loader.dataset) # # of trajs
     while train_state.step < job_config.training.steps:
-        train_state.step += 1
-
         try:
             batch = next(data_iterator)
         except StopIteration:
-            checkpoint.save(train_state.step, force=True)
+            #logger.info(f"[rank{rank}] dataset.dp_rank: {data_loader.dataset.dp_rank}, _sample_idx: {data_loader.dataset._sample_idx}")
             data_iterator = iter(data_loader)
+            #logger.info(f"[rank{rank}] dataset.dp_rank: {data_loader.dataset.dp_rank}, _sample_idx: {data_loader.dataset._sample_idx}")
             batch = next(data_iterator)
+        
+        train_state.step += 1
 
         # unpack common fields expected by your graphs
         input_ids = batch["input_ids"].to(device, non_blocking=True) # check `pin_memory`; it starts the transfer and immediately move on to the next operation, overlapping computation and data transfer.
@@ -367,39 +369,37 @@ def main(job_config: JobConfig):
         enable_embed_batch = True if (job_config.training.seq_len >= 16384 and job_config.training.batch_size > 1) else False
         enable_embed_batch = False
 
-        with torch.no_grad():
-            # TODO: make embed function for Qwen.2.5 VL
-            if 'llava' in model_name.lower():
-                inputs_embeds = model.embed(
-                            input_ids=input_ids,
-                            pixel_values=pixel_values,
-                            n_image=n_image,
-                            enable_embed_batch=enable_embed_batch)
-            elif 'qwen' in model_name.lower():
-                # logic for image_grid_thw
-                # grid_t * grid_h * grid_w == pixel_values.shape[1]
-                # grid_h, grid_w = job_config.training.img_width // 14, job_config.training.img_height // 14
-                # hw = grid_h * grid_w
-                # grid_t = n_image // hw
-                # n_vis_tokens = n_image.squeeze(-1)
-                # assert torch.all(n_vis_tokens % hw == 0), "per-sample tokens must be divisible by H*W"
-                # grid_t = (n_vis_tokens // hw).to(torch.int32).unsqueeze(-1)  # (N,1)
-                # # make per-sample columns for H and W
-                # grid_h_col = torch.full_like(grid_t, grid_h)  # (N,1), int32
-                # grid_w_col = torch.full_like(grid_t, grid_w)  # (N,1), int32
-                # image_grid_thw = torch.cat([grid_t, grid_h_col, grid_w_col], dim=1).to(pixel_values.device)
-                # logger.info(f"image_grid_thw: {image_grid_thw.shape}")
+        # with torch.no_grad():
+        if 'llava' in model_name.lower():
+            inputs_embeds = model.embed(
+                        input_ids=input_ids,
+                        pixel_values=pixel_values,
+                        n_image=n_image,
+                        enable_embed_batch=enable_embed_batch)
+        elif 'qwen' in model_name.lower():
+            # logic for image_grid_thw
+            # grid_t * grid_h * grid_w == pixel_values.shape[1]
+            # grid_h, grid_w = job_config.training.img_width // 14, job_config.training.img_height // 14
+            # hw = grid_h * grid_w
+            # grid_t = n_image // hw
+            # n_vis_tokens = n_image.squeeze(-1)
+            # assert torch.all(n_vis_tokens % hw == 0), "per-sample tokens must be divisible by H*W"
+            # grid_t = (n_vis_tokens // hw).to(torch.int32).unsqueeze(-1)  # (N,1)
+            # # make per-sample columns for H and W
+            # grid_h_col = torch.full_like(grid_t, grid_h)  # (N,1), int32
+            # grid_w_col = torch.full_like(grid_t, grid_w)  # (N,1), int32
+            # image_grid_thw = torch.cat([grid_t, grid_h_col, grid_w_col], dim=1).to(pixel_values.device)
+            # logger.info(f"image_grid_thw: {image_grid_thw.shape}")
 
-                image_grid_thw = batch.get("image_grid_thw").to(device, non_blocking=True)
-                inputs_embeds = model.embed(input_ids=input_ids,
-                                            pixel_values=pixel_values,
-                                            image_grid_thw=image_grid_thw)
-            else:
-                inputs_embeds = model.embed(input_ids=input_ids,
-                                            pixel_values=pixel_values)
+            image_grid_thw = batch.get("image_grid_thw").to(device, non_blocking=True)
+            inputs_embeds = model.embed(input_ids=input_ids,
+                                        pixel_values=pixel_values,
+                                        image_grid_thw=image_grid_thw)
+        else:
+            inputs_embeds = model.embed(input_ids=input_ids,
+                                        pixel_values=pixel_values)
 
-        logger.info(f"[rank{dp_rank}] input_ids.shape: {input_ids.shape}, inputs_embeds: {inputs_embeds.shape}, world_mesh: {world_mesh}")
-        logger.info(f"[rank{dp_rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.device}")
+        logger.info(f"[rank{rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.shape}, world_mesh: {world_mesh}")
         in_ids.append(input_ids.shape[1])
         in_embeds.append(inputs_embeds.shape[1])
 
@@ -416,7 +416,7 @@ def main(job_config: JobConfig):
                 # Shard(1) since input_layernorm is applied SequenceParallel()
                 inputs_embeds = distribute_tensor(inputs_embeds, world_mesh['tp'], placements=[Shard(1)]).to_local()
                 
-        logger.info(f"[rank{rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.shape}")
+        logger.info(f"[rank{rank}] inputs_embeds (re-dist): {type(inputs_embeds)} {inputs_embeds.shape} {inputs_embeds.device}")
 
         # --- Context Parallel context ---
         optional_context_parallel_ctx = (
@@ -528,6 +528,9 @@ def main(job_config: JobConfig):
             checkpoint.save(
                 train_state.step, force=(train_state.step == job_config.checkpoint.interval)
             )
+
+        if train_state.step % (N // dp_degree) == 0: # after each epoch
+            checkpoint.save(train_state.step, force=True)
 
     logger.info(f"avg input_ids length: {np.array(in_ids).mean()}")
     logger.info(f"avg input_embeds length: {np.array(in_embeds).mean()}")

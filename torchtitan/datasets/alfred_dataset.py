@@ -2,6 +2,7 @@ import os
 import re
 import json
 import pickle
+from pathlib import Path
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
@@ -145,9 +146,11 @@ class ALFREDDataset(IterableDataset, Stateful):
 
         self.use_only_last_frame = True
 
-        self.system_prompt = "You are an embodied AI agent operating in a simulated 3D environment. " + \
-                            "Perceive the scene (image inputs), and predict the next action to complete the task."
-
+        self.system_prompt = = (
+            "You are an embodied AI agent operating in a simulated 3D environment. "
+            "Perceive the scene (image inputs), and predict the next action to complete the task."
+        )
+        
         if len(self.traj_data) == 0:
             self._load_traj_data()
 
@@ -166,19 +169,20 @@ class ALFREDDataset(IterableDataset, Stateful):
 
     def __iter__(self):
 
-        # Per-rank sharding
-        dp_rank = self.dp_rank
+        # for per-rank sharding
         dp_world = max(1, self.dp_world_size)
 
         N = len(self.traj_data)
         usable = (N // dp_world) * dp_world  # drop the tail so every rank has equal count
+
+        it = self._get_data_iter()
 
         # Resume offsets
         start_traj = self._sample_idx
         start_chunk = self._chunk_idx
 
         # Iterate trajectories; select only those belonging to this shard
-        for ti, traj in enumerate(self._get_data_iter(), start=start_traj):
+        for ti, traj in enumerate(it, start=start_traj):
         #for ti, traj in enumerate(self.traj_data, start=start_traj): -> this doens't work when len(self.traj_data) % dp_world_size != 0
             # Stop exactly at the dropped tail boundary
             if ti >= usable:
@@ -188,7 +192,7 @@ class ALFREDDataset(IterableDataset, Stateful):
             self._sample_idx = ti + 1
             
             # Keep only trajectories owned by this shard
-            if (ti % dp_world) != dp_rank:
+            if (ti % dp_world) != self.dp_rank:
                 # if we skip a traj, and we were resuming inside it, reset chunk cursor
                 if ti == start_traj:
                     self._chunk_idx = 0
@@ -351,12 +355,13 @@ class ALFREDDataset(IterableDataset, Stateful):
 
     def _load_traj_data(self):
         directory_path = self.traj_data_dir
-        all_files = []
-        for root, _, files in os.walk(directory_path):
-            for file in files:
-                if file.endswith('.txt'):
-                    file_path = os.path.join(root, file)
-                    all_files.append((file_path, file))
+        if not os.path.exists(directory_path):
+            raise ValueError(f"Trajectory data directory not found: {self.traj_data_dir}")
+        
+        all_files = [
+            (str(file_path), file_path.name) 
+            for file_path in Path(directory_path).rglob('*.txt')
+        ]
         
         # Sort the file paths to ensure consistent order
         all_files.sort(key=lambda x: x[1]) # Sort by filename
@@ -386,9 +391,9 @@ class ALFREDDataset(IterableDataset, Stateful):
             high_idx_2_low_act_list[high_idx].append(low_act)
 
         # start: make squences here
-        main_goal_str = "<|goal|>Your main goal: "
+        main_goal_str = "Your main goal: "
         if 'turk_annotations' in traj:
-            main_goal_str += traj['turk_annotations']['anns'][0]['task_desc'] + "<|goal|>"
+            main_goal_str += traj['turk_annotations']['anns'][0]['task_desc']
         # else we need to use templated desc .. later
 
         n_system_prompt_tokens = len(self.processor(text=self.system_prompt).input_ids) + 8 # additional speical tokens such as '<|im_start|>', '<|im_end|>'
