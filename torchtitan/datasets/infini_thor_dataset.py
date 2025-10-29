@@ -72,7 +72,7 @@ def _pin_batch(obj):
     return obj
 
 
-class ALFREDDataset(IterableDataset, Stateful):
+class InfiniTHORDataset(IterableDataset, Stateful):
 
     def __init__(
         self,
@@ -263,8 +263,8 @@ class ALFREDDataset(IterableDataset, Stateful):
                 input_ids = output.input_ids[:, :-1]
                 labels = labels[:, 1:]
 
-                input_ids = pad_to_multiple(input_ids, 4, pad_token=self.eos_tok_id)
-                labels = pad_to_multiple(labels, 4, pad_token=self.ignore_index)
+                input_ids = pad_to_multiple(input_ids, self.cp_degree * 2, pad_token=self.eos_tok_id)
+                labels = pad_to_multiple(labels, self.cp_degree * 2, pad_token=self.ignore_index)
 
                 self._chunk_idx = ci + 1
 
@@ -341,7 +341,6 @@ class ALFREDDataset(IterableDataset, Stateful):
                 chunks.append({
                     'lang_input': input_seq,
                     'img_list': _img_list,
-                    'task_goal': task_goal_str,
                     'traj': traj,
                 })
         else:
@@ -349,7 +348,6 @@ class ALFREDDataset(IterableDataset, Stateful):
                 chunks.append({
                     'lang_input': input_seq,
                     'img_list': img_list[img_start:img_end],
-                    'task_goal': traj['turk_annotations']['anns'][0]['task_desc'],
                     'traj': traj,
                 })
 
@@ -383,105 +381,102 @@ class ALFREDDataset(IterableDataset, Stateful):
         for im_info in traj['images']:
             low_idx_2_image[im_info['low_idx']].append(im_info['image_name'])
 
-        # Prepare
-        high_idx_2_low_act_list = defaultdict(list)
-        for low_idx, low_act in enumerate(traj['plan']['low_actions']):
-            high_idx = low_act['high_idx']
-            low_act['low_idx'] = low_idx
-            if len(high_idx_2_low_act_list[high_idx]) > 0:
-                assert high_idx_2_low_act_list[high_idx][-1]['low_idx'] < low_act['low_idx']
-            high_idx_2_low_act_list[high_idx].append(low_act)
-
-        # start: make squences here
-        main_goal_str = "Your main goal: "
-        if 'turk_annotations' in traj:
-            main_goal_str += traj['turk_annotations']['anns'][0]['task_desc']
-        # else we need to use templated desc .. later
-
-        n_system_prompt_tokens = len(self.processor(text=self.system_prompt).input_ids) + 8 # additional speical tokens such as '<|im_start|>', '<|im_end|>'
-        n_main_goal_tokens = len(self.processor(text=main_goal_str).input_ids)
-
+        # init
+        n_system_prompt_tok = len(self.processor(text=self.system_prompt).input_ids) + 8 # additional speical tokens such as '<|im_start|>', '<|im_end|>'
+        tok_buffer_size = n_system_prompt_tok
+        
         chunk_seq_list = []
         chunk_img_file_list = []
+        chunk_seq = ""
+        n_chunk_tok = 0
+        chunk_img_files = []
+        last_state_image = '000000000.png'
+        n_chunk_img = 0
+        #img_start_idx = 0
 
-        chunk_seq = main_goal_str
-        n_chunk_tokens = n_system_prompt_tokens + n_main_goal_tokens # for chunking
+        # start: make squences here
+        for sub_traj in traj['sub_trajs']:
+            main_goal_str = f"<|goal|>Your task goal: {sub_traj['subgoal']}<|goal|>"
+            n_main_goal_tok = len(self.processor(text=main_goal_str).input_ids)
 
-        # initial image state
-        #chunk_seq += f"<|vision_start|>{self.img_token}<|vision_end|>" # '<image>' for LLaVA-OV, '<|image_pad|>' for Qwen
-        chunk_seq += self.img_token # '<image>' for LLaVA-OV, '<|image_pad|>' for Qwen
-        n_chunk_tokens += self.n_tok_per_img
-        chunk_img_files = ['000000000.png']
-        n_chunk_img = 1
-        img_start_idx = 1
+            chunk_seq += main_goal_str
+            n_chunk_tok += n_main_goal_tok # for chunking
 
-        for high_idx, low_act_list in high_idx_2_low_act_list.items():
-            if high_idx >= len(traj['plan']['high_pddl']):
-                continue
-            
-            #plan_str = f"<|plan|>Plan: {self.get_templated_high_pddl_desc(traj['plan']['high_pddl'][high_idx])}<|plan|>"
-            plan_str = ""
+            # initial image state
+            #chunk_seq += f"<|vision_start|>{self.img_token}<|vision_end|>" # '<image>' for LLaVA-OV, '<|image_pad|>' for Qwen
+            chunk_seq += self.img_token # '<image>' for LLaVA-OV, '<|image_pad|>' for Qwen
+            n_chunk_tok += self.n_tok_per_img
+            chunk_img_files.append(last_state_image)
+            n_chunk_img += 1 # do not update img_start_idx; use the prev state img
+        
+            low_start, low_end = sub_traj['low_pddl_idx']
+            for high_idx in range(*sub_traj['high_pddl_idx']):
+                low_act_list = [act for act in traj['plan']['low_actions'][low_start:low_end] if act['high_idx'] == high_idx]
 
-            high_plan_seq = ""
-            #high_plan_seq += plan_str
-            #n_high_plan_tokens = len(self.processor(text=plan_str).input_ids)
-            n_high_plan_tokens = 0
-            n_high_plan_img = 0
+                #plan_str = f"<|plan|>Plan: {self.get_templated_high_pddl_desc(traj['plan']['high_pddl'][high_idx])}<|plan|>"
+                plan_str = ""
+                high_plan_seq = ""
+                #high_plan_seq += plan_str
+                #n_high_plan_tokens = len(self.processor(text=plan_str).input_ids)
+                n_high_plan_tokens = 0
+                n_high_plan_img = 0
 
-            low_act_last_frames = []
-            #for low_idx, low_act in enumerate(low_act_list):
-            n_low_act_tok_list = []
-            for _, low_act in enumerate(low_act_list):
-                low_idx = low_act['low_idx']
-                action_str = self.serialize_action(low_act['api_action'])
-                low_act_seq = action_str
-                action_str_tok = self.processor(text=action_str).input_ids   
-                n_low_act_tokens = len(action_str_tok)
-                
-                # count tokens for images
-                n_low_img = len(low_idx_2_image[low_idx])
+                low_act_last_frames = []
+                #for low_idx, low_act in enumerate(low_act_list):
+                n_low_act_tok_list = []
+                for _, low_act in enumerate(low_act_list):
+                    low_idx = low_act['low_idx']
+                    action_str = self.serialize_action(low_act['api_action'])
+                    low_act_seq = action_str
+                    action_str_tok = self.processor(text=action_str).input_ids   
+                    n_low_act_tokens = len(action_str_tok)
+                    
+                    # count tokens for images
+                    n_low_img = len(low_idx_2_image[low_idx])
 
-                if self.use_only_last_frame:
-                    low_act_seq += (self.img_token * 1)
-                    n_low_act_tokens += (self.n_tok_per_img * 1) # e.g., one frame is 1485 tokens in LLaVA-OV
+                    if self.use_only_last_frame:
+                        low_act_seq += (self.img_token * 1)
+                        n_low_act_tokens += (self.n_tok_per_img * 1) # e.g., one frame is 1485 tokens in LLaVA-OV
+                    else:
+                        low_act_seq += (self.img_token * n_low_img)
+                        n_low_act_tokens += (self.n_tok_per_img * n_low_img) # one frame is 1485 tokens in LLaVA-OV
+
+                    if (n_high_plan_tokens + n_low_act_tokens) >= self.max_seq_len:
+                        # truncate; do not add this low_act and break
+                        break
+                    else:
+                        low_act_last_frames.append(low_idx_2_image[low_idx][-1])
+                        n_high_plan_tokens += n_low_act_tokens
+                        high_plan_seq += low_act_seq
+                        n_high_plan_img += n_low_img
+
+                    n_low_act_tok_list.append(n_low_act_tokens)
+
+                assert n_high_plan_tokens < self.max_seq_len
+                assert sum(n_low_act_tok_list) < self.max_seq_len, \
+                        f"This ({sum(n_low_act_tok_list)}) cannot fit into max_length limit. You need to increase max_length"
+
+                if (n_chunk_tok + n_high_plan_tokens) >= (self.max_seq_len - tok_buffer_size):
+                    assert chunk_seq.count(self.img_token) == len(chunk_img_files), \
+                        f"chunk_seq: {chunk_seq}\nlen(chunk_img_files): {len(chunk_img_files)}\n# img tokens: {chunk_seq.count(self.img_token)}"
+                    chunk_seq_list.append(chunk_seq)
+                    chunk_img_file_list.append(chunk_img_files)
+                    last_state_image = chunk_img_files[-1]
+                    
+                    # reset for next chunk
+                    chunk_seq = main_goal_str + self.img_token + high_plan_seq
+                    n_chunk_tok = n_main_goal_tok + self.n_tok_per_img + n_high_plan_tokens
+                    #img_start_idx = img_start_idx + n_chunk_img
+                    n_chunk_img = n_high_plan_img + 1 # +1 for last state image
+                    chunk_img_files = [last_state_image] + low_act_last_frames
+                    #chunk_img_files = low_act_last_frames
                 else:
-                    low_act_seq += (self.img_token * n_low_img)
-                    n_low_act_tokens += (self.n_tok_per_img * n_low_img) # one frame is 1485 tokens in LLaVA-OV
+                    chunk_seq += high_plan_seq
+                    n_chunk_tok += n_high_plan_tokens
+                    n_chunk_img += n_high_plan_img
+                    chunk_img_files.extend(low_act_last_frames)
 
-                if (n_high_plan_tokens + n_low_act_tokens) >= self.max_seq_len:
-                    # truncate; do not add this low_act and break
-                    break
-                else:
-                    low_act_last_frames.append(low_idx_2_image[low_idx][-1])
-                    n_high_plan_tokens += n_low_act_tokens
-                    high_plan_seq += low_act_seq
-                    n_high_plan_img += n_low_img
-
-                n_low_act_tok_list.append(n_low_act_tokens)
-
-            assert n_high_plan_tokens < self.max_seq_len
-            assert sum(n_low_act_tok_list) < self.max_seq_len, \
-                    f"This ({sum(n_low_act_tok_list)}) cannot fit into max_length limit. You need to increase max_length"
-
-            if (n_chunk_tokens + n_high_plan_tokens) >= self.max_seq_len:
-                assert chunk_seq.count(self.img_token) == len(chunk_img_files), \
-                    f"chunk_seq: {chunk_seq}\nlen(chunk_img_files): {len(chunk_img_files)}\n# img tokens: {chunk_seq.count(self.img_token)}"
-                chunk_seq_list.append(chunk_seq)
-                chunk_img_file_list.append(chunk_img_files)
-                last_state_image = chunk_img_files[-1]
-                
-                # reset for next chunk
-                chunk_seq = main_goal_str + self.img_token + high_plan_seq
-                n_chunk_tokens = n_main_goal_tokens + self.n_tok_per_img + n_high_plan_tokens
-                img_start_idx = img_start_idx + n_chunk_img
-                n_chunk_img = n_high_plan_img + 1 # +1 for last state image
-                chunk_img_files = [last_state_image] + low_act_last_frames
-                #chunk_img_files = low_act_last_frames
-            else:
-                chunk_seq += high_plan_seq
-                n_chunk_tokens += n_high_plan_tokens
-                n_chunk_img += n_high_plan_img
-                chunk_img_files.extend(low_act_last_frames)
+            last_state_image = chunk_img_files[-1]
 
         chunk_seq_list.append(chunk_seq)
         chunk_img_file_list.append(chunk_img_files)

@@ -1,0 +1,57 @@
+[job]
+dump_folder = "./outputs"
+description = "Qwen2.5 VL 7B training"
+
+[profiling]
+enable_profiling = true
+save_traces_folder = "profile_trace"
+profile_freq = 100
+
+[metrics]
+log_freq = 10
+enable_wandb = true
+
+[model]
+name = "Qwen/Qwen2.5-VL-7B-Instruct"
+flavor = "7B"
+norm_type = "rmsnorm"  # layernorm / np_layernorm / rmsnorm
+
+[optimizer]
+name = "AdamW"
+lr = 1e-5
+
+[training]
+batch_size = 1 # batch_per_device
+seq_len = 131072 # maximum sequence length for this model
+warmup_steps = 300  # lr scheduler warm up # warmup_ratio 0.03
+max_norm = 1.0  # grad norm clipping
+steps = 10000 # around 3 epochs
+data_parallel_replicate_degree = 1
+data_parallel_shard_degree = -1
+tensor_parallel_degree = 1
+compile = false
+dataset = "infini-thor"
+img_width = 336
+img_height = 336
+n_tok_per_img = 144
+attn_impl = "flash_attention_2"
+
+[experimental]
+context_parallel_degree = 16
+pipeline_parallel_degree = 1
+
+[checkpoint]
+enable_checkpoint = true
+folder = "checkpoint"
+interval_type = "steps"
+interval = 2000
+model_weights_only = false
+export_dtype = "float32"
+async_mode = "disabled" # ["disabled", "async", "async_with_pinned_mem"]
+
+[activation_checkpoint]
+mode = 'selective'  # ['none', 'selective', 'full']
+selective_ac_option = 'op'  # 'int' = ac every positive int layer or 'op', ac based on ops policy
+
+[float8]
+enable_float8_linear = false

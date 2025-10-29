@@ -256,8 +256,9 @@ def build_data_loader(
     img_token_id: int = None,
     #infinite: bool = None,
 ):
-    if job_config.training.dataset == "alfred":
+    if job_config.training.dataset in ["alfred", "infini-thor"]:
         from torchtitan.datasets.alfred_dataset import ALFREDDataset, AlfredDataLoader
+        from torchtitan.datasets.infini_thor_dataset import InfiniTHORDataset
         traj_data_dir = os.environ['TRAJ_DATA_DIR'] 
         img_data_dir = os.environ['IMG_DATA_DIR']
         tokenizer = processor.tokenizer
@@ -268,8 +269,10 @@ def build_data_loader(
         else:
             from torchtitan.datasets.alfred_dataset import ALFREDDataset, AlfredDataLoader
 
-        dataset = ALFREDDataset(
-            dataset_name="alfred",
+        dataset_cls = ALFREDDataset if job_config.training.dataset == 'alfred' else InfiniTHORDataset
+
+        dataset = dataset_cls(
+            dataset_name=job_config.training.dataset,
             processor=processor,
             n_tok_per_img=job_config.training.n_tok_per_img,
             img_width=job_config.training.img_width,

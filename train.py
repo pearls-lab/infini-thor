@@ -30,7 +30,9 @@ from torchtitan.tools.profiling import maybe_enable_memory_snapshot, maybe_enabl
 from torchtitan.train_spec import get_train_spec
 from torchtitan.utils import device_module, device_type, import_module_from_path
 
-from huggingface_hub import snapshot_download, upload_folder, create_repo
+from huggingface_hub import HfApi
+
+api = HfApi()
 
 AWS_S3_PATH = os.environ.get('AWS_S3_PATH', None)
 
@@ -65,6 +67,7 @@ def combine_model_parts_state(model_parts: List[nn.Module]):
                 out[k] = v
     return out
 
+
 def save_checkpoint_s3(states, step, output_dir):
     """Kick off an async S3 sync from rank 0 and barrier the group (kept from originals)."""
     if AWS_S3_PATH and get_local_rank() == 0:
@@ -77,6 +80,15 @@ def save_checkpoint_s3(states, step, output_dir):
         except Exception as e:
             logger.error(f"Error starting S3 sync: {e}")
     dist.barrier()
+
+
+def upload_ckpt_hf(output_dir, path_in_repo):
+    api.upload_folder(
+        folder_path=output_dir,
+        path_in_repo=path_in_repo,
+        repo_id="anonymous-penguin/infini-thor-ft",
+        repo_type="dataset"
+    )
 
 def warmup_dynamic_rope_scaling(model, device, seq_len, rope_kwargs):
     """Matches your warm-up path for RoPE scaling to avoid on-the-fly reallocs."""
@@ -369,43 +381,53 @@ def main(job_config: JobConfig):
         enable_embed_batch = True if (job_config.training.seq_len >= 16384 and job_config.training.batch_size > 1) else False
         enable_embed_batch = False
 
-        # with torch.no_grad():
-        if 'llava' in model_name.lower():
-            inputs_embeds = model.embed(
-                        input_ids=input_ids,
-                        pixel_values=pixel_values,
-                        n_image=n_image,
-                        enable_embed_batch=enable_embed_batch)
-        elif 'qwen' in model_name.lower():
-            # logic for image_grid_thw
-            # grid_t * grid_h * grid_w == pixel_values.shape[1]
-            # grid_h, grid_w = job_config.training.img_width // 14, job_config.training.img_height // 14
-            # hw = grid_h * grid_w
-            # grid_t = n_image // hw
-            # n_vis_tokens = n_image.squeeze(-1)
-            # assert torch.all(n_vis_tokens % hw == 0), "per-sample tokens must be divisible by H*W"
-            # grid_t = (n_vis_tokens // hw).to(torch.int32).unsqueeze(-1)  # (N,1)
-            # # make per-sample columns for H and W
-            # grid_h_col = torch.full_like(grid_t, grid_h)  # (N,1), int32
-            # grid_w_col = torch.full_like(grid_t, grid_w)  # (N,1), int32
-            # image_grid_thw = torch.cat([grid_t, grid_h_col, grid_w_col], dim=1).to(pixel_values.device)
-            # logger.info(f"image_grid_thw: {image_grid_thw.shape}")
+        with torch.no_grad():
+            if 'llava' in model_name.lower():
+                inputs_embeds = model.embed(
+                            input_ids=input_ids,
+                            pixel_values=pixel_values,
+                            n_image=n_image,
+                            enable_embed_batch=enable_embed_batch)
+                position_ids = torch.arange(0, input_ids.shape[1], device=input_ids.device)
+                position_ids = position_ids.unsqueeze(0)
+                position_ids = position_ids.expand(input_ids.shape[0], position_ids.shape[1])
+            elif 'qwen' in model_name.lower():
+                # logic for image_grid_thw
+                # grid_t * grid_h * grid_w == pixel_values.shape[1]
+                # grid_h, grid_w = job_config.training.img_width // 14, job_config.training.img_height // 14
+                # hw = grid_h * grid_w
+                # grid_t = n_image // hw
+                # n_vis_tokens = n_image.squeeze(-1)
+                # assert torch.all(n_vis_tokens % hw == 0), "per-sample tokens must be divisible by H*W"
+                # grid_t = (n_vis_tokens // hw).to(torch.int32).unsqueeze(-1)  # (N,1)
+                # # make per-sample columns for H and W
+                # grid_h_col = torch.full_like(grid_t, grid_h)  # (N,1), int32
+                # grid_w_col = torch.full_like(grid_t, grid_w)  # (N,1), int32
+                # image_grid_thw = torch.cat([grid_t, grid_h_col, grid_w_col], dim=1).to(pixel_values.device)
+                # logger.info(f"image_grid_thw: {image_grid_thw.shape}")
 
-            image_grid_thw = batch.get("image_grid_thw").to(device, non_blocking=True)
-            inputs_embeds = model.embed(input_ids=input_ids,
-                                        pixel_values=pixel_values,
-                                        image_grid_thw=image_grid_thw)
-        else:
-            inputs_embeds = model.embed(input_ids=input_ids,
-                                        pixel_values=pixel_values)
+                image_grid_thw = batch.get("image_grid_thw").to(device, non_blocking=True)
+                inputs_embeds = model.embed(input_ids=input_ids,
+                                            pixel_values=pixel_values,
+                                            image_grid_thw=image_grid_thw)
+                if parallel_dims.cp_enabled:
+                    position_ids, rope_deltas = model.get_rope_index(
+                        input_ids,
+                        image_grid_thw,
+                        None, None, None,
+                    )
+                    model.rope_deltas = rope_deltas
+                    logger.info(f"[rank{rank}] position_ids: {type(position_ids)} {position_ids.shape}")
+            else:
+                inputs_embeds = model.embed(input_ids=input_ids,
+                                            pixel_values=pixel_values)
+                position_ids = torch.arange(0, input_ids.shape[1], device=input_ids.device)
+                position_ids = position_ids.unsqueeze(0)
+                position_ids = position_ids.expand(input_ids.shape[0], position_ids.shape[1])
 
         logger.info(f"[rank{rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.shape}, world_mesh: {world_mesh}")
         in_ids.append(input_ids.shape[1])
         in_embeds.append(inputs_embeds.shape[1])
-
-        position_ids = batch.get("position_ids", None)
-        if position_ids is not None:
-            position_ids = position_ids.to(device, non_blocking=True)
 
         # TODO zero_grad() here ?
         #optimizers.zero_grad()
@@ -423,7 +445,7 @@ def main(job_config: JobConfig):
             utils.create_context_parallel_ctx(
                 cp_mesh=world_mesh["cp"],
                 cp_buffers=[input_ids, inputs_embeds, labels, position_ids],
-                cp_seq_dims=[1, 1, 1, 1],
+                cp_seq_dims=[1, 1, 1, 2],
                 cp_no_restore_buffers={input_ids, inputs_embeds, labels, position_ids},
                 cp_rotate_method=job_config.experimental.context_parallel_rotate_method,
             )
@@ -520,22 +542,26 @@ def main(job_config: JobConfig):
                 # f"{color.magenta}mfu: {mfu:.2f}%{color.reset}"
             )
 
-        if job_config.checkpoint.interval > 0 and train_state.step % job_config.checkpoint.interval == 0:
-            # save_dir = Path(job_config.checkpoint.folder) / f"step-{train_state.step}"
-            # save_dir.mkdir(parents=True, exist_ok=True)
-            # states = {"model": combine_model_parts_state(model_parts)}
-            # dcp.save(states, storage_writer=dcp.FileSystemWriter(str(save_dir)))
-            checkpoint.save(
-                train_state.step, force=(train_state.step == job_config.checkpoint.interval)
-            )
+        # if job_config.checkpoint.interval > 0 and train_state.step % job_config.checkpoint.interval == 0:
+        #     # save_dir = Path(job_config.checkpoint.folder) / f"step-{train_state.step}"
+        #     # save_dir.mkdir(parents=True, exist_ok=True)
+        #     # states = {"model": combine_model_parts_state(model_parts)}
+        #     # dcp.save(states, storage_writer=dcp.FileSystemWriter(str(save_dir)))
+        #     checkpoint.save(
+        #         train_state.step, force=(train_state.step == job_config.checkpoint.interval)
+        #     )
 
         if train_state.step % (N // dp_degree) == 0: # after each epoch
             checkpoint.save(train_state.step, force=True)
+            if rank == 0:
+                upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}", f"step-{train_state.step}")
 
     logger.info(f"avg input_ids length: {np.array(in_ids).mean()}")
     logger.info(f"avg input_embeds length: {np.array(in_embeds).mean()}")
     
     checkpoint.save(train_state.step, force=True)
+    if rank == 0:
+        upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}", f"step-{train_state.step}")
     logger.info("Training finished.")
 
 
