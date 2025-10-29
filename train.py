@@ -370,6 +370,7 @@ def main(job_config: JobConfig):
             batch = next(data_iterator)
         
         train_state.step += 1
+        gc_handler.run(train_state.step)
 
         # unpack common fields expected by your graphs
         input_ids = batch["input_ids"].to(device, non_blocking=True) # check `pin_memory`; it starts the transfer and immediately move on to the next operation, overlapping computation and data transfer.
