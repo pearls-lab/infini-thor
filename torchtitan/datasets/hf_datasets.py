@@ -282,7 +282,7 @@ def build_data_loader(
             img_data_dir=img_data_dir,
             max_seq_len=job_config.training.seq_len, 
             #world_size=world_size,
-            cp_degree=job_config.experimental.context_parallel_degree,
+            cp_degree=max(job_config.experimental.context_parallel_degree, job_config.training.tensor_parallel_degree),
             rank=rank,
             dp_rank=dp_rank,
             dp_world_size=dp_world_size)

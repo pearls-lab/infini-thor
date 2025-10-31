@@ -473,10 +473,15 @@ def main(job_config: JobConfig):
                     logits = model.language_model(inputs_embeds=inputs_embeds, position_ids=position_ids, use_cache=False)
                 elif hasattr(model, "model"): # others such as qwen
                     #logger.info(f"input_ids.shape: {input_ids.shape}, input_embeds.shape: {inputs_embeds.shape}")
-                    output = model(input_ids=input_ids,
-                                    inputs_embeds=inputs_embeds,
-                                    position_ids=position_ids,
-                                    use_cache=False)
+                    if parallel_dims.cp_enabled:
+                        output = model(input_ids=input_ids,
+                                        inputs_embeds=inputs_embeds,
+                                        position_ids=position_ids,
+                                        use_cache=False)
+                    else:
+                        output = model(input_ids=input_ids,
+                                        inputs_embeds=inputs_embeds,
+                                        use_cache=False)
                     logits = output if isinstance(output, torch.Tensor) else output.logits
                 else:
                     logits = model(input_ids=input_ids, use_cache=False)
@@ -543,14 +548,16 @@ def main(job_config: JobConfig):
                 # f"{color.magenta}mfu: {mfu:.2f}%{color.reset}"
             )
 
-        # if job_config.checkpoint.interval > 0 and train_state.step % job_config.checkpoint.interval == 0:
-        #     # save_dir = Path(job_config.checkpoint.folder) / f"step-{train_state.step}"
-        #     # save_dir.mkdir(parents=True, exist_ok=True)
-        #     # states = {"model": combine_model_parts_state(model_parts)}
-        #     # dcp.save(states, storage_writer=dcp.FileSystemWriter(str(save_dir)))
-        #     checkpoint.save(
-        #         train_state.step, force=(train_state.step == job_config.checkpoint.interval)
-        #     )
+        if job_config.checkpoint.interval > 0 and train_state.step % job_config.checkpoint.interval == 0:
+            # save_dir = Path(job_config.checkpoint.folder) / f"step-{train_state.step}"
+            # save_dir.mkdir(parents=True, exist_ok=True)
+            # states = {"model": combine_model_parts_state(model_parts)}
+            # dcp.save(states, storage_writer=dcp.FileSystemWriter(str(save_dir)))
+            checkpoint.save(
+                train_state.step, force=(train_state.step == job_config.checkpoint.interval)
+            )
+            if rank == 0:
+                upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}", f"step-{train_state.step}")
 
         if train_state.step % (N // dp_degree) == 0: # after each epoch
             checkpoint.save(train_state.step, force=True)
