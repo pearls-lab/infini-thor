@@ -257,7 +257,7 @@ def build_data_loader(
     #infinite: bool = None,
 ):
     if job_config.training.dataset in ["alfred", "infini-thor"]:
-        from torchtitan.datasets.alfred_dataset import ALFREDDataset, AlfredDataLoader
+        #from torchtitan.datasets.alfred_dataset import ALFREDDataset, AlfredDataLoader
         from torchtitan.datasets.infini_thor_dataset import InfiniTHORDataset
         traj_data_dir = os.environ['TRAJ_DATA_DIR'] 
         img_data_dir = os.environ['IMG_DATA_DIR']
@@ -267,7 +267,8 @@ def build_data_loader(
         if job_config.training.seq_len > 131072:
             from torchtitan.datasets.alfred_dataset_long_ctx import ALFREDDataset, AlfredDataLoader
         else:
-            from torchtitan.datasets.alfred_dataset import ALFREDDataset, AlfredDataLoader
+            #from torchtitan.datasets.alfred_dataset import ALFREDDataset, AlfredDataLoader
+            from torchtitan.datasets.alfred_dataset_no_nav import ALFREDDataset, AlfredDataLoader
 
         dataset_cls = ALFREDDataset if job_config.training.dataset == 'alfred' else InfiniTHORDataset
 
