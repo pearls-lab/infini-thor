@@ -30,7 +30,7 @@ from torchtitan.tools.profiling import maybe_enable_memory_snapshot, maybe_enabl
 from torchtitan.train_spec import get_train_spec
 from torchtitan.utils import device_module, device_type, import_module_from_path
 
-from huggingface_hub import HfApi
+from huggingface_hub import HfApi, repo_exists
 
 api = HfApi()
 
@@ -39,6 +39,9 @@ AWS_S3_PATH = os.environ.get('AWS_S3_PATH', None)
 
 def get_local_rank():
     return int(os.environ.get("LOCAL_RANK", "0"))
+
+def get_global_rank():
+    return int(os.environ.get("RANK", "0"))
 
 def set_nested_attr(obj, name, value):
     """Register a buffer on nested modules (works through lists/ModuleLists), like your originals."""
@@ -82,11 +85,11 @@ def save_checkpoint_s3(states, step, output_dir):
     dist.barrier()
 
 
-def upload_ckpt_hf(output_dir, path_in_repo):
+def upload_ckpt_hf(output_dir, repo_id, path_in_repo):
     api.upload_folder(
         folder_path=output_dir,
         path_in_repo=path_in_repo,
-        repo_id="anonymous-penguin/infini-thor-ft",
+        repo_id=repo_id,
         repo_type="dataset"
     )
 
@@ -163,7 +166,7 @@ def main(job_config: JobConfig):
     pp_mesh = world_mesh["pp"] if parallel_dims.pp_enabled else None
     tp_mesh = world_mesh["tp"] if parallel_dims.tp_enabled else None
 
-    rank = get_local_rank()
+    local_rank, global_rank = get_local_rank(), get_global_rank()
 
     # --- model spec & config ---
     model_name = job_config.model.name  # Expect user to set a HF ckpt (llava or qwen2-vl family)
@@ -196,7 +199,7 @@ def main(job_config: JobConfig):
         processor, 
         #dp_mesh=dp_mesh if parallel_dims.dp_enabled else None,
         split="train",
-        rank=rank,
+        rank=global_rank,
         dp_world_size=dp_degree,
         dp_rank=dp_rank,
         img_token_id=model_config.image_token_id
@@ -418,7 +421,7 @@ def main(job_config: JobConfig):
                         None, None, None,
                     )
                     model.rope_deltas = rope_deltas
-                    logger.info(f"[rank{rank}] position_ids: {type(position_ids)} {position_ids.shape}")
+                    logger.info(f"[rank{global_rank}] position_ids: {type(position_ids)} {position_ids.shape}")
             else:
                 inputs_embeds = model.embed(input_ids=input_ids,
                                             pixel_values=pixel_values)
@@ -426,7 +429,7 @@ def main(job_config: JobConfig):
                 position_ids = position_ids.unsqueeze(0)
                 position_ids = position_ids.expand(input_ids.shape[0], position_ids.shape[1])
 
-        logger.info(f"[rank{rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.shape}, world_mesh: {world_mesh}")
+        logger.info(f"[rank{global_rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.shape}, world_mesh: {world_mesh}")
         in_ids.append(input_ids.shape[1])
         in_embeds.append(inputs_embeds.shape[1])
 
@@ -439,7 +442,7 @@ def main(job_config: JobConfig):
                 # Shard(1) since input_layernorm is applied SequenceParallel()
                 inputs_embeds = distribute_tensor(inputs_embeds, world_mesh['tp'], placements=[Shard(1)]).to_local()
                 
-        logger.info(f"[rank{rank}] inputs_embeds (re-dist): {type(inputs_embeds)} {inputs_embeds.shape} {inputs_embeds.device}")
+        logger.info(f"[rank{global_rank}] inputs_embeds (re-dist): {type(inputs_embeds)} {inputs_embeds.shape} {inputs_embeds.device}")
 
         # --- Context Parallel context ---
         optional_context_parallel_ctx = (
@@ -556,20 +559,26 @@ def main(job_config: JobConfig):
             checkpoint.save(
                 train_state.step, force=(train_state.step == job_config.checkpoint.interval)
             )
-            if rank == 0:
-                upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}", f"step-{train_state.step}")
+            if local_rank == 0:
+                upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}", 
+                                job_config.job.hf_repo_id,
+                                f"step-{train_state.step}")
 
         if train_state.step % (N // dp_degree) == 0: # after each epoch
             checkpoint.save(train_state.step, force=True)
-            if rank == 0:
-                upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}", f"step-{train_state.step}")
+            if local_rank == 0:
+                upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}",
+                                job_config.job.hf_repo_id,
+                                f"step-{train_state.step}")
 
     logger.info(f"avg input_ids length: {np.array(in_ids).mean()}")
     logger.info(f"avg input_embeds length: {np.array(in_embeds).mean()}")
     
     checkpoint.save(train_state.step, force=True)
-    if rank == 0:
-        upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}", f"step-{train_state.step}")
+    if local_rank == 0:
+        upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}",
+                        job_config.job.hf_repo_id,
+                        f"step-{train_state.step}")
     logger.info("Training finished.")
 
 
@@ -578,6 +587,11 @@ if __name__ == "__main__":
     # e.g., `torchrun --nproc_per_node=8 train.py --job.config_file my_job.yaml`
     config = JobConfig()
     config.parse_args()
+
+    # write a simple Python code to test HF repo id is valid or not
+    if not repo_exists(config.job.hf_repo_id, repo_type="dataset"):
+        raise ValueError(f"Invalid Hugging Face repo ID: {config.job.hf_repo_id}")
+
     main(config)
     
     if torch.distributed.is_initialized():

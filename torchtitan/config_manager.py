@@ -86,6 +86,10 @@ class JobConfig:
             action="store_true",
             help="Print the args to terminal",
         )
+        self.parser.add_argument(
+            "--job.hf_repo_id",
+            type=str
+        )
 
         # profiling configs
         self.parser.add_argument(
