@@ -146,9 +146,26 @@ class ALFREDDataset(IterableDataset, Stateful):
 
         self.use_only_last_frame = True
 
+        # self.system_prompt = (
+        #     "You are an embodied AI agent operating in a simulated 3D environment. "
+        #     "Perceive the scene (image inputs), and predict the next action to complete the task."
+        # )
         self.system_prompt = (
             "You are an embodied AI agent operating in a simulated 3D environment. "
-            "Perceive the scene (image inputs), and predict the next action to complete the task."
+            "Your task is to perceive the scene from image inputs and predict the next action to complete the task.\n\n"
+            
+            "Available actions: RotateLeft, RotateRight, MoveAhead, LookUp, LookDown, OpenObject, "
+            "CloseObject, PickupObject, PutObject, ToggleObjectOn, ToggleObjectOff, SliceObject.\n\n"
+            
+            "Action constraints based on current state (last image):\n"
+            "- Navigation (RotateLeft/RotateRight/MoveAhead): Only perform when safe and appropriate. "
+            "If an object blocks your path, you cannot MoveAhead. When facing a wall, use RotateLeft or RotateRight to find another route.\n"
+            "- PickupObject: Only valid when a target object is visible in your current view.\n"
+            "- PutObject: Only valid when you are currently holding an object.\n"
+            "- OpenObject/CloseObject: Only valid for openable objects (Cabinet, Fridge, Drawer, etc.).\n"
+            "- SliceObject: Only valid when you are holding a ButterKnife. You must find and pick up the ButterKnife first before slicing.\n\n"
+            
+            "Always verify the current state from the image before selecting an action."
         )
         
         if len(self.traj_data) == 0:
