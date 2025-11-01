@@ -90,7 +90,7 @@ def upload_ckpt_hf(output_dir, repo_id, path_in_repo):
         folder_path=output_dir,
         path_in_repo=path_in_repo,
         repo_id=repo_id,
-        repo_type="dataset"
+        repo_type="model"
     )
 
 def warmup_dynamic_rope_scaling(model, device, seq_len, rope_kwargs):
@@ -381,21 +381,14 @@ def main(job_config: JobConfig):
         pixel_values = batch["pixel_values"].to(device, non_blocking=True)
         n_image      = batch["n_image"].to(device, non_blocking=True)
 
+        logger.info(f"input_ids: {input_ids.shape}, pixel_values: {pixel_values.shape}, image_grid_thw: {batch.get("image_grid_thw").shape}")
+
         # TODO: enable_embed_batch
         enable_embed_batch = True if (job_config.training.seq_len >= 16384 and job_config.training.batch_size > 1) else False
         enable_embed_batch = False
 
         with torch.no_grad():
-            if 'llava' in model_name.lower():
-                inputs_embeds = model.embed(
-                            input_ids=input_ids,
-                            pixel_values=pixel_values,
-                            n_image=n_image,
-                            enable_embed_batch=enable_embed_batch)
-                position_ids = torch.arange(0, input_ids.shape[1], device=input_ids.device)
-                position_ids = position_ids.unsqueeze(0)
-                position_ids = position_ids.expand(input_ids.shape[0], position_ids.shape[1])
-            elif 'qwen' in model_name.lower():
+            if 'qwen' in model_name.lower():
                 # logic for image_grid_thw
                 # grid_t * grid_h * grid_w == pixel_values.shape[1]
                 # grid_h, grid_w = job_config.training.img_width // 14, job_config.training.img_height // 14
@@ -414,14 +407,14 @@ def main(job_config: JobConfig):
                 inputs_embeds = model.embed(input_ids=input_ids,
                                             pixel_values=pixel_values,
                                             image_grid_thw=image_grid_thw)
-                if parallel_dims.cp_enabled:
-                    position_ids, rope_deltas = model.get_rope_index(
-                        input_ids,
-                        image_grid_thw,
-                        None, None, None,
-                    )
-                    model.rope_deltas = rope_deltas
-                    logger.info(f"[rank{global_rank}] position_ids: {type(position_ids)} {position_ids.shape}")
+                # if parallel_dims.cp_enabled:
+                position_ids, rope_deltas = model.get_rope_index(
+                    input_ids,
+                    image_grid_thw,
+                    None, None, None,
+                )
+                model.rope_deltas = rope_deltas
+                logger.info(f"[rank{global_rank}] position_ids: {type(position_ids)} {position_ids.shape}")
             else:
                 inputs_embeds = model.embed(input_ids=input_ids,
                                             pixel_values=pixel_values)
@@ -436,11 +429,11 @@ def main(job_config: JobConfig):
         # TODO zero_grad() here ?
         #optimizers.zero_grad()
         
-        # Optional: redistribute inputs for TP if CP is off (as in your code)
+        # # Optional: redistribute inputs for TP if CP is off (as in your code)
         if parallel_dims.tp_enabled and (not parallel_dims.cp_enabled) and inputs_embeds is not None:
-            if not (parallel_dims.pp_enabled and False):  # if not first stage etc., simplified
-                # Shard(1) since input_layernorm is applied SequenceParallel()
-                inputs_embeds = distribute_tensor(inputs_embeds, world_mesh['tp'], placements=[Shard(1)]).to_local()
+            # if not (parallel_dims.pp_enabled and False):  # if not first stage etc., simplified
+            # Shard(1) since input_layernorm is applied SequenceParallel()
+            inputs_embeds = distribute_tensor(inputs_embeds, world_mesh['tp'], placements=[Shard(1)]).to_local()
                 
         logger.info(f"[rank{global_rank}] inputs_embeds (re-dist): {type(inputs_embeds)} {inputs_embeds.shape} {inputs_embeds.device}")
 
@@ -472,25 +465,25 @@ def main(job_config: JobConfig):
                 loss.backward()
         else:
             with train_context(optional_context_parallel_ctx):
-                if hasattr(model, "language_model"): # Llava family
-                    logits = model.language_model(inputs_embeds=inputs_embeds, position_ids=position_ids, use_cache=False)
-                elif hasattr(model, "model"): # others such as qwen
-                    #logger.info(f"input_ids.shape: {input_ids.shape}, input_embeds.shape: {inputs_embeds.shape}")
-                    if parallel_dims.cp_enabled:
-                        output = model(input_ids=input_ids,
-                                        inputs_embeds=inputs_embeds,
-                                        position_ids=position_ids,
-                                        use_cache=False)
-                    else:
-                        output = model(input_ids=input_ids,
-                                        inputs_embeds=inputs_embeds,
-                                        use_cache=False)
-                    logits = output if isinstance(output, torch.Tensor) else output.logits
+                if parallel_dims.cp_enabled:
+                    output = model(input_ids=input_ids,
+                                    inputs_embeds=inputs_embeds,
+                                    position_ids=position_ids,
+                                    use_cache=False)
                 else:
-                    logits = model(input_ids=input_ids, use_cache=False)
+                    output = model(input_ids=input_ids,
+                                    inputs_embeds=inputs_embeds,
+                                    #position_ids=position_ids,
+                                    use_cache=False)
+                logits = output if isinstance(output, torch.Tensor) else output.logits
+
                 # CP hack parity
                 if (labels + torch.tensor([100], device=labels.device)).sum() == 0:
                     labels[:, -2] = input_ids[:, -1]
+                logger.info(f"logits: {logits.shape} ({type(logits)}), labels: {labels.shape}")
+                logger.info(f"logits: {logits[0][:100]} ({type(logits)}), labels: {labels[0][:100]}")
+                # if isinstance(logits, torch.distributed.tensor.DTensor):
+                #     logits = logits.to_local()
                 loss = loss_fn(logits, labels)
                 del logits
                 loss.backward()
@@ -502,6 +495,7 @@ def main(job_config: JobConfig):
             foreach=True,
             pp_mesh=world_mesh["pp"] if parallel_dims.pp_enabled else None,
         )
+        
         checkpoint.maybe_wait_for_staging()
         optimizers.step()
         lr_schedulers.step()
@@ -589,7 +583,7 @@ if __name__ == "__main__":
     config.parse_args()
 
     # write a simple Python code to test HF repo id is valid or not
-    if not repo_exists(config.job.hf_repo_id, repo_type="dataset"):
+    if not repo_exists(config.job.hf_repo_id, repo_type="model"):
         raise ValueError(f"Invalid Hugging Face repo ID: {config.job.hf_repo_id}")
 
     main(config)
