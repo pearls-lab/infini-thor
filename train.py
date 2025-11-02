@@ -618,26 +618,32 @@ def main(job_config: JobConfig):
             checkpoint.save(
                 train_state.step, force=(train_state.step == job_config.checkpoint.interval)
             )
+            dist.barrier()  # Ensure all ranks finished saving before upload
             if local_rank == 0:
                 upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}", 
                                 job_config.job.hf_repo_id,
                                 f"step-{train_state.step}")
+            dist.barrier()  # Ensure all ranks wait for upload to complete
 
         if train_state.step % (N // dp_degree) == 0: # after each epoch
             checkpoint.save(train_state.step, force=True)
+            dist.barrier()  # Ensure all ranks finished saving before upload
             if local_rank == 0:
                 upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}",
                                 job_config.job.hf_repo_id,
                                 f"step-{train_state.step}")
+            dist.barrier()  # Ensure all ranks wait for upload to complete
 
     logger.info(f"avg input_ids length: {np.array(in_ids).mean()}")
     logger.info(f"avg input_embeds length: {np.array(in_embeds).mean()}")
     
     checkpoint.save(train_state.step, force=True)
+    dist.barrier()  # Ensure all ranks finished saving before upload
     if local_rank == 0:
         upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}",
                         job_config.job.hf_repo_id,
                         f"step-{train_state.step}")
+    dist.barrier()  # Ensure all ranks wait for upload to complete
     logger.info("Training finished.")
 
 
