@@ -59,6 +59,7 @@ def parallelize_qwen2_5_vl(
         apply_tp(
             model,
             world_mesh["tp"],
+            parallel_dims,
             loss_parallel=parallel_dims.loss_parallel_enabled,
             enable_float8=job_config.float8.enable_float8_linear,
             enable_async_tp=job_config.experimental.enable_async_tensor_parallel,
@@ -127,6 +128,7 @@ def parallelize_qwen2_5_vl(
 def apply_tp(
     model: nn.Module,
     tp_mesh: DeviceMesh,
+    parallel_dims: "ParallelDims",
     loss_parallel: bool,
     enable_float8: bool,
     enable_async_tp: bool,
@@ -136,25 +138,33 @@ def apply_tp(
     # transformer block's inputs)
     # 2. Parallelize the root norm layer over the sequence dim
     # 3. Parallelize the final linear output layer
-    parallelize_module(
-        model.model,
-        tp_mesh,
-        {   # we don't parallelize for the CP later
-            # "embed_tokens": RowwiseParallel( 
-            #     input_layouts=Replicate(),
-            #     output_layouts=Shard(1),
-            # ),
-            "norm": SequenceParallel(
-                #use_local_output=True
-            )
-        },
-    )
+
+    cp_enabled = parallel_dims.cp_enabled
+
+    # If CP is on, we cannot shard the sequence dim.
+    # TP must treat the sequence dim as Replicate().
+    if not cp_enabled:
+        parallelize_module(
+            model.model,
+            tp_mesh,
+            {   # we don't parallelize for the CP later
+                # "embed_tokens": RowwiseParallel( 
+                #     input_layouts=Replicate(),
+                #     output_layouts=Shard(1),
+                # ),
+                "norm": SequenceParallel()
+            },
+        )
+
+    # The input layout for the lm_head depends on the final layernorm's output
+    lm_head_input_layout = Shard(1) if not cp_enabled else Replicate()
+
     parallelize_module(
         model,
         tp_mesh,
         {
             "lm_head": ColwiseParallel(
-                input_layouts=Shard(1),
+                input_layouts=lm_head_input_layout,
                 output_layouts=Shard(-1) if loss_parallel else Replicate(),
                 use_local_output=not loss_parallel,
             ),
@@ -196,27 +206,43 @@ def apply_tp(
         layer_iterator = enumerate(layers) # ModuleList case - use enumerate
 
     for layer_id, transformer_block in layer_iterator:
-        layer_plan = {
-            "input_layernorm": SequenceParallel(),
-            "self_attn": prepare_module_input(
-                input_kwarg_layouts={"hidden_states": Shard(1)},
-                desired_input_kwarg_layouts={"hidden_states": Replicate()}
-            ),
-            "self_attn.q_proj": colwise_parallel(),
-            "self_attn.k_proj": colwise_parallel(),
-            "self_attn.v_proj": colwise_parallel(),
-            "self_attn.o_proj": rowwise_parallel(output_layouts=Shard(1)),
-            "mlp": prepare_module_input(
-                input_layouts=(Shard(1),),
-                desired_input_layouts=(Replicate(),),
-            ),
-            "mlp.gate_proj": colwise_parallel(),
-            "mlp.up_proj": colwise_parallel(),
-            "mlp.down_proj": rowwise_parallel(output_layouts=Shard(1)),
-            "post_attention_layernorm": SequenceParallel(),
-        }
-        # if layer_id == 0:
-        #     logger.info(transformer_block)
+        if not cp_enabled:
+            layer_plan = {
+                "input_layernorm": SequenceParallel(),
+                "self_attn": prepare_module_input(
+                    input_kwarg_layouts={"hidden_states": Shard(1)},
+                    desired_input_kwarg_layouts={"hidden_states": Replicate()}
+                ),
+                "self_attn.q_proj": colwise_parallel(),
+                "self_attn.k_proj": colwise_parallel(),
+                "self_attn.v_proj": colwise_parallel(),
+                "self_attn.o_proj": rowwise_parallel(output_layouts=Shard(1)),
+                "mlp": prepare_module_input(
+                    input_layouts=(Shard(1),),
+                    desired_input_layouts=(Replicate(),),
+                ),
+                "mlp.gate_proj": colwise_parallel(),
+                "mlp.up_proj": colwise_parallel(),
+                "mlp.down_proj": rowwise_parallel(output_layouts=Shard(1)),
+                "post_attention_layernorm": SequenceParallel(),
+            }
+        else:
+            # --- NEW Plan (CP Enabled) ---
+            # This plan only shards hidden dims. All sequence dims are Replicate()
+            # from the TP mesh's perspective. No input prep is needed.
+            layer_plan = {
+                # "input_layernorm" is omitted -> replicated by default
+                # "self_attn" (PrepareModuleInput) is omitted -> identity op
+                "self_attn.q_proj": colwise_parallel(),
+                "self_attn.k_proj": colwise_parallel(),
+                "self_attn.v_proj": colwise_parallel(),
+                "self_attn.o_proj": rowwise_parallel(output_layouts=Replicate()), # <-- CHANGED
+                #"mlp": Replicate(),              # <-- CHANGED (no prep needed)
+                "mlp.gate_proj": colwise_parallel(),
+                "mlp.up_proj": colwise_parallel(),
+                "mlp.down_proj": rowwise_parallel(output_layouts=Replicate()), # <-- CHANGED
+                #"post_attention_layernorm": Replicate(), # <-- CHANGED
+            }
 
         parallelize_module(
             module=transformer_block,

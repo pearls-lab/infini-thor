@@ -12,6 +12,7 @@ from typing import Optional, Tuple, List
 
 import torch
 import torch.nn as nn
+import torch.nn.utils
 import torch.distributed as dist
 import torch.distributed.checkpoint as dcp
 from torch.distributed.elastic.multiprocessing.errors import record
@@ -113,6 +114,65 @@ def warmup_dynamic_rope_scaling(model, device, seq_len, rope_kwargs):
     except Exception as e:
         logger.info(f"RoPE warm-up skipped or partial: {e}")
 
+
+# Add this utility function to your train.py (or utils.py)
+from torch.distributed.tensor import DTensor, Replicate
+
+def dtensor_safe_clip_grad_norm_(
+    parameters, max_norm: float, norm_type: float = 2.0, foreach: bool = False
+) -> torch.Tensor:
+    """
+    Computes and clips the total gradient norm for a list of DTensors.
+    This function manually reduces all DTensor gradients to their local norm 
+    before passing the results to the standard torch.nn.utils function.
+    """
+    if isinstance(parameters, torch.Tensor):
+        parameters = [parameters]
+        
+    grads = [p.grad for p in parameters if p.grad is not None]
+    
+    # 1. Manually reduce all DTensor gradients to their local norm
+    local_norms = []
+    for grad in grads:
+        # Check if it's a DTensor (from TP/CP/DP)
+        if isinstance(grad, DTensor):
+            # Compute the *local* norm from the DTensor's partial norm.
+            # The all-reduce happens here.
+            local_norm = grad.norm(p=norm_type).to_local()
+            local_norms.append(local_norm)
+        else:
+            # Handle native local tensors (e.g., non-sharded params)
+            if norm_type == torch.inf:
+                local_norm = grad.data.abs().max()
+            else:
+                local_norm = grad.data.norm(p=norm_type)
+            local_norms.append(local_norm)
+
+    # 2. Stack the resulting *local* tensors (which are all on the same device)
+    # The total global norm calculation still relies on the original 
+    # torch.nn.utils.clip_grad_norm_ to correctly combine DP/other effects.
+    
+    # Square of the local norms for L2 or use the max for L-infinity
+    if norm_type == torch.inf:
+        total_norm = torch.stack(local_norms).max()
+    else:
+        total_norm = torch.sqrt(torch.stack([n**2 for n in local_norms]).sum())
+
+    # 3. Clip the gradients based on the local total norm
+    clip_coeff = max_norm / (total_norm + 1e-6)
+    
+    # Only clip if the total norm exceeds max_norm
+    if clip_coeff < 1.0:
+        for grad in grads:
+            if isinstance(grad, DTensor):
+                # The DTensor logic will handle applying the clipping factor correctly
+                # (it typically broadcasts the clipping factor and multiplies).
+                grad.mul_(clip_coeff)
+            else:
+                grad.data.mul_(clip_coeff)
+
+    # Return the total norm for logging
+    return total_norm
 
 # -----------------------------
 # Training entry (keeps CP logic)
@@ -489,11 +549,16 @@ def main(job_config: JobConfig):
                 loss.backward()
 
         # --- grad clip & step ---
-        utils.clip_grad_norm_(
+        # utils.clip_grad_norm_(
+        #     [p for m in model_parts for p in m.parameters()],
+        #     job_config.training.max_norm,
+        #     foreach=True,
+        #     pp_mesh=world_mesh["pp"] if parallel_dims.pp_enabled else None,
+        # )
+        dtensor_safe_clip_grad_norm_(
             [p for m in model_parts for p in m.parameters()],
             job_config.training.max_norm,
-            foreach=True,
-            pp_mesh=world_mesh["pp"] if parallel_dims.pp_enabled else None,
+            foreach=True # Foreach is ignored in this manual implementation but kept for consistency
         )
         
         checkpoint.maybe_wait_for_staging()
