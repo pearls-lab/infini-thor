@@ -337,7 +337,8 @@ class Qwen2_5_VLVisionBlock(nn.Module):
         super().__init__()
         self.norm1 = Qwen2RMSNorm(config.hidden_size, eps=1e-6)
         self.norm2 = Qwen2RMSNorm(config.hidden_size, eps=1e-6)
-        self.attn = QWEN2_5_VL_VISION_ATTENTION_CLASSES[attn_implementation](
+        #self.attn = QWEN2_5_VL_VISION_ATTENTION_CLASSES[attn_implementation](
+        self.attn = QWEN2_5_VL_VISION_ATTENTION_CLASSES["flash_attention_2"](
             config.hidden_size, num_heads=config.num_heads
         )
         self.mlp = Qwen2_5_VLMLP(config, bias=True)
