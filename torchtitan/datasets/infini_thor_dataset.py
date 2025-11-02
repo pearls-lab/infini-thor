@@ -87,7 +87,7 @@ class InfiniTHORDataset(IterableDataset, Stateful):
         split: str = "train",
         max_seq_len: int = 131072,
         #world_size: int = 1,
-        cp_degree: int = 1,
+        pad_to: int = 1,
         rank: int = 0,
         dp_rank: int = 0,
         dp_world_size: int = 1,
@@ -110,7 +110,7 @@ class InfiniTHORDataset(IterableDataset, Stateful):
         self.ignore_index = ignore_index
         self.eval = eval
         #self.world_size = world_size
-        self.cp_degree = cp_degree
+        self.pad_to = pad_to
         self.rank = rank
         self.dp_rank = dp_rank
         self.dp_world_size = dp_world_size
@@ -263,8 +263,8 @@ class InfiniTHORDataset(IterableDataset, Stateful):
                 input_ids = output.input_ids[:, :-1]
                 labels = labels[:, 1:]
 
-                input_ids = pad_to_multiple(input_ids, self.cp_degree * 2, pad_token=self.eos_tok_id)
-                labels = pad_to_multiple(labels, self.cp_degree * 2, pad_token=self.ignore_index)
+                input_ids = pad_to_multiple(input_ids, self.pad_to, pad_token=self.eos_tok_id)
+                labels = pad_to_multiple(labels, self.pad_to, pad_token=self.ignore_index)
 
                 self._chunk_idx = ci + 1
 

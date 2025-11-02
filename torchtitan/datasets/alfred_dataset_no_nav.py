@@ -146,28 +146,9 @@ class ALFREDDataset(IterableDataset, Stateful):
 
         self.use_only_last_frame = True
 
-        # self.system_prompt = (
-        #     "You are an embodied AI agent operating in a simulated 3D environment. "
-        #     "Perceive the scene (image inputs), and predict the next action to complete the task."
-        # )
-        self.system_prompt = (
-            "You are an embodied AI agent operating in a simulated 3D environment. "
-            "Your task is to perceive the scene from image inputs and predict the next action to complete the task.\n\n"
-            
-            "Available actions: RotateLeft, RotateRight, MoveAhead, LookUp, LookDown, OpenObject, "
-            "CloseObject, PickupObject, PutObject, ToggleObjectOn, ToggleObjectOff, SliceObject.\n\n"
-            
-            "Action constraints based on current state (last image):\n"
-            "- Navigation (RotateLeft/RotateRight/MoveAhead): Only perform when safe and appropriate. "
-            "If an object blocks your path, you cannot MoveAhead. When facing a wall, use RotateLeft or RotateRight to find another route.\n"
-            "- PickupObject: Only valid when a target object is visible in your current view.\n"
-            "- PutObject: Only valid when you are currently holding an object.\n"
-            "- OpenObject/CloseObject: Only valid for openable objects (Cabinet, Fridge, Drawer, etc.).\n"
-            "- SliceObject: Only valid when you are holding a ButterKnife. You must find and pick up the ButterKnife first before slicing.\n\n"
-            
-            "Always verify the current state from the image before selecting an action."
-        )
-        
+        self.system_prompt = "You are an embodied AI agent operating in a simulated 3D environment. " + \
+                            "Perceive the scene (image inputs), and predict the next action to complete the task."
+
         if len(self.traj_data) == 0:
             self._load_traj_data()
 
@@ -186,20 +167,19 @@ class ALFREDDataset(IterableDataset, Stateful):
 
     def __iter__(self):
 
-        # for per-rank sharding
+        # Per-rank sharding
+        dp_rank = self.dp_rank
         dp_world = max(1, self.dp_world_size)
 
         N = len(self.traj_data)
         usable = (N // dp_world) * dp_world  # drop the tail so every rank has equal count
-
-        it = self._get_data_iter()
 
         # Resume offsets
         start_traj = self._sample_idx
         start_chunk = self._chunk_idx
 
         # Iterate trajectories; select only those belonging to this shard
-        for ti, traj in enumerate(it, start=start_traj):
+        for ti, traj in enumerate(self._get_data_iter(), start=start_traj):
         #for ti, traj in enumerate(self.traj_data, start=start_traj): -> this doens't work when len(self.traj_data) % dp_world_size != 0
             # Stop exactly at the dropped tail boundary
             if ti >= usable:
@@ -209,7 +189,7 @@ class ALFREDDataset(IterableDataset, Stateful):
             self._sample_idx = ti + 1
             
             # Keep only trajectories owned by this shard
-            if (ti % dp_world) != self.dp_rank:
+            if (ti % dp_world) != dp_rank:
                 # if we skip a traj, and we were resuming inside it, reset chunk cursor
                 if ti == start_traj:
                     self._chunk_idx = 0
@@ -229,72 +209,49 @@ class ALFREDDataset(IterableDataset, Stateful):
                 continue
 
             # Heavy work happens ONLY for this shard's trajectories
-            chunks = self._load_sample(traj, chunk=True)
-            if not isinstance(chunks, list):
-                chunks = [chunks]
+            content, img_list = self._load_sample(traj, chunk=True)
 
-            # Resume inside the first selected trajectory if needed
-            first_chunk_idx = start_chunk if ti == start_traj else 0
+            messages = [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": content}
+            ]
 
-            for ci, chunk in enumerate(chunks[first_chunk_idx:], start=first_chunk_idx):
-                n_img_token = chunk['lang_input'].count(self.img_token)
-                n_act_token = chunk['lang_input'].count('<|act|>')
-                if n_act_token == 0:
-                    logger.warning(f"Skip this chunk - no target labels (action tokens)")
+            prompt = self.processor.tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=False,   # set True if you plan to .generate immediately
+            )
+
+            output = self.processor(text=prompt, images=img_list, return_tensors="pt")
+
+            #logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] sample_idx: {self._sample_idx} n_img: {len(img_list)}\nprompt: {prompt}")
+            print(f"[rank{self.rank}][dp_rank{self.dp_rank}] sample_idx: {self._sample_idx} n_img: {len(img_list)}\nprompt: {prompt}")
+            
+            labels = output.input_ids.clone()
+
+            act_tok = False
+            for i, l in enumerate(labels[0]):
+                if (not act_tok) and l == self.act_tok_id: # 151648
+                    act_tok = True
                     continue
-                if not self.use_only_last_frame and len(chunk['img_list']) != n_img_token:
-                    logger.warning(f"Some images are missed -- expected {n_img_token}, but {len(chunk['img_list'])}")
-                    logger.warning(f"len(chunk['img_list']): {len(chunk['img_list'])}, len(chunk['lang_input']): {len(chunk['lang_input'])}, chunk['lang_input']: {chunk['lang_input']}")
-                    continue # raise ValueError()
                 
-                # old version
-                # logger.info(f"n_img_token: {n_img_token}, len(chunk['img_list']): {len(chunk['img_list'])}")
-                # output = self.processor(images=chunk['img_list'], text=chunk['lang_input'], return_tensors="pt")
-                # print(chunk['lang_input'])
-                messages = self.build_messages_from_interleaved(chunk['lang_input'], chunk['img_list'])
+                if (not act_tok) and l != self.act_tok_id:
+                    labels[0][i] = self.ignore_index
 
-                prompt = self.processor.tokenizer.apply_chat_template(
-                    messages, tokenize=False, add_generation_prompt=False,   # set True if you plan to .generate immediately
-                )
+                if act_tok and l == self.act_tok_id:
+                    act_tok = False
+            
+            input_ids = output.input_ids[:, :-1]
+            labels = labels[:, 1:]
 
-                output = self.processor(
-                    text=prompt, images=chunk['img_list'], return_tensors="pt"
-                )
+            input_ids = pad_to_multiple(input_ids, self.pad_to, pad_token=self.eos_tok_id)
+            labels = pad_to_multiple(labels, self.pad_to, pad_token=self.ignore_index)
 
-                logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] sample_idx: {self._sample_idx} chunk_idx: {self._chunk_idx} n_img: {len(chunk['img_list'])}\nprompt: {prompt}")
-                
-                labels = output.input_ids.clone()
-
-                act_tok = False
-                for i, l in enumerate(labels[0]):
-                    if (not act_tok) and l == self.act_tok_id: # 151648
-                        act_tok = True
-                        continue
-                    
-                    if (not act_tok) and l != self.act_tok_id:
-                        labels[0][i] = self.ignore_index
-
-                    if act_tok and l == self.act_tok_id:
-                        act_tok = False
-                
-                input_ids = output.input_ids[:, :-1]
-                labels = labels[:, 1:]
-
-                input_ids = pad_to_multiple(input_ids, self.pad_to, pad_token=self.eos_tok_id)
-                labels = pad_to_multiple(labels, self.pad_to, pad_token=self.ignore_index)
-
-                self._chunk_idx = ci + 1
-
-                yield {
-                    'input_ids': input_ids,
-                    'pixel_values': output.pixel_values,
-                    'labels': labels,
-                    'image_grid_thw': output.image_grid_thw
-                }
-
+            yield {
+                'input_ids': input_ids,
+                'pixel_values': output.pixel_values,
+                'labels': labels,
+                'image_grid_thw': output.image_grid_thw
+            }
             # end of one traj
-            # reset chunk_idx
-            self._chunk_idx = 0
             
         # end of epoch
         self._sample_idx = len(self.traj_data)
@@ -336,41 +293,21 @@ class ALFREDDataset(IterableDataset, Stateful):
         # with S3
         filename = traj['filename'] # with S3
         traj = json.loads(traj['text'])
-        chunk_seq_list, chunk_img_list = self.seq_preprocess(traj)
-
-        #traj_imgs = set([x['image_name'].split(".")[0] for x in traj['images']])
+        contents = self.seq_preprocess(traj)
 
         img_tar_file = filename.replace("txt", "tar")
         tar_file = os.path.join(self.img_data_dir, img_tar_file)
 
         img_dict = extract_and_convert_tar(tar_file, self.img_width, self.img_height)
+
+        imgs = []
         
-        chunks = []
-
-        if self.use_only_last_frame:
-            for input_seq, cimgs in zip(chunk_seq_list, chunk_img_list):
-                if self.dataset_name == "alfred":
-                    _img_list = [img_dict[fname.replace("png", "jpg")] for fname in cimgs]
-                    task_goal_str = traj['turk_annotations']['anns'][0]['task_desc']
-                else:
-                    _img_list = [img_dict[fname] for fname in cimgs]
-                    task_goal_str = ""
-                chunks.append({
-                    'lang_input': input_seq,
-                    'img_list': _img_list,
-                    'task_goal': task_goal_str,
-                    'traj': traj,
-                })
-        else:
-            for input_seq, (img_start, img_end) in zip(chunk_seq_list, chunk_img_idx):
-                chunks.append({
-                    'lang_input': input_seq,
-                    'img_list': img_list[img_start:img_end],
-                    'task_goal': traj['turk_annotations']['anns'][0]['task_desc'],
-                    'traj': traj,
-                })
-
-        return chunks
+        for content in contents:
+            if content["type"] == "image":
+                content["image"] = img_dict[content["image"].replace("png", "jpg")]
+                imgs.append(content["image"])
+        
+        return contents, imgs
 
     def _load_traj_data(self):
         directory_path = self.traj_data_dir
@@ -395,6 +332,8 @@ class ALFREDDataset(IterableDataset, Stateful):
                 print(f"Error reading file {file_path}: {str(e)}")
 
     def seq_preprocess(self, traj):
+        contents = []
+
         # Prepare: low_idx_to_image
         low_idx_2_image = defaultdict(list)
         for im_info in traj['images']:
@@ -410,103 +349,38 @@ class ALFREDDataset(IterableDataset, Stateful):
             high_idx_2_low_act_list[high_idx].append(low_act)
 
         # start: make squences here
-        main_goal_str = "Your main goal: "
+        main_goal_str = "<|goal|>Your task goal: "
         if 'turk_annotations' in traj:
-            main_goal_str += traj['turk_annotations']['anns'][0]['task_desc']
+            main_goal_str += traj['turk_annotations']['anns'][0]['task_desc'] + "<|goal|>"
         # else we need to use templated desc .. later
 
-        n_system_prompt_tokens = len(self.processor(text=self.system_prompt).input_ids) + 8 # additional speical tokens such as '<|im_start|>', '<|im_end|>'
-        n_main_goal_tokens = len(self.processor(text=main_goal_str).input_ids)
-
-        chunk_seq_list = []
-        chunk_img_file_list = []
-
-        chunk_seq = main_goal_str
-        n_chunk_tokens = n_system_prompt_tokens + n_main_goal_tokens # for chunking
-
-        # initial image state
-        #chunk_seq += f"<|vision_start|>{self.img_token}<|vision_end|>" # '<image>' for LLaVA-OV, '<|image_pad|>' for Qwen
-        chunk_seq += self.img_token # '<image>' for LLaVA-OV, '<|image_pad|>' for Qwen
-        n_chunk_tokens += self.n_tok_per_img
-        chunk_img_files = ['000000000.png']
-        n_chunk_img = 1
-        img_start_idx = 1
+        contents.append({"type": "text", "text": main_goal_str})
+        contents.append({"type": "image", "image": '000000000.png'})
 
         for high_idx, low_act_list in high_idx_2_low_act_list.items():
-            if high_idx >= len(traj['plan']['high_pddl']):
+            high_action = traj['plan']['high_pddl'][high_idx]['discrete_action']
+            if high_action['action'] == "NoOp":
                 continue
-            
-            #plan_str = f"<|plan|>Plan: {self.get_templated_high_pddl_desc(traj['plan']['high_pddl'][high_idx])}<|plan|>"
-            plan_str = ""
 
-            high_plan_seq = ""
-            #high_plan_seq += plan_str
-            #n_high_plan_tokens = len(self.processor(text=plan_str).input_ids)
-            n_high_plan_tokens = 0
-            n_high_plan_img = 0
-
-            low_act_last_frames = []
-            #for low_idx, low_act in enumerate(low_act_list):
-            n_low_act_tok_list = []
-            for _, low_act in enumerate(low_act_list):
-                low_idx = low_act['low_idx']
-                action_str = self.serialize_action(low_act['api_action'])
-                low_act_seq = action_str
-                action_str_tok = self.processor(text=action_str).input_ids   
-                n_low_act_tokens = len(action_str_tok)
-                
-                # count tokens for images
-                n_low_img = len(low_idx_2_image[low_idx])
-
-                if self.use_only_last_frame:
-                    low_act_seq += (self.img_token * 1)
-                    n_low_act_tokens += (self.n_tok_per_img * 1) # e.g., one frame is 1485 tokens in LLaVA-OV
-                else:
-                    low_act_seq += (self.img_token * n_low_img)
-                    n_low_act_tokens += (self.n_tok_per_img * n_low_img) # one frame is 1485 tokens in LLaVA-OV
-
-                if (n_high_plan_tokens + n_low_act_tokens) >= self.max_seq_len:
-                    # truncate; do not add this low_act and break
-                    break
-                else:
-                    low_act_last_frames.append(low_idx_2_image[low_idx][-1])
-                    n_high_plan_tokens += n_low_act_tokens
-                    high_plan_seq += low_act_seq
-                    n_high_plan_img += n_low_img
-
-                n_low_act_tok_list.append(n_low_act_tokens)
-
-            assert n_high_plan_tokens < self.max_seq_len
-            assert sum(n_low_act_tok_list) < self.max_seq_len, \
-                    f"This ({sum(n_low_act_tok_list)}) cannot fit into max_length limit. You need to increase max_length"
-
-            if (n_chunk_tokens + n_high_plan_tokens) >= self.max_seq_len:
-                assert chunk_seq.count(self.img_token) == len(chunk_img_files), \
-                    f"chunk_seq: {chunk_seq}\nlen(chunk_img_files): {len(chunk_img_files)}\n# img tokens: {chunk_seq.count(self.img_token)}"
-                chunk_seq_list.append(chunk_seq)
-                chunk_img_file_list.append(chunk_img_files)
-                last_state_image = chunk_img_files[-1]
-                
-                # reset for next chunk
-                chunk_seq = main_goal_str + self.img_token + high_plan_seq
-                n_chunk_tokens = n_main_goal_tokens + self.n_tok_per_img + n_high_plan_tokens
-                img_start_idx = img_start_idx + n_chunk_img
-                n_chunk_img = n_high_plan_img + 1 # +1 for last state image
-                chunk_img_files = [last_state_image] + low_act_last_frames
-                #chunk_img_files = low_act_last_frames
+            if high_action['action'] == "GotoLocation":
+                # if high_idx + 1 < len(traj['plan']['high_pddl']) and traj['plan']['high_pddl'][high_idx+1]['discrete_action']['action'] == "PickupObject":
+                #     goto_loc = high_action['args'][0]
+                #     pickup_obj = traj['plan']['high_pddl'][high_idx+1]['discrete_action']['args'][0]
+                #     dest = goto_loc if goto_loc != pickup_obj else pickup_obj
+                dest = high_action['args'][0]
+                action_str = f"<|act|>GotoLocation {dest}<|act|>"
+                contents.append({"type": "text", "text": action_str})
+                for _, low_act in enumerate(low_act_list):
+                    low_idx = low_act['low_idx']
+                contents.append({"type": "image", "image": low_idx_2_image[low_idx][-1]})
             else:
-                chunk_seq += high_plan_seq
-                n_chunk_tokens += n_high_plan_tokens
-                n_chunk_img += n_high_plan_img
-                chunk_img_files.extend(low_act_last_frames)
+                for _, low_act in enumerate(low_act_list):
+                    low_idx = low_act['low_idx']
+                    action_str = self.serialize_action(low_act['api_action'])
+                    contents.append({"type": "text", "text": action_str})
+                    contents.append({"type": "image", "image": low_idx_2_image[low_idx][-1]})
 
-        chunk_seq_list.append(chunk_seq)
-        chunk_img_file_list.append(chunk_img_files)
-
-        if self.use_only_last_frame:
-            assert len(chunk_seq_list) == len(chunk_img_file_list)
-
-        return chunk_seq_list, chunk_img_file_list
+        return contents
 
     def serialize_action(self, act):
         template = self.act_template[act['action']]

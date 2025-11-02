@@ -6,6 +6,8 @@
 
 import os
 import pickle
+import importlib
+import inspect
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
@@ -256,43 +258,54 @@ def build_data_loader(
     img_token_id: int = None,
     #infinite: bool = None,
 ):
-    if job_config.training.dataset in ["alfred", "infini-thor"]:
-        from torchtitan.datasets.alfred_dataset import ALFREDDataset, AlfredDataLoader
-        from torchtitan.datasets.infini_thor_dataset import InfiniTHORDataset
-        traj_data_dir = os.environ['TRAJ_DATA_DIR'] 
-        img_data_dir = os.environ['IMG_DATA_DIR']
-        tokenizer = processor.tokenizer
-        tokenizer.add_special_tokens({"additional_special_tokens": ['<|act|>', '<|plan|>', '<|goal|>']})
-        
-        if job_config.training.seq_len > 131072:
-            from torchtitan.datasets.alfred_dataset_long_ctx import ALFREDDataset, AlfredDataLoader
-        else:
-            from torchtitan.datasets.alfred_dataset import ALFREDDataset, AlfredDataLoader
+    dataset_module_name = job_config.training.dataset
 
-        dataset_cls = ALFREDDataset if job_config.training.dataset == 'alfred' else InfiniTHORDataset
+    module = importlib.import_module(f"torchtitan.datasets.{dataset_module_name}")
 
-        dataset = dataset_cls(
-            dataset_name=job_config.training.dataset,
-            processor=processor,
-            n_tok_per_img=job_config.training.n_tok_per_img,
-            img_width=job_config.training.img_width,
-            img_height=job_config.training.img_height,
-            img_token_id=img_token_id,
-            traj_data_dir=traj_data_dir,
-            img_data_dir=img_data_dir,
-            max_seq_len=job_config.training.seq_len, 
-            #world_size=world_size,
-            cp_degree=max(job_config.experimental.context_parallel_degree, job_config.training.tensor_parallel_degree),
-            rank=rank,
-            dp_rank=dp_rank,
-            dp_world_size=dp_world_size)
-        
-        data_loader = AlfredDataLoader(dataset, dp_rank, dp_world_size,
-                                        batch_size=job_config.training.batch_size)
-        return data_loader
-    else:
-        """Build a data loader for HuggingFace datasets."""
-        hf_ds = HuggingFaceDataset(
-            job_config.training.dataset, job_config.training.dataset_path, tokenizer, job_config.training.seq_len, world_size, rank, infinite
+    # Try to get the dataset class (could be ALFREDDataset or InfiniTHORDataset)
+    dataset_cls = None
+    for class_name in ["ALFREDDataset", "InfiniTHORDataset"]:
+        if hasattr(module, class_name):
+            dataset_cls = getattr(module, class_name)
+            break
+    
+    if dataset_cls is None:
+        raise ValueError(
+            f"Dataset class (ALFREDDataset or InfiniTHORDataset) not found in module "
+            f"torchtitan.datasets.{dataset_module_name}"
         )
-        return DPAwareDataLoader(rank, hf_ds, batch_size=batch_size, world_size=world_size)
+
+    data_loader_cls = None
+    for class_name in ["AlfredDataLoader", "DataLoader"]:
+        if hasattr(module, class_name):
+            data_loader_cls = getattr(module, class_name)
+            break
+    
+    if data_loader_cls is None:
+        raise ValueError(
+            f"DataLoader class (AlfredDataLoader or DataLoader) not found in module "
+            f"torchtitan.datasets.{dataset_module_name}"
+        )
+    
+    traj_data_dir = os.environ['TRAJ_DATA_DIR'] 
+    img_data_dir = os.environ['IMG_DATA_DIR']
+    
+    dataset = dataset_cls(
+        dataset_name=job_config.training.dataset,
+        processor=processor,
+        n_tok_per_img=job_config.training.n_tok_per_img,
+        img_width=job_config.training.img_width,
+        img_height=job_config.training.img_height,
+        img_token_id=img_token_id,
+        traj_data_dir=traj_data_dir,
+        img_data_dir=img_data_dir,
+        max_seq_len=job_config.training.seq_len, 
+        pad_to=max(job_config.training.tensor_parallel_degree,
+                    job_config.experimental.context_parallel_degree * 2),
+        rank=rank,
+        dp_rank=dp_rank,
+        dp_world_size=dp_world_size)
+    
+    data_loader = data_loader_cls(dataset, dp_rank, dp_world_size,
+                                    batch_size=job_config.training.batch_size)
+    return data_loader
