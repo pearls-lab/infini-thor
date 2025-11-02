@@ -158,22 +158,23 @@ class InfiniTHORDataset(IterableDataset, Stateful):
         return len(self.traj_data)
 
     def _get_data_iter(self):
-        if self._sample_idx >= len(self.traj_data): # reset 
-            self._sample_idx = 0
-            self._chunk_idx = 0
-
+        # Create iterator and skip to current position
         it = iter(self.traj_data)
         for _ in range(self._sample_idx): # iterator starting at sample_idx (if sample_idx is not 0 from the dataloader state)
             next(it)
         return it
 
     def __iter__(self):
-
         # for per-rank sharding
         dp_world = max(1, self.dp_world_size)
 
         N = len(self.traj_data)
         usable = (N // dp_world) * dp_world  # drop the tail so every rank has equal count
+
+        # Reset if we've completed an epoch
+        if self._sample_idx >= len(self.traj_data):
+            self._sample_idx = 0
+            self._chunk_idx = 0
 
         it = self._get_data_iter()
 
