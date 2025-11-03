@@ -156,17 +156,12 @@ class ALFREDDataset(IterableDataset, Stateful):
         return len(self.traj_data)
 
     def _get_data_iter(self):
-        if self._sample_idx >= len(self.traj_data): # reset 
-            self._sample_idx = 0
-            self._chunk_idx = 0
-
         it = iter(self.traj_data)
         for _ in range(self._sample_idx): # iterator starting at sample_idx (if sample_idx is not 0 from the dataloader state)
             next(it)
         return it
 
     def __iter__(self):
-
         # Per-rank sharding
         dp_rank = self.dp_rank
         dp_world = max(1, self.dp_world_size)
@@ -174,12 +169,19 @@ class ALFREDDataset(IterableDataset, Stateful):
         N = len(self.traj_data)
         usable = (N // dp_world) * dp_world  # drop the tail so every rank has equal count
 
+        # Reset if we've completed an epoch
+        if self._sample_idx >= len(self.traj_data):
+            self._sample_idx = 0
+            self._chunk_idx = 0
+
+        it = self._get_data_iter()
+
         # Resume offsets
         start_traj = self._sample_idx
         start_chunk = self._chunk_idx
 
         # Iterate trajectories; select only those belonging to this shard
-        for ti, traj in enumerate(self._get_data_iter(), start=start_traj):
+        for ti, traj in enumerate(it, start=start_traj):
         #for ti, traj in enumerate(self.traj_data, start=start_traj): -> this doens't work when len(self.traj_data) % dp_world_size != 0
             # Stop exactly at the dropped tail boundary
             if ti >= usable:
