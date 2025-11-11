@@ -349,7 +349,7 @@ class ALFREDDataset(IterableDataset, Stateful):
 
         if self.use_only_last_frame:
             for input_seq, cimgs in zip(chunk_seq_list, chunk_img_list):
-                if self.dataset_name == "alfred":
+                if "alfred" in self.dataset_name:
                     _img_list = [img_dict[fname.replace("png", "jpg")] for fname in cimgs]
                     task_goal_str = traj['turk_annotations']['anns'][0]['task_desc']
                 else:
