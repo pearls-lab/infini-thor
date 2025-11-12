@@ -2122,11 +2122,54 @@ class Qwen2_5_VLForActionPrediction(Qwen2_5_VLForConditionalGeneration):
     # def forward(self, *args, **kwargs):
     #     return super().forward(*args, **kwargs)
 
-    def embed(self, input_ids: torch.LongTensor = None,
-                    pixel_values: torch.FloatTensor = None,
-                    image_grid_thw: Optional[torch.LongTensor] = None):
+    # def embed(self, input_ids: torch.LongTensor = None,
+    #                 pixel_values: torch.FloatTensor = None,
+    #                 image_grid_thw: Optional[torch.LongTensor] = None):
+    #     inputs_embeds = self.model.embed_tokens(input_ids)
+    #     if pixel_values is not None:
+    #         pixel_values = pixel_values.type(self.visual.dtype)
+    #         with torch.no_grad():
+    #             image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw)
+    #         n_image_tokens = (input_ids == self.config.image_token_id).sum().item()
+    #         n_image_features = image_embeds.shape[0]
+    #         if n_image_tokens != n_image_features:
+    #             raise ValueError(
+    #                 f"Image features and image tokens do not match: tokens: {n_image_tokens}, features {n_image_features}"
+    #             )
+
+    #         mask = input_ids == self.config.image_token_id
+    #         mask_unsqueezed = mask.unsqueeze(-1)
+    #         mask_expanded = mask_unsqueezed.expand_as(inputs_embeds)
+    #         image_mask = mask_expanded.to(inputs_embeds.device)
+
+    #         image_embeds = image_embeds.to(inputs_embeds.device, inputs_embeds.dtype)
+    #         inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds)
+    #     return inputs_embeds
+
+    @torch.no_grad()
+    def _visual_embed_one(self, pixel_value_b, grid_thw_b):
+        # Ensure dtype/device match what the visual encoder expects
+        pv = pixel_value_b.to(dtype=self.visual.dtype)
+        return self.visual(pv, grid_thw=grid_thw_b)  # [L_img_b, hidden]
+
+    def embed(
+        self,
+        input_ids: torch.LongTensor = None,
+        pixel_values: Optional[Union[List[torch.Tensor], Tuple[torch.Tensor], torch.Tensor]] = None,
+        image_grid_thw: Optional[Union[List[torch.Tensor], Tuple[torch.Tensor], torch.Tensor]] = None,
+    ):
+        """
+        Per-sample visual embedding:
+          - Loops over batch dimension and runs vision encoder once per sample.
+          - Replaces positions of image tokens in each row with per-sample visual embeddings.
+        """
+        # Text embeddings first: [B, T, D]
         inputs_embeds = self.model.embed_tokens(input_ids)
-        if pixel_values is not None:
+        B, T, D = inputs_embeds.shape
+        device = inputs_embeds.device
+        out_dtype = inputs_embeds.dtype
+
+        if B == 1 and (pixel_values is not None) and not isinstance(pixel_values, list):
             pixel_values = pixel_values.type(self.visual.dtype)
             with torch.no_grad():
                 image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw)
@@ -2144,6 +2187,61 @@ class Qwen2_5_VLForActionPrediction(Qwen2_5_VLForConditionalGeneration):
 
             image_embeds = image_embeds.to(inputs_embeds.device, inputs_embeds.dtype)
             inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds)
+            return inputs_embeds
+
+        if pixel_values is None:
+            return inputs_embeds
+
+        # Normalize inputs to per-sample lists
+        if isinstance(pixel_values, torch.Tensor):
+            # Treat as batch tensor; split along first dim
+            pixel_values_list = list(pixel_values)
+        else:
+            pixel_values_list = list(pixel_values)
+
+        if image_grid_thw is None:
+            grids_list = [None] * len(pixel_values_list)
+        elif isinstance(image_grid_thw, torch.Tensor):
+            grids_list = list(image_grid_thw)
+        else:
+            grids_list = list(image_grid_thw)
+
+        # Sanity: align lengths with batch
+        if len(pixel_values_list) != B:
+            raise ValueError(
+                f"pixel_values batch size mismatch: got {len(pixel_values_list)} vs input_ids batch {B}"
+            )
+        if len(grids_list) != B:
+            raise ValueError(
+                f"image_grid_thw batch size mismatch: got {len(grids_list)} vs input_ids batch {B}"
+            )
+
+        img_token_id = self.config.image_token_id
+
+        # Process each sample independently
+        for b in range(B):
+            mask_b = (input_ids[b] == img_token_id)  # [T]
+            n_img_tokens_b = int(mask_b.sum().item())
+            if n_img_tokens_b == 0:
+                continue  # no image tokens in this sample
+
+            # Compute per-sample visual embeddings
+            img_embeds_b = self._visual_embed_one(pixel_values_list[b], grids_list[b])  # [L_img_b, D]
+            if img_embeds_b.dim() != 2 or img_embeds_b.size(1) != D:
+                raise ValueError(
+                    f"Visual embed dim mismatch for sample {b}: expected [L, {D}], got {tuple(img_embeds_b.shape)}"
+                )
+
+            n_feats_b = int(img_embeds_b.size(0))
+            if n_feats_b != n_img_tokens_b:
+                raise ValueError(
+                    f"Image features and image tokens do not match for sample {b}: "
+                    f"tokens={n_img_tokens_b}, features={n_feats_b}"
+                )
+
+            # Assign per-sample visual embeddings into the image-token slots
+            inputs_embeds[b, mask_b] = img_embeds_b.to(device=device, dtype=out_dtype)
+
         return inputs_embeds
 
     # @torch.inference_mode()

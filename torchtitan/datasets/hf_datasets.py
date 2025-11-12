@@ -276,14 +276,14 @@ def build_data_loader(
         )
 
     data_loader_cls = None
-    for class_name in ["AlfredDataLoader", "DataLoader"]:
+    for class_name in ["AlfredDataLoader", "DataLoader", "AlfredValidActDataLoader"]:
         if hasattr(module, class_name):
             data_loader_cls = getattr(module, class_name)
             break
     
     if data_loader_cls is None:
         raise ValueError(
-            f"DataLoader class (AlfredDataLoader or DataLoader) not found in module "
+            f"DataLoader class (AlfredDataLoader or DataLoader or AlfredValidActDataLoader) not found in module "
             f"torchtitan.datasets.{dataset_module_name}"
         )
     
@@ -306,6 +306,11 @@ def build_data_loader(
         dp_rank=dp_rank,
         dp_world_size=dp_world_size)
     
-    data_loader = data_loader_cls(dataset, dp_rank, dp_world_size,
+    if hasattr(module, "AlfredValidActDataLoader"):
+        data_loader = data_loader_cls(dataset, dp_rank, dp_world_size,
+                                    eos_tok_id=processor.tokenizer.eos_token_id,
                                     batch_size=job_config.training.batch_size)
+    else:
+        data_loader = data_loader_cls(dataset, dp_rank, dp_world_size,
+                                        batch_size=job_config.training.batch_size)
     return data_loader

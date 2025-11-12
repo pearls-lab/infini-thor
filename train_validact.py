@@ -174,6 +174,64 @@ def dtensor_safe_clip_grad_norm_(
     # Return the total norm for logging
     return total_norm
 
+
+def dp_sync_batch_shapes(batch, inputs_embeds, labels, dp_pg):
+    """
+    Make B equal across DP ranks by truncating to min B,
+    and L equal by padding to max L.
+    batch: dict with 'pixel_values' (List), 'image_grid_thw' (List)
+    inputs_embeds: [B, Lb, D] (ragged across B allowed before padding)
+    labels: [B, Lb]
+    """
+    device = inputs_embeds.device
+    B_local = torch.tensor([inputs_embeds.size(0)], device=device, dtype=torch.int64)
+    L_local = torch.tensor([inputs_embeds.size(1)], device=device, dtype=torch.int64)
+
+    # all_gather B and L from all DP ranks
+    ws = dist.get_world_size(group=dp_pg)
+    B_all = [torch.zeros_like(B_local) for _ in range(ws)]
+    L_all = [torch.zeros_like(L_local) for _ in range(ws)]
+    dist.all_gather(B_all, B_local, group=dp_pg)
+    dist.all_gather(L_all, L_local, group=dp_pg)
+
+    B_step = int(torch.stack(B_all).min().item())
+    L_step = int(torch.stack(L_all).max().item())
+
+    # 1) TRIM batch dimension to B_step (for tensors and lists)
+    def trim_list(lst, k):
+        return lst[:k] if lst is not None else None
+
+    inputs_embeds = inputs_embeds[:B_step]
+    labels = labels[:B_step] if labels is not None else None
+    if "attention_mask" in batch and batch["attention_mask"] is not None:
+        batch["attention_mask"] = batch["attention_mask"][:B_step]
+    batch["pixel_values"] = trim_list(batch.get("pixel_values"), B_step)
+    batch["image_grid_thw"] = trim_list(batch.get("image_grid_thw"), B_step)
+
+    # 2) PAD sequence dimension to L_step
+    # pad_len = L_step - inputs_embeds.size(1)
+    # if pad_len > 0:
+    #     pad_embeds = torch.zeros((B_step, pad_len, inputs_embeds.size(-1)),
+    #                              dtype=inputs_embeds.dtype, device=device)
+    #     inputs_embeds = torch.cat([inputs_embeds, pad_embeds], dim=1)
+
+    #     if labels is not None:
+    #         pad_lbl = torch.full((B_step, pad_len), fill_value=-100,
+    #                              dtype=labels.dtype, device=device)
+    #         labels = torch.cat([labels, pad_lbl], dim=1)
+
+    #     if "attention_mask" in batch:
+    #         if batch["attention_mask"] is None:
+    #             batch["attention_mask"] = torch.ones((B_step, L_step),
+    #                                                  dtype=torch.long, device=device)
+    #         else:
+    #             pad_mask = torch.zeros((B_step, pad_len), dtype=batch["attention_mask"].dtype,
+    #                                    device=device)
+    #             batch["attention_mask"] = torch.cat([batch["attention_mask"], pad_mask], dim=1)
+
+    return inputs_embeds, labels, batch
+
+
 # -----------------------------
 # Training entry (keeps CP logic)
 # -----------------------------
@@ -447,26 +505,23 @@ def main(job_config: JobConfig):
         gc_handler.run(train_state.step)
 
         # unpack common fields expected by your graphs
-        input_ids = batch["input_ids"].to(device, non_blocking=True) # check `pin_memory`; it starts the transfer and immediately move on to the next operation, overlapping computation and data transfer.
-        labels       = batch["labels"].to(device, non_blocking=True)
-        pixel_values = batch["pixel_values"].to(device, non_blocking=True)
-        n_image      = batch["n_image"].to(device, non_blocking=True)
+        # ---- tensors moved to device
+        input_ids = batch["input_ids"].to(device, non_blocking=True)            # [B, T]
+        labels = batch.get("labels", None)
+        if labels is not None:
+            labels = labels.to(device, non_blocking=True)                        # [B, T]
 
-        # global sample counting
+        # ---- per-sample image payloads: keep as lists, DO NOT .to()
+        pixel_values_list   = batch["pixel_values"]      # List[Tensor|None], len B
+        image_grid_thw_list = batch["image_grid_thw"]    # List[Tensor|None], len B
+
+        # ---- sample counting (reduce over DP only)
         local_samples = torch.tensor([input_ids.size(0)], device=device, dtype=torch.int64)
+        if dp_pg is not None:
+            dist.all_reduce(local_samples, op=dist.ReduceOp.SUM, group=dp_pg)
+        train_state.samples_seen_global += int(local_samples.item())
 
-        # Reduce over DP (and CP if present) to get the true global count for this step.
-        # Your loss logging uses world_mesh["dp_cp"]; reuse the same group if available.
-        if parallel_dims.dp_replicate_enabled or parallel_dims.dp_shard_enabled or parallel_dims.cp_enabled:
-            #dist.all_reduce(local_samples, op=dist.ReduceOp.SUM, group=world_mesh["dp_cp"])
-            if dp_pg is not None:
-                dist.all_reduce(local_samples, op=dist.ReduceOp.SUM, group=dp_pg)
-        # else single-process or pure TP/PP case: no reduce needed.
-
-        global_samples_this_step = int(local_samples.item())
-        train_state.samples_seen_global += global_samples_this_step
-
-        logger.info(f"global_samples_this_step: {global_samples_this_step}, input_ids: {input_ids.shape}, pixel_values: {pixel_values.shape}, image_grid_thw: {batch.get("image_grid_thw").shape}")
+        logger.info(f"[rank{global_rank}] samples_seen_global: {train_state.samples_seen_global}, input_ids: {input_ids.shape}")
 
         # TODO: enable_embed_batch
         enable_embed_batch = True if (job_config.training.seq_len >= 16384 and job_config.training.batch_size > 1) else False
@@ -488,18 +543,28 @@ def main(job_config: JobConfig):
                 # image_grid_thw = torch.cat([grid_t, grid_h_col, grid_w_col], dim=1).to(pixel_values.device)
                 # logger.info(f"image_grid_thw: {image_grid_thw.shape}")
 
-                image_grid_thw = batch.get("image_grid_thw").to(device, non_blocking=True)
-                inputs_embeds = model.embed(input_ids=input_ids,
-                                            pixel_values=pixel_values,
-                                            image_grid_thw=image_grid_thw)
-                # if parallel_dims.cp_enabled:
-                position_ids, rope_deltas = model.get_rope_index(
-                    input_ids,
-                    image_grid_thw,
-                    None, None, None,
+                inputs_embeds = model.embed(
+                    input_ids=input_ids,
+                    pixel_values=pixel_values_list,          # list, not tensor
+                    image_grid_thw=image_grid_thw_list,      # list, not tensor
                 )
-                model.rope_deltas = rope_deltas
-                logger.info(f"[rank{global_rank}] position_ids: {type(position_ids)} {position_ids.shape}")
+
+                if parallel_dims.cp_enabled:
+                    grids_for_rope = [
+                        (g.to(device, non_blocking=True) if g is not None else None)
+                        for g in image_grid_thw_list
+                    ]
+                    position_ids, rope_deltas = model.get_rope_index(
+                        input_ids,
+                        grids_for_rope,   # pass list on device (or adapt your helper to accept lists)
+                        None, None, None,
+                    )
+                    model.rope_deltas = rope_deltas
+                    logger.info(f"[rank{global_rank}] position_ids: {type(position_ids)} {position_ids.shape}")
+            
+                # if dp_pg is not None:
+                #     inputs_embeds, labels, batch = dp_sync_batch_shapes(batch, inputs_embeds, labels, dp_pg)
+
             else:
                 inputs_embeds = model.embed(input_ids=input_ids,
                                             pixel_values=pixel_values)
@@ -566,7 +631,7 @@ def main(job_config: JobConfig):
                 if (labels + torch.tensor([100], device=labels.device)).sum() == 0:
                     labels[:, -2] = input_ids[:, -1]
                 logger.info(f"logits: {logits.shape} ({type(logits)}), labels: {labels.shape}")
-                logger.info(f"logits: {logits[0][:100]} ({type(logits)}), labels: {labels[0][:100]}")
+                #logger.info(f"logits: {logits[0][-20:]} ({type(logits)}), labels: {labels[0][-20:]}")
                 # if isinstance(logits, torch.distributed.tensor.DTensor):
                 #     logits = logits.to_local()
                 loss = loss_fn(logits, labels)
