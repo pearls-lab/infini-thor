@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 import itertools
 from functools import partial
+import random
 
 import torch
 from torch.distributed.checkpoint.stateful import Stateful
@@ -132,26 +133,26 @@ class ALFREDDataset(IterableDataset, Stateful):
         self._sample_idx = 0
 
         self.system_prompt = (
-            "You are an embodied AI agent operating in a simulated 3D household environment (AI2-THOR). "
-            "Your goal is to predict the NEXT VALID ACTIONS given a task goal plus the sequence of prior actions and ego-centric visual states. "
-            "Use the latest image (current state) to ground your decision.\n\n"
+            "You are an embodied AI agent operating in the simulated 3D household environment AI2-THOR. "
+            "Your goal is to predict the NEXT VALID ACTIONS and the BEST ACTION, given the task goal, the sequence of prior actions, "
+            "and the current ego-centric visual observation. Always use the latest image (current state) when making decisions.\n\n"
 
             "Available actions: MoveAhead, RotateLeft, RotateRight, LookUp, LookDown, "
             "OpenObject, CloseObject, PickupObject, PutObject, ToggleObjectOn, ToggleObjectOff, SliceObject.\n\n"
 
-            "Action constraints (evaluate against the CURRENT image/state):\n"
-            "- Navigation (MoveAhead/RotateLeft/RotateRight): MoveAhead only if the path is clear; if blocked or facing a wall, rotate first.\n"
+            "=== ACTION CONSTRAINTS (must match the CURRENT image/state) ===\n"
+            "- Navigation (MoveAhead / RotateLeft / RotateRight): MoveAhead only if the path is clear. If blocked or facing a wall, rotate first.\n"
             "- PickupObject: Only if the target object is visible and reachable.\n"
-            "- PutObject: Only if you are holding an object AND there is a suitable receptacle/place in front of you.\n"
-            "- OpenObject / CloseObject: Only for openable objects (e.g., Cabinet, Fridge, Drawer) currently in view and within reach.\n"
-            "- SliceObject: Only if you are holding a Knife or ButterKnife.\n"
-            "- ToggleObjectOn / ToggleObjectOff: Only for togglable objects (e.g., Faucet, Microwave, Lamp) currently in view and within reach.\n"
-            "- Do not propose impossible actions (e.g., moving through obstacles) or duplicate actions.\n\n"
+            "- PutObject: Only if you are holding an object AND a suitable receptacle/place is directly in front of you.\n"
+            "- OpenObject / CloseObject: Only for openable objects (Cabinet, Fridge, Drawer, etc.) visible and within reach.\n"
+            "- SliceObject: Only if you are currently holding a Knife or ButterKnife.\n"
+            "- ToggleObjectOn / ToggleObjectOff: Only for togglable objects (e.g., Faucet, Microwave, Lamp) visible and within reach.\n"
+            "- Do NOT propose impossible actions (e.g., moving through obstacles) or duplicate actions.\n\n"
 
-            "=== OUTPUT POLICY ===\n"
-            "- The model’s output must begin after the text 'next valid actions: '.\n"
-            "- List all valid actions as a comma-separated list (no explanations or extra text).\n"
-            "- For object interactions, follow these exact formats:\n"
+            "=== OUTPUT FORMAT ===\n"
+            "- First, output all valid actions as a comma-separated list with no explanations.\n"
+            "- Then, output the best action among them.\n"
+            "- For object interactions, follow EXACTLY these formats (case-sensitive):\n"
             "    OpenObject [object]\n"
             "    CloseObject [object]\n"
             "    PickupObject [object]\n"
@@ -160,11 +161,11 @@ class ALFREDDataset(IterableDataset, Stateful):
             "    ToggleObjectOff [object]\n"
             "    SliceObject [object]\n\n"
 
-            "Examples:\n"
-            "    next valid actions: MoveAhead, RotateLeft, RotateRight\n"
-            "    next valid actions: PickupObject Mug\n"
-            "    next valid actions: PutObject Apple CounterTop\n"
-            "    next valid actions: OpenObject Fridge\n"
+            "=== EXAMPLES ===\n"
+            "    next valid actions: MoveAhead, RotateLeft, RotateRight, LookUp, LookDown, best action: MoveAhead\n"
+            "    next valid actions: RotateLeft, RotateRight, LookUp, LookDown, PickupObject Mug, best action: PickupObject Mug\n"
+            "    next valid actions: RotateLeft, RotateRight, LookDown, PutObject Apple CounterTop, best action: PutObject Apple CounterTop\n"
+            "    next valid actions: RotateLeft, RotateRight, LookUp, OpenObject Fridge, best action: OpenObject Fridge\n"
         )
 
         if len(self.data) == 0:
@@ -184,6 +185,24 @@ class ALFREDDataset(IterableDataset, Stateful):
         for _ in range(self._traj_idx): # iterator starting at sample_idx (if sample_idx is not 0 from the dataloader state)
             next(it)
         return it
+
+    def filter_samples(self, validact_pair, generated_actions):
+        nav_acts = set(["RotateRight", "RotateLeft", "LookUp", "LookDown"])
+        filtered_samples = []
+        nav_samples = []
+        for si, (seq, valact) in enumerate(validact_pair.items()):
+            act_seq = [{'action': "INIT"}] + generated_actions[:si]
+            best_act = generated_actions[si]
+            act_set = set([x['action'] for x in valact])
+            if (act_set & nav_acts) == nav_acts:
+                nav_samples.append((act_seq, valact, best_act))
+            else:
+                filtered_samples.append((act_seq, valact, best_act))
+        
+        random.shuffle(nav_samples)
+        filtered_samples += nav_samples[:int(len(nav_samples)*0.2)]
+        print(f"\t\t filter out: {len(validact_pair)} -> {len(filtered_samples)}")
+        return filtered_samples
 
     def __iter__(self):
         # Per-rank sharding
@@ -213,10 +232,16 @@ class ALFREDDataset(IterableDataset, Stateful):
                 continue
 
             img_dict = extract_and_convert_tar(tar_file, self.img_width, self.img_height)
+            lowidx2img = defaultdict(list)
+            for img_meta in traj['images']:
+                lowidx2img[img_meta['low_idx']].append(img_meta['image_name'])
 
-            N = len(traj['validact_pair'])
-            usable = (N // dp_world) * dp_world 
-            for si, (seq, valact) in enumerate(traj['validact_pair'].items(), start=start_sample):
+            # TODO: filter out - use only 20% for major samples
+            filtered_sample = self.filter_samples(traj['validact_pair'], traj['generated_actions'])
+            N = len(filtered_sample)
+            usable = (N // dp_world) * dp_world
+            
+            for si, (seq, valact, best_act) in enumerate(filtered_sample):
                 if si >= usable:
                     break
                 
@@ -227,11 +252,16 @@ class ALFREDDataset(IterableDataset, Stateful):
                     continue
 
                 # Heavy work happens ONLY for this shard's trajectories
-                content, img_list = self._load_sample([{'action': "INIT"}] + traj['generated_actions'][:si], valact, img_dict)
+                #best_act = traj['generated_actions'][si]
+                #act_seq = seq.split("||")
+                
+                #content, assistant_response, img_list = self._load_sample([{'action': "INIT"}] + traj['generated_actions'][:si], valact, best_act, img_dict, lowidx2img)
+                content, assistant_response, img_list = self._load_sample(seq, valact, best_act, img_dict, lowidx2img)
 
                 messages = [
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": content}
+                    {"role": "user", "content": content},
+                    {"role": "assistant", "content": assistant_response}
                 ]
 
                 prompt = self.processor.tokenizer.apply_chat_template(
@@ -243,23 +273,34 @@ class ALFREDDataset(IterableDataset, Stateful):
                 #print(f"[rank{self.rank}][dp_rank{self.dp_rank}] traj_idx: {self._traj_idx} sample_idx: {self._sample_idx} n_img: {len(img_list)}\nprompt: {prompt}")
                 
                 labels = output.input_ids.clone()
-
-                def enc(s: str) -> List[int]:
-                    return self.processor.tokenizer(s, add_special_tokens=False).input_ids
-
+                
+                # Tokenize assistant response (without special tokens)
+                assistant_tokens = self.processor.tokenizer(
+                    assistant_response, 
+                    add_special_tokens=False
+                ).input_ids
+                
+                # Search for assistant tokens in the actual output sequence
                 seq = output.input_ids[0].tolist()
-                pat = enc(" next valid actions:")
-                start_idx = None
-                plen = len(pat)
-                # find first occurrence of pat in seq
-                for i in range(len(seq) - plen, -1, -1):
-                    if seq[i:i+plen] == pat:
-                        start_idx = i + plen
+                assistant_start_idx = None
+                alen = len(assistant_tokens)
+                
+                # Search from the end since assistant response is at the end
+                for i in range(len(seq) - alen, -1, -1):
+                    if seq[i:i+alen] == assistant_tokens:
+                        assistant_start_idx = i
                         break
+                
+                if assistant_start_idx is None:
+                    # Fallback: try finding a partial match or key phrase
+                    logger.warning(f"Could not find exact assistant token match")
+                    # You might want to handle this case differently
+                    assistant_start_idx = 0
+                
 
                 # Default: mask all; if anchor found, unmask only the target span (after anchor)
                 labels[:] = self.ignore_index
-                labels[0, start_idx:] = output.input_ids[0, start_idx:]
+                labels[0, assistant_start_idx:] = output.input_ids[0, assistant_start_idx:]
 
                 shift_input_ids = output.input_ids[..., :-1].contiguous()
                 shift_labels = labels[..., 1:].contiguous()
@@ -267,7 +308,9 @@ class ALFREDDataset(IterableDataset, Stateful):
                 # input_ids = pad_to_multiple(input_ids, self.pad_to, pad_token=self.eos_tok_id)
                 # labels = pad_to_multiple(labels, self.pad_to, pad_token=self.ignore_index)
                 logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] traj_idx: {self._traj_idx} sample_idx: {self._sample_idx} input_ids: {output.input_ids.shape} n_img: {len(img_list)}")
-                logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] labels: {self.processor.tokenizer.decode(labels[0, start_idx:]).strip()}")
+                logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] labels: {self.processor.tokenizer.decode(labels[0, assistant_start_idx:]).strip()}")
+                # print(f"[rank{self.rank}][dp_rank{self.dp_rank}] traj_idx: {self._traj_idx} sample_idx: {self._sample_idx} input_ids: {output.input_ids.shape} n_img: {len(img_list)}")
+                # print(f"[rank{self.rank}][dp_rank{self.dp_rank}] labels: {self.processor.tokenizer.decode(labels[0, assistant_start_idx:]).strip()}")
                 
                 yield {
                     'input_ids': shift_input_ids,
@@ -310,34 +353,39 @@ class ALFREDDataset(IterableDataset, Stateful):
         else:
             return act_dict['action']
 
-    def valact_to_str(self, valact):
-        _act_list = []
-        for va in valact:
-            if va['action'] == 'PutObject':
-                _act_list.append(f"PutObject {va['objectId']} {va['receptacleObjectId']}")
-            elif 'Object' in va['action']:
-                _act_list.append(f"{va['action']} {va['objectId']}")
-            else:
-                _act_list.append(va['action'])
-        return ", ".join(_act_list)
+    def get_obj_name(self, obj_id):
+        return obj_id.split("|")[0]
 
+    def act_dict_to_str(self, va):
+        if va['action'] == 'PutObject':
+            return f"PutObject {self.get_obj_name(va['objectId'])} {self.get_obj_name(va['receptacleObjectId'])}"
+        elif 'Object' in va['action']:
+            return f"{va['action']} {self.get_obj_name(va['objectId'])}"
+        else:
+            return va['action']
 
-    def _load_sample(self, seq_list, valact, img_dict):
+    def val_act_list_to_str(self, valact):
+        _act_list = [self.act_dict_to_str(va) for va in valact]
+        _act_set = set(_act_list)
+        return ", ".join(_act_set)
+
+    def _load_sample(self, seq_list, valact, best_act, img_dict, lowidx2img):
         contents = []
         imgs = []
         
-        for img_idx, act in enumerate(seq_list):
+        for low_idx, act in enumerate(seq_list):
             if act['action'] == "INIT":
                 contents.append({"type": "text", "text": f"initial state: "})
             else:
                 contents.append({"type": "text", "text": f" action: {self.get_act_str2(act)} state: "})
             #contents.append({"type": "image", "image": f'{img_idx:06d}.png'})
-            contents.append({"type": "image", "image": img_dict[f'{img_idx:06d}.png']})
-            imgs.append(img_dict[f'{img_idx:06d}.png'])
+            for low_img_name in lowidx2img[low_idx]:
+                contents.append({"type": "image", "image": img_dict[low_img_name]})
+                imgs.append(img_dict[low_img_name])
         
-        contents.append({"type": "text", "text": f" next valid actions: {self.valact_to_str(valact)}"})
+        assistant_response = f"next valid actions: {self.val_act_list_to_str(valact)}, best action: {self.act_dict_to_str(best_act)}"
         
-        return contents, imgs
+        return contents, assistant_response, imgs
 
     def _load_data(self):
         directory_path = self.traj_data_dir
