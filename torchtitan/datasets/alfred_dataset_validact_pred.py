@@ -43,6 +43,20 @@ def extract_and_convert_tar(tar_path, img_width, img_height):
     
     return image_dict
 
+
+def read_images(img_dir, img_width, img_height):
+    image_dict = {}
+    for filename in os.listdir(img_dir):
+        img_file = os.path.join(img_dir, filename)
+        image = Image.open(img_file)  # PIL can open file paths directly
+        image = image.convert("RGB")
+        if image.size != (img_width, img_height):
+            image = image.resize((img_width, img_height), resample=Image.Resampling.LANCZOS)
+        image_dict[filename] = image
+
+    return image_dict
+
+
 def pad_to_multiple(tensor, multiple=4, pad_token=0):
     length = tensor.shape[1]
     pad_length = (multiple - (length % multiple)) % multiple
@@ -227,11 +241,16 @@ class ALFREDDataset(IterableDataset, Stateful):
             
             img_tar_file = filename.replace("txt", "tar") if "txt" in filename else filename.replace("json", "tar")
             tar_file = os.path.join(self.img_data_dir, img_tar_file)
-            if not os.path.exists(tar_file):
+            if os.path.exists(tar_file):
+                img_dict = extract_and_convert_tar(tar_file, self.img_width, self.img_height)
+            elif os.path.isdir(os.path.join(os.path.join(self.img_data_dir, img_tar_file.split(".")[0]))):
+                img_dir = os.path.join(os.path.join(self.img_data_dir, img_tar_file.split(".")[0]))
+                img_dict = read_images(img_dir, self.img_width, self.img_height)
+            else:
                 self._traj_idx = 0
                 continue
 
-            img_dict = extract_and_convert_tar(tar_file, self.img_width, self.img_height)
+
             lowidx2img = defaultdict(list)
             for img_meta in traj['images']:
                 lowidx2img[img_meta['low_idx']].append(img_meta['image_name'])
