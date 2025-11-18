@@ -8,6 +8,7 @@
 # training techniques (e.g. activation checkpointing and compile) to the Llama model.
 
 from collections import defaultdict
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -64,13 +65,13 @@ def parallelize_qwen2_5_vl(
             enable_float8=job_config.float8.enable_float8_linear,
             enable_async_tp=job_config.experimental.enable_async_tensor_parallel,
         )
-        if parallel_dims.pp_enabled and hasattr(model, "vision_tower"):
-            apply_tp_vision_tower(
-                model,
-                world_mesh["tp"],
-                enable_float8=job_config.float8.enable_float8_linear,
-                enable_async_tp=job_config.experimental.enable_async_tensor_parallel,
-            )
+        #if parallel_dims.pp_enabled and hasattr(model, "visual"):
+        # apply_tp_visual(
+        #         model,
+        #         world_mesh["tp"],
+        #         enable_float8=job_config.float8.enable_float8_linear,
+        #         enable_async_tp=job_config.experimental.enable_async_tensor_parallel,
+        #     )
 
     if job_config.activation_checkpoint.mode != "none":
         apply_ac(model, job_config.activation_checkpoint)
@@ -262,58 +263,68 @@ def apply_tp(
     )
 
 
-def apply_tp_vision_tower(
+def apply_tp_visual(
     model: nn.Module,
     tp_mesh: DeviceMesh,
     enable_float8: bool,
     enable_async_tp: bool,
 ):
-    """Apply tensor parallelism for the vision tower."""
+    """Apply tensor parallelism for the Qwen2.5-VL vision tower."""
 
     rowwise_parallel, colwise_parallel, prepare_module_input = (
-            RowwiseParallel,
-            ColwiseParallel,
-            PrepareModuleInput,
+        RowwiseParallel,
+        ColwiseParallel,
+        PrepareModuleInput,
     )
 
-    parallelize_module(
-        model.vision_tower.vision_model,
-        tp_mesh,
-        {   # cannot parallelize bc of image features
-            # "embed_tokens": RowwiseParallel( 
-            #     input_layouts=Replicate(),
-            #     output_layouts=Shard(1),
-            # ),
-            "post_layernorm": SequenceParallel(),
-        },
-    )
+    # NOTE: We do NOT parallelize patch_embed here (Conv3d) to keep the
+    # input layout simple. The main compute is in the blocks + merger.
 
-    for layer_id, siglip_block in enumerate(model.vision_tower.vision_model.encoder.layers):
+    # ------------------------------------------------------------------
+    # 1) Parallelize each Qwen2_5_VLVisionBlock inside model.visual.blocks
+    # ------------------------------------------------------------------
+    for layer_id, vision_block in enumerate(model.visual.blocks):
         layer_plan = {
-            # "self_attn": prepare_module_input(
-            #     #input_kwarg_layouts={"hidden_states": Shard(1)},
-            #     #desired_input_kwarg_layouts={"hidden_states": Replicate()}
-            # ),
-            "self_attn.q_proj": colwise_parallel(),
-            "self_attn.k_proj": colwise_parallel(),
-            "self_attn.v_proj": colwise_parallel(),
-            "self_attn.out_proj": rowwise_parallel(output_layouts=Shard(1)),
-            "layer_norm1": SequenceParallel(),
+            # Attention: qkv / proj (same pattern as text blocks)
+            "attn.qkv": colwise_parallel(),
+            "attn.proj": rowwise_parallel(output_layouts=Shard(1)),
+
+            # Norms in sequence parallel
+            "norm1": SequenceParallel(),
+            "norm2": SequenceParallel(),
+
+            # MLP: gate/up are column-parallel, down is row-parallel.
+            # PrepareModuleInput handles the layout transition.
             "mlp": prepare_module_input(
                 input_layouts=(Shard(1),),
                 desired_input_layouts=(Replicate(),),
             ),
-            "mlp.fc1": colwise_parallel(),
-            "mlp.fc2": rowwise_parallel(output_layouts=Shard(1)),
-            "layer_norm2": SequenceParallel(),
+            "mlp.gate_proj": colwise_parallel(),
+            "mlp.up_proj": colwise_parallel(),
+            "mlp.down_proj": rowwise_parallel(output_layouts=Shard(1)),
         }
 
         parallelize_module(
-            module=siglip_block,
+            module=vision_block,
             device_mesh=tp_mesh,
             parallelize_plan=layer_plan,
         )
-    
+
+    # ------------------------------------------------------------------
+    # 2) Patch merger: ONLY sequence parallel on ln_q, NO TP on mlp
+    # ------------------------------------------------------------------
+    # parallelize_module(
+    #     module=model.visual.merger,
+    #     device_mesh=tp_mesh,
+    #     parallelize_plan={
+    #         "ln_q": SequenceParallel(),
+    #         # DO NOT TP the MLP: its hidden_size=3420 is not divisible by 8
+    #     },
+    # )   
+
+    # ------------------------------------------------------------------
+    # 3) Optional async TP plumbing (same as before)
+    # ------------------------------------------------------------------
     if enable_async_tp:
         from torch.distributed._symmetric_memory import enable_symm_mem_for_group
 
@@ -322,7 +333,7 @@ def apply_tp_vision_tower(
 
     logger.info(
         f"Applied {'Float8 ' if enable_float8 else ''}{'Async ' if enable_async_tp else ''}"
-        "Tensor Parallelism to the model.vision_tower"
+        "Tensor Parallelism to the model.visual (Qwen2_5_VisionTransformerPretrainedModel)"
     )
 
 

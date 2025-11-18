@@ -422,7 +422,34 @@ class ALFREDDataset(IterableDataset, Stateful):
                 contents.append({"type": "image", "image": img_dict[low_img_name]})
                 imgs.append(img_dict[low_img_name])
         
-        assistant_response = f"next valid actions: {self.val_act_list_to_str(valact)}, best action: {self.act_dict_to_str(best_act)}"
+        MAX_IMGS = 280
+
+        if len(imgs) > MAX_IMGS:
+            # keep last MAX_IMGS images
+            imgs = imgs[-MAX_IMGS:]
+
+            # Now we must update contents accordingly:
+            # keep all text, but prune image entries from the front.
+            new_contents = []
+            remaining = len(imgs)
+            
+            for c in reversed(contents):
+                if c["type"] == "image":
+                    if remaining > 0:
+                        new_contents.append(c)
+                        remaining -= 1
+                    # else drop
+                else:
+                    # always keep text
+                    new_contents.append(c)
+
+            # reverse again to restore original order
+            contents = list(reversed(new_contents))
+
+        assistant_response = (
+            f"next valid actions: {self.val_act_list_to_str(valact)}, "
+            f"best action: {self.act_dict_to_str(best_act)}"
+        )
         
         return contents, assistant_response, imgs
 
