@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional
 import itertools
 from functools import partial
 import random
+import hashlib
 
 import torch
 from torch.distributed.checkpoint.stateful import Stateful
@@ -200,7 +201,13 @@ class ALFREDDataset(IterableDataset, Stateful):
             next(it)
         return it
 
-    def filter_samples(self, validact_pair, generated_actions):
+    def _traj_seed(self, filename: str) -> int:
+        """Deterministic per-trajectory seed shared across ranks."""
+        h = hashlib.md5(filename.encode("utf-8")).hexdigest()
+        # Take first 8 hex digits -> 32-bit int
+        return int(h[:8], 16)
+
+    def filter_samples(self, validact_pair, generated_actions, filename: str):
         nav_acts = set(["RotateRight", "RotateLeft", "LookUp", "LookDown"])
         filtered_samples = []
         nav_samples = []
@@ -213,8 +220,21 @@ class ALFREDDataset(IterableDataset, Stateful):
             else:
                 filtered_samples.append((act_seq, valact, best_act))
         
-        random.shuffle(nav_samples)
-        filtered_samples += nav_samples[:int(len(nav_samples)*0.2)]
+        # random.shuffle(nav_samples)
+        # filtered_samples += nav_samples[:int(len(nav_samples)*0.2)]
+        # print(f"\t\t filter out: {len(validact_pair)} -> {len(filtered_samples)}")
+        # return filtered_samples
+
+        # --- deterministic shuffle: same on all DP ranks ---
+        keep_n = int(len(nav_samples) * 0.2)
+
+        if keep_n > 0:
+            rng = random.Random(self._traj_seed(filename))
+            indices = list(range(len(nav_samples)))
+            rng.shuffle(indices)
+            for idx in indices[:keep_n]:
+                filtered_samples.append(nav_samples[idx])
+
         print(f"\t\t filter out: {len(validact_pair)} -> {len(filtered_samples)}")
         return filtered_samples
 
@@ -256,7 +276,7 @@ class ALFREDDataset(IterableDataset, Stateful):
                 lowidx2img[img_meta['low_idx']].append(img_meta['image_name'])
 
             # TODO: filter out - use only 20% for major samples
-            filtered_sample = self.filter_samples(traj['validact_pair'], traj['generated_actions'])
+            filtered_sample = self.filter_samples(traj['validact_pair'], traj['generated_actions'], filename)
             N = len(filtered_sample)
             usable = (N // dp_world) * dp_world
             
