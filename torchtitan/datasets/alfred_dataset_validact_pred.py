@@ -177,10 +177,10 @@ class ALFREDDataset(IterableDataset, Stateful):
             "    SliceObject [object]\n\n"
 
             "=== EXAMPLES ===\n"
-            "    next valid actions: MoveAhead, RotateLeft, RotateRight, LookUp, LookDown, best action: MoveAhead\n"
-            "    next valid actions: RotateLeft, RotateRight, LookUp, LookDown, PickupObject Mug, best action: PickupObject Mug\n"
-            "    next valid actions: RotateLeft, RotateRight, LookDown, PutObject Apple CounterTop, best action: PutObject Apple CounterTop\n"
-            "    next valid actions: RotateLeft, RotateRight, LookUp, OpenObject Fridge, best action: OpenObject Fridge\n"
+            "    Next valid actions: MoveAhead, RotateLeft, RotateRight, LookUp, LookDown. Best action: MoveAhead\n"
+            "    Next valid actions: RotateLeft, RotateRight, LookUp, LookDown, PickupObject Mug. Best action: PickupObject Mug\n"
+            "    Next valid actions: RotateLeft, RotateRight, LookDown, PutObject Apple CounterTop. Best action: PutObject Apple CounterTop\n"
+            "    Next valid actions: RotateLeft, RotateRight, LookUp, OpenObject Fridge. Best action: OpenObject Fridge\n"
         )
 
         if len(self.data) == 0:
@@ -413,9 +413,9 @@ class ALFREDDataset(IterableDataset, Stateful):
         
         for low_idx, act in enumerate(seq_list):
             if act['action'] == "INIT":
-                contents.append({"type": "text", "text": f"initial state: "})
+                contents.append({"type": "text", "text": f"Initial state: "})
             else:
-                contents.append({"type": "text", "text": f" action: {self.get_act_str2(act)} state: "})
+                contents.append({"type": "text", "text": f" Action: {self.get_act_str2(act)} State: "})
             #contents.append({"type": "image", "image": f'{img_idx:06d}.png'})
             for low_img_name in lowidx2img[low_idx]:
                 if low_img_name in img_dict:
@@ -447,8 +447,8 @@ class ALFREDDataset(IterableDataset, Stateful):
             contents = list(reversed(new_contents))
 
         assistant_response = (
-            f"next valid actions: {self.val_act_list_to_str(valact)}, "
-            f"best action: {self.act_dict_to_str(best_act)}"
+            f"Next valid actions: {self.val_act_list_to_str(valact)}. "
+            f"Best action: {self.act_dict_to_str(best_act)}"
         )
         
         return contents, assistant_response, imgs
