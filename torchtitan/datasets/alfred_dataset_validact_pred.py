@@ -226,7 +226,7 @@ class ALFREDDataset(IterableDataset, Stateful):
         # return filtered_samples
 
         # --- deterministic shuffle: same on all DP ranks ---
-        keep_n = int(len(nav_samples) * 0.2)
+        keep_n = int(len(nav_samples) * 0.5)
 
         if keep_n > 0:
             rng = random.Random(self._traj_seed(filename))
@@ -269,7 +269,6 @@ class ALFREDDataset(IterableDataset, Stateful):
             else:
                 self._traj_idx = 0
                 continue
-
 
             lowidx2img = defaultdict(list)
             for img_meta in traj['images']:
@@ -419,8 +418,9 @@ class ALFREDDataset(IterableDataset, Stateful):
                 contents.append({"type": "text", "text": f" action: {self.get_act_str2(act)} state: "})
             #contents.append({"type": "image", "image": f'{img_idx:06d}.png'})
             for low_img_name in lowidx2img[low_idx]:
-                contents.append({"type": "image", "image": img_dict[low_img_name]})
-                imgs.append(img_dict[low_img_name])
+                if low_img_name in img_dict:
+                    contents.append({"type": "image", "image": img_dict[low_img_name]})
+                    imgs.append(img_dict[low_img_name])
         
         MAX_IMGS = 280
 
