@@ -1,4 +1,4 @@
-transformers==4.49.0
+transformers
 accelerate==1.11.0
 datasets==4.3.0
 einops==0.8.1

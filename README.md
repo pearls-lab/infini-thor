@@ -106,7 +106,8 @@ python run_eval_QA_NiEH.py \
     --qa_file_path path/to/qa_data.csv \
     --metadata_dir path/to/metadata \
     --model_name_or_path llava-hf/llava-onevision-qwen2-7b-ov-hf \
-    --full_traj
+    --full_traj \
+    --eval_mode full_traj
 ```
 
 QA performance with the full trajectory as input:
@@ -125,7 +126,7 @@ Note: To run the DeepSeek-VL model, follow the instruction [here](https://github
 
 ---
 
-Run the evaluation with different input context sizes (e.g., `--ctx_size 256` means 256K tokens used as the model's input). 
+1) Run the evaluation with different input context sizes (e.g., `--ctx_size 256` means 256K tokens used as the model's input). 
 
 
 ```bash
@@ -138,7 +139,7 @@ python run_eval_QA_NiEH.py \
 
 ---
 
-Run the evaluation with a context extension method, e.g.:
+2) Run the evaluation with a context extension method, e.g.:
 ```bash
 python run_eval_QA_NiEH.py \
     --qa_file_path path/to/qa_data.csv \
@@ -147,6 +148,37 @@ python run_eval_QA_NiEH.py \
     --ctx_size 256 \
     --ctx_extension yarn \
     --ctx_extension_factor 4.0
+```
+
+3) retrieval with CLIP (top-10)
+```bash
+python run_eval_QA_NiEH.py \
+  --model_name_or_path llava-hf/llava-onevision-qwen2-7b-ov-hf \
+  --qa_file_path path/to/qa_data.csv \
+  --metadata_dir path/to/metadata \
+  --ctx_size 32 \
+  --full_traj \
+  --eval_mode clip_retrieval \
+  --clip_top_k 10 \
+  --clip_model_name openai/clip-vit-large-patch14
+```
+
+4) Truncate head with context size 32K
+```bash
+python run_eval_QA_NiEH.py \
+  --model_name_or_path llava-hf/llava-onevision-qwen2-7b-ov-hf \
+  --qa_file_path path/to/qa.csv \
+  --metadata_dir path/to/metadata \
+  --ctx_size 32 \
+  --full_traj \
+  --eval_mode truncate_head
+```
+
+LLM Judge
+```
+python nieh_llm_judge_eval.py \
+  --log_path path/for/result_log_file.log \
+  --judge_model gpt-4.1-mini
 ```
 
 ## Interactive Evaluation

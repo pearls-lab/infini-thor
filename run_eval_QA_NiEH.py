@@ -2,8 +2,9 @@ import argparse
 import csv
 import os
 import sys
+import json
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 import numpy as np
 import logging
 from PIL import Image
@@ -15,7 +16,9 @@ from transformers import (
     AutoProcessor,
     AutoTokenizer,
     LlavaOnevisionForConditionalGeneration,
-    Qwen2_5_VLForConditionalGeneration
+    Qwen2_5_VLForConditionalGeneration,
+    CLIPModel,
+    CLIPProcessor,
 )
 from transformers.utils import is_flash_attn_2_available, is_torch_cuda_available
 
@@ -50,6 +53,99 @@ model_zoo = {
 }
 
 depth_map = {0: 0, 1: 0.2, 2: 0.4, 3: 0.6, 4: 0.8}
+
+
+def load_clip_retriever(model_name: str, device: torch.device):
+    """
+    Load a CLIP (or CLIP-like) model and processor for retrieval.
+    """
+    clip_model = CLIPModel.from_pretrained(model_name)
+    clip_processor = CLIPProcessor.from_pretrained(model_name)
+    clip_model.to(device)
+    clip_model.eval()
+    return clip_model, clip_processor
+
+
+def retrieve_top_images_clip(
+    question: str,
+    img_list: List[Image.Image],
+    clip_model: "CLIPModel",
+    clip_processor: "CLIPProcessor",
+    device: torch.device,
+    top_k: int = 10,
+) -> Tuple[List[Image.Image], List[int]]:
+    """
+    Retrieve top-k images most similar to the question using CLIP.
+    Returns the selected images (kept in temporal order) and their indices.
+    """
+    if len(img_list) == 0:
+        return [], []
+
+    # Encode question
+    text_inputs = clip_processor(
+        text=[question],
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+    ).to(device)
+    with torch.no_grad():
+        text_features = clip_model.get_text_features(**text_inputs)
+        text_features = text_features / text_features.norm(p=2, dim=-1, keepdim=True)
+
+    # Encode images in batches
+    all_img_feats = []
+    batch_size = 32
+    for start in range(0, len(img_list), batch_size):
+        batch_imgs = img_list[start:start + batch_size]
+        img_inputs = clip_processor(images=batch_imgs, return_tensors="pt").to(device)
+        with torch.no_grad():
+            img_feats = clip_model.get_image_features(**img_inputs)
+            img_feats = img_feats / img_feats.norm(p=2, dim=-1, keepdim=True)
+        all_img_feats.append(img_feats)
+
+    img_features = torch.cat(all_img_feats, dim=0)
+    sims = (img_features @ text_features.T).squeeze(1)
+
+    k = min(top_k, len(img_list))
+    _, top_indices = torch.topk(sims, k=k, largest=True, sorted=True)
+    top_indices_list = top_indices.tolist()
+
+    # For the context, keep chronological order
+    chronological_indices = sorted(top_indices_list)
+    selected_imgs = [img_list[i] for i in chronological_indices]
+    return selected_imgs, chronological_indices
+
+
+def truncate_head_by_ctx_size(
+    img_list: List[Image.Image],
+    ctx_size_k: int,
+    n_img_token: int,
+) -> Tuple[List[Image.Image], List[int]]:
+    """
+    Approximate truncation of the trajectory head, keeping only the tail that
+    fits into the given context size (in K tokens) based on a per-image token estimate.
+    """
+    if len(img_list) == 0:
+        return [], []
+
+    if n_img_token is None or n_img_token <= 0:
+        # Fallback: keep the full trajectory if we don't know the image token count
+        indices = list(range(len(img_list)))
+        return img_list, indices
+
+    max_tokens = ctx_size_k * 1024  # ctx_size is expressed in K tokens
+    max_images = max_tokens // n_img_token
+    if max_images <= 0:
+        max_images = 1
+
+    if max_images >= len(img_list):
+        start_idx = 0
+    else:
+        start_idx = len(img_list) - max_images
+
+    indices = list(range(start_idx, len(img_list)))
+    selected_imgs = img_list[start_idx:]
+    return selected_imgs, indices
 
 
 def get_model_cls(model_name_or_path):
@@ -136,6 +232,7 @@ def load_model(model_name_or_path: str,
             low_cpu_mem_usage=True,
             config=cfg,
             attn_implementation=attn_impl,
+            #attn_implementation="eager",
         )
         model = model_cls.from_pretrained(model_name_or_path, **kwargs)
         #model.to(device)
@@ -154,7 +251,7 @@ def generate(
     processor: Any, 
     model: Any, 
     device: torch.device
-) -> str:
+) -> Tuple[str, Optional[int]]:
     content = []
     for im in img_list:
         content.append({'type': 'image'})
@@ -172,11 +269,18 @@ def generate(
     )
 
     inputs = processor(images=img_list, text=prompt, padding=True, return_tensors="pt").to(device, torch.bfloat16)
+    ctx_len: Optional[int] = None
+    if "input_ids" in inputs:
+        try:
+            ctx_len = int(inputs["input_ids"].shape[1])
+        except Exception:
+            ctx_len = None
+    
     out = model.generate(**inputs, max_new_tokens=50, pad_token_id=processor.tokenizer.eos_token_id)
     
     decoded_out = processor.batch_decode(out, skip_special_tokens=True)
     lm_response = decoded_out[0].strip().split("\n")[-1]
-    return lm_response
+    return lm_response, ctx_len
 
 
 @torch.no_grad()
@@ -191,6 +295,10 @@ def main(
     full_traj: bool = False,
     attn_impl: str = "flash_attention_2",
     base_model: str = None,
+    qa_file_path: Optional[str] = None,
+    eval_mode: str = "full_traj",
+    clip_model_name: Optional[str] = None,
+    clip_top_k: int = 10,
 ) -> None:
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -215,6 +323,14 @@ def main(
     if n_img_token is None:
         raise ValueError(f"Unknown image token count for model '{model_name_or_path}'. ")
 
+    # Optional CLIP retriever (used only when full_traj is True and eval_mode == 'clip_retrieval')
+    clip_model = None
+    clip_processor = None
+    if full_traj and eval_mode == "clip_retrieval":
+        clip_model_name = clip_model_name or "openai/clip-vit-large-patch14"
+        logger.info(f"Loading CLIP model for retrieval: {clip_model_name}")
+        clip_model, clip_processor = load_clip_retriever(clip_model_name, device)
+
     if full_traj:
         total_match = 0.0
         total_count = 0.0
@@ -222,7 +338,74 @@ def main(
         total_match = [0 for _ in target_depths]
         total_count = [0 for _ in target_depths]
 
+    # Prepare JSONL logging / resume from existing results
+    qa_basename = os.path.splitext(os.path.basename(qa_file_path))[0] if qa_file_path is not None else "qa"
+    model_basename = os.path.basename(model_name_or_path.rstrip("/"))
+    os.makedirs("output", exist_ok=True)
+    safe_qa = qa_basename.replace(os.sep, "_")
+    safe_model = model_basename.replace(os.sep, "_").replace(":", "_")
+    safe_full_traj = "_full_traj" if full_traj else ""
+    safe_mode = f"_{eval_mode}" if (full_traj and eval_mode and eval_mode != "full_traj") else ""
+    safe_ctx_size = f"_{ctx_size}K" if eval_mode == "truncate_head" else ""
+    safe_topk = f"_top{clip_top_k}" if eval_mode == "clip_retrieval" else ""
+    log_path = os.path.join(
+        "output",
+        f"eval_{safe_qa}_{safe_model}{safe_full_traj}{safe_mode}.log",
+    )
+    log_path = os.path.join("output", f"eval_{safe_qa}_{safe_model}{safe_full_traj}{safe_mode}{safe_ctx_size}{safe_topk}.log")
+
+    existing_qidx = set()
+    if os.path.exists(log_path):
+        logger.info(f"Found existing log file at {log_path}, will resume and skip completed questions.")
+        with open(log_path, "r", encoding="utf-8") as f_log:
+            for line in f_log:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+                qid = rec.get("qidx")
+                if qid is None:
+                    continue
+                try:
+                    qid_int = int(qid)
+                except (TypeError, ValueError):
+                    continue
+                existing_qidx.add(qid_int)
+
+                # Warm start aggregate stats from existing records
+                if full_traj:
+                    score_val = rec.get("score")
+                    if score_val is not None:
+                        total_match += float(score_val)
+                        total_count += 1.0
+                else:
+                    per_depth = rec.get("per_depth", [])
+                    for item in per_depth:
+                        try:
+                            depth = int(item.get("depth"))
+                        except (TypeError, ValueError):
+                            continue
+                        if depth < 0 or depth >= len(total_match):
+                            continue
+                        score_val = item.get("score")
+                        if score_val is None:
+                            continue
+                        count_val = float(item.get("count", 1.0))
+                        total_match[depth] += float(score_val)
+                        total_count[depth] += count_val
+
+    logger.info(f"Writing per-question results to: {log_path}")
+    log_f = open(log_path, "a", encoding="utf-8")
+
     for qidx, row in enumerate(qa_data):
+        if qidx in existing_qidx:
+            logger.info(f"Skipping qidx={qidx} (already present in {log_path})")
+            continue
+
         img_list, metadata, traj_text, img_path_list = nieh_utils.load_qa_data(row['traj_id'], metadata_dir)
         assert len(img_list) == len(metadata['img_idx']), f"Image count mismatch for trajectory {row['traj_id']}"
 
@@ -231,14 +414,55 @@ def main(
         Do not include explanation or reasoning in the answer. Answer with a single word or words.
         {row['question']}
         """
+        # prompt = (
+        #     "You are given a sequence of ego-centric images from an embodied agent. "
+        #     "They are ordered in time from earliest to latest. "
+        #     "Use only the information in these images to answer the question.\n\n"
+        #     f"Question: {row['question']}\n\n"
+        #     "Answer guidelines:\n"
+        #     "- Respond with the final answer only, without explanation or reasoning.\n"
+        #     "- If the answer is yes/no, reply with exactly 'yes' or 'no'.\n"
+        #     "- If the answer is a number or count, reply using digits only (e.g., '2').\n"
+        # )
 
         if full_traj:
-            ctx_img_list = img_list
-            logger.info(
-                    f"gt_idx: {row['gt_img_idx']}, full_traj: True, "
-                    f"n_imgs: {len(ctx_img_list)}, ")
+            # Select context images based on eval_mode
+            selected_indices = list(range(len(img_list)))
 
-            lm_response = generate(ctx_img_list, prompt, processor, model, device)
+            if eval_mode == "clip_retrieval":
+                if clip_model is None or clip_processor is None:
+                    raise RuntimeError("eval_mode='clip_retrieval' requires a loaded CLIP model.")
+                ctx_img_list, selected_indices = retrieve_top_images_clip(
+                    question=row["question"],
+                    img_list=img_list,
+                    clip_model=clip_model,
+                    clip_processor=clip_processor,
+                    device=device,
+                    top_k=clip_top_k,
+                )
+            elif eval_mode == "truncate_head":
+                ctx_img_list, selected_indices = truncate_head_by_ctx_size(
+                    img_list=img_list,
+                    ctx_size_k=ctx_size,
+                    n_img_token=n_img_token,
+                )
+            else:
+                # Default behaviour: use the full trajectory
+                ctx_img_list = img_list
+
+            if not ctx_img_list:
+                logger.warning(
+                    f"No images selected for qidx={qidx} in eval_mode='{eval_mode}'. Skipping."
+                )
+                continue
+
+            logger.info(
+                f"gt_idx: {row['gt_img_idx']}, full_traj: True, "
+                f"mode: {eval_mode}, n_imgs: {len(ctx_img_list)}, "
+                f"selected_indices: {selected_indices}"
+            )
+
+            lm_response, ctx_len = generate(ctx_img_list, prompt, processor, model, device)
             if lm_response:  # Only process if we got a valid response
                 score = nieh_utils.get_score(lm_response, row['answer'])
                 logger.info(
@@ -248,6 +472,24 @@ def main(
                 )
                 total_match += score
                 total_count += 1.0
+
+                record = {
+                    "qidx": qidx,
+                    "traj_id": row.get("traj_id"),
+                    "question": row.get("question"),
+                    "gt_img_idx": row.get("gt_img_idx"),
+                    "ctx_size_k": ctx_size,
+                    "n_imgs": len(ctx_img_list),
+                    "ctx_n_tokens": ctx_len,
+                    "llm_response": lm_response,
+                    "gt_answer": row.get("answer"),
+                    "score": float(score),
+                    "eval_mode": eval_mode,
+                    "selected_img_indices": selected_indices,
+                }
+                json.dump(record, log_f, ensure_ascii=False)
+                log_f.write("\n")
+                log_f.flush()
         else:
             # for haystack building
             NiH_match = [0 for _ in target_depths]
@@ -267,6 +509,35 @@ def main(
                         )
                         NiH_match[di] = score
                         NiH_count[di] = 1.0
+
+                        per_depth_results.append(
+                            {
+                                "depth": depth,
+                                "depth_label": depth_map[depth],
+                                "n_imgs": len(ctx_img_list),
+                                "ctx_n_tokens": ctx_len,
+                                "llm_response": lm_response,
+                                "gt_answer": row.get("answer"),
+                                "score": float(score),
+                                "count": 1.0,
+                            }
+                        )
+
+            if per_depth_results:
+                record = {
+                    "qidx": qidx,
+                    "traj_id": row.get("traj_id"),
+                    "question": row.get("question"),
+                    "gt_img_idx": row.get("gt_img_idx"),
+                    "mode": "haystack",
+                    "ctx_size_k": ctx_size,
+                    "model_name": model_name_or_path,
+                    "base_model": base_model,
+                    "per_depth": per_depth_results,
+                }
+                json.dump(record, log_f, ensure_ascii=False)
+                log_f.write("\n")
+                log_f.flush()
 
             total_match = [x + y for x, y in zip(total_match, NiH_match)]
             total_count = [x + y for x, y in zip(total_count, NiH_count)]
@@ -290,6 +561,7 @@ def main(
                     f"total_count: {total_count[depth]}"
                 )
 
+    log_f.close()
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Test generation")
@@ -351,6 +623,32 @@ if __name__ == "__main__":
         default=None,
         help="base model name for local checkpoints",
     )
+    parser.add_argument(
+        "--eval_mode",
+        type=str,
+        default="full_traj",
+        choices=["full_traj", "clip_retrieval", "truncate_head"],
+        help=(
+            "Evaluation mode when --full_traj is enabled. "
+            "'full_traj': use entire trajectory; "
+            "'clip_retrieval': retrieve top-K images with CLIP; "
+            "'truncate_head': keep only the tail that fits in ctx_size."
+        ),
+    )
+    parser.add_argument(
+        "--clip_model_name",
+        type=str,
+        default=None,
+        help="Optional CLIP model name for retrieval (only used when eval_mode='clip_retrieval'). "
+             "Defaults to 'openai/clip-vit-large-patch14' if not set.",
+    )
+    parser.add_argument(
+        "--clip_top_k",
+        type=int,
+        default=10,
+        help="Number of top images to retrieve with CLIP when eval_mode='clip_retrieval'.",
+    )
+
 
     args = parser.parse_args()
 
@@ -377,5 +675,9 @@ if __name__ == "__main__":
         ctx_extension_factor=args.ctx_extension_factor,
         full_traj=args.full_traj,
         attn_impl=args.attn_impl,
-        base_model=args.base_model
+        base_model=args.base_model,
+        qa_file_path=args.qa_file_path,
+        eval_mode=args.eval_mode,
+        clip_model_name=args.clip_model_name,
+        clip_top_k=args.clip_top_k,
     )

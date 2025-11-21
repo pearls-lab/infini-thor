@@ -1,0 +1,830 @@
+qid,question,answer,match1,num_evidence,num_gt_img,gt_img_idx,gt_steps,traj_id,match2,match3,match4,match_sum
+floorplan209_21_641_1746939338_q39,Where is Statue now?,['Dresser'],1.0,1,1,[785],[562],floorplan209_21_641_1746939338,0.0,0.0,0.0,1.0
+floorplan230_11_503_1746036310_q26,Where is CreditCard now?,['SideTable'],1.0,1,1,[653],[465],floorplan230_11_503_1746036310,1.0,1.0,1.0,3.0
+floorplan213_19_711_1746891979_q16,What objects are on the DiningTable?,"['Box', 'RemoteControl', 'Watch', 'KeyChain']",0.5,1,1,[911],[679],floorplan213_19_711_1746891979,0.25,0.0,0.5,0.75
+floorplan213_14_436_1746025566_q9,What objects are on the SideTable?,"['Statue', 'Watch', 'KeyChain']",0.6666666666666666,1,1,[275],[197],floorplan213_14_436_1746025566,0.3333333333333333,0.3333333333333333,0.3333333333333333,1.3333333333333333
+floorplan213_26_838_1747110471_q2,Was Box open?,['Yes'],1.0,1,1,[1149],[837],floorplan213_26_838_1747110471,1.0,1.0,1.0,3.0
+floorplan211_26_726_1746786652_q42,Where is Pillow now?,['ArmChair'],0.0,1,1,[978],[691],floorplan211_26_726_1746786652,1.0,0.0,1.0,1.0
+floorplan223_26_749_1746930005_q1,Have you seen a GarbageCan?,['Yes'],1.0,1,1,[267],[190],floorplan223_26_749_1746930005,1.0,1.0,1.0,3.0
+floorplan210_15_464_1744755675_q9,What objects are on the Ottoman?,"['Box', 'KeyChain']",0.5,1,1,[526],[375],floorplan210_15_464_1744755675,0.5,0.0,0.5,1.0
+floorplan229_22_756_1746788037_q22,What objects are on the Dresser?,"['Television', 'Statue', 'KeyChain', 'Pen', 'Book']",0.4,1,1,[270],[200],floorplan229_22_756_1746788037,0.0,0.4,0.4,0.8
+floorplan22_24_419_1745155479_q10,Is Fork on the CounterTop?,['Yes'],0.0,1,1,[566],[360],floorplan22_24_419_1745155479,0.0,1.0,0.0,1.0
+floorplan212_24_603_1745121556_q24,What objects are on the Drawer?,"['Pencil', 'KeyChain']",0.5,1,1,[819],[555],floorplan212_24_603_1745121556,0.0,1.0,0.5,1.5
+floorplan221_16_442_1744749839_q17,Is RemoteControl on the DiningTable?,['Yes'],1.0,1,1,[351],[249],floorplan221_16_442_1744749839,1.0,1.0,1.0,3.0
+floorplan230_12_473_1745431565_q5,Is CreditCard on the SideTable?,['Yes'],1.0,1,1,[531],[369],floorplan230_12_473_1745431565,1.0,1.0,1.0,3.0
+floorplan230_17_831_1747084973_q32,Where is Candle now?,['CoffeeTable'],0.0,1,1,[1119],[830],floorplan230_17_831_1747084973,1.0,1.0,1.0,2.0
+floorplan218_10_556_1745368595_q32,Is Statue in the Dresser?,['Yes'],0.0,1,1,[645],[476],floorplan218_10_556_1745368595,1.0,1.0,1.0,2.0
+floorplan209_21_641_1746939338_q0,Is there any Window in this room?,['Yes'],1.0,1,1,[804],[578],floorplan209_21_641_1746939338,1.0,1.0,1.0,3.0
+floorplan211_24_728_1747232896_q39,Where is Plate now?,['SideTable'],1.0,1,1,[907],[647],floorplan211_24_728_1747232896,1.0,1.0,1.0,3.0
+floorplan229_14_428_1745415798_q26,What objects are on the Sofa?,"['Pillow', 'CreditCard', 'RemoteControl', 'Book']",0.25,1,1,[551],[398],floorplan229_14_428_1745415798,0.0,0.25,0.0,0.5
+floorplan210_15_500_1746335965_q21,Is KeyChain in the Drawer?,['Yes'],1.0,1,1,[377],[263],floorplan210_15_500_1746335965,1.0,0.0,1.0,2.0
+floorplan303_28_811_1747035692_q14,What objects are on the Desk?,"['Laptop', 'Vase', 'DeskLamp', 'Mug', 'CreditCard', 'Pencil', 'AlarmClock']",0.4285714285714285,1,1,[822],[577],floorplan303_28_811_1747035692,0.1428571428571428,0.2857142857142857,0.2857142857142857,0.857142857142857
+floorplan218_17_889_1747021157_q25,Is RemoteControl on the SideTable?,['Yes'],1.0,1,1,[839],[643],floorplan218_17_889_1747021157,1.0,1.0,1.0,3.0
+floorplan210_15_500_1746335965_q3,What object did you put on the Drawer?,['KeyChain'],1.0,1,2,"[376, 377]",[263],floorplan210_15_500_1746335965,0.0,0.0,1.0,1.0
+floorplan211_16_428_1746018300_q1,Have you seen a Vase?,['Yes'],1.0,1,1,[7],[2],floorplan211_16_428_1746018300,1.0,0.0,1.0,2.0
+floorplan323_15_654_1745056238_q12,Where is Bowl now?,['Desk'],0.0,1,1,[761],[595],floorplan323_15_654_1745056238,1.0,0.0,0.0,1.0
+floorplan210_25_724_1746881128_q20,Is CreditCard in the Dresser?,['Yes'],0.0,1,1,[1002],[723],floorplan210_25_724_1746881128,1.0,0.0,1.0,1.0
+floorplan26_30_702_1747072764_q15,How many objects were on the CounterTop?,[6],0.0,1,1,[184],[126],floorplan26_30_702_1747072764,1.0,0.0,0.0,1.0
+floorplan210_25_865_1747054518_q27,What objects are on the CoffeeTable?,"['Newspaper', 'RemoteControl', 'KeyChain']",0.0,1,1,[651],[466],floorplan210_25_865_1747054518,0.3333333333333333,0.0,0.3333333333333333,0.3333333333333333
+floorplan211_32_822_1746985748_q35,Is Newspaper on the Sofa?,['Yes'],0.0,1,1,[1144],[801],floorplan211_32_822_1746985748,1.0,0.0,0.0,1.0
+floorplan311_20_802_1747029800_q4,Is CellPhone in the Dresser?,['Yes'],0.0,1,1,[1011],[736],floorplan311_20_802_1747029800,1.0,0.0,0.0,1.0
+floorplan323_19_730_1746848930_q1,Have you seen a LightSwitch?,['Yes'],1.0,1,1,[64],[52],floorplan323_19_730_1746848930,1.0,1.0,0.0,3.0
+floorplan229_18_614_1747089320_q30,Is CellPhone on the Sofa?,['Yes'],0.0,1,1,[853],[613],floorplan229_18_614_1747089320,1.0,0.0,1.0,1.0
+floorplan211_25_698_1746910764_q17,Is KeyChain on the CoffeeTable?,['Yes'],1.0,1,1,[955],[669],floorplan211_25_698_1746910764,1.0,1.0,1.0,3.0
+floorplan211_15_427_1744399825_q19,Is CellPhone on the ArmChair?,['Yes'],1.0,1,1,[521],[364],floorplan211_15_427_1744399825,1.0,1.0,1.0,3.0
+floorplan218_15_787_1747025912_q0,Is there any GarbageCan in this room?,['Yes'],1.0,1,1,[1046],[783],floorplan218_15_787_1747025912,1.0,0.0,0.0,2.0
+floorplan218_11_719_1745311812_q31,Where is RemoteControl now?,['Sofa'],1.0,1,1,[699],[556],floorplan218_11_719_1745311812,1.0,0.0,1.0,2.0
+floorplan210_13_423_1745411371_q0,Is there any DeskLamp in this room?,['Yes'],1.0,1,1,[380],[282],floorplan210_13_423_1745411371,1.0,1.0,1.0,3.0
+floorplan229_20_720_1746854284_q2,Is RemoteControl on the CoffeeTable?,['Yes'],1.0,1,1,[851],[614],floorplan229_20_720_1746854284,0.0,1.0,1.0,2.0
+floorplan211_24_728_1747232896_q1,Have you seen a Newspaper?,['Yes'],0.0,1,1,[974],[697],floorplan211_24_728_1747232896,1.0,0.0,0.0,1.0
+floorplan314_17_418_1744520906_q3,What object did you put on the GarbageCan?,['Pen'],1.0,1,2,"[287, 288]",[201],floorplan314_17_418_1744520906,0.0,1.0,1.0,2.0
+floorplan210_27_795_1747100232_q2,Was Laptop open?,['Yes'],1.0,1,1,[1111],[794],floorplan210_27_795_1747100232,1.0,1.0,0.0,3.0
+floorplan229_14_437_1745957927_q27,Where is TissueBox now?,['CoffeeTable'],1.0,1,1,[411],[288],floorplan229_14_437_1745957927,1.0,0.0,1.0,2.0
+floorplan213_13_442_1746335424_q26,How many objects were on the DiningTable?,[3],0.0,1,1,[279],[207],floorplan213_13_442_1746335424,1.0,0.0,0.0,1.0
+floorplan218_15_787_1747025912_q2,What object did you put on the Sofa?,['RemoteControl'],1.0,1,2,"[572, 573]",[434],floorplan218_15_787_1747025912,1.0,1.0,1.0,3.0
+floorplan9_20_418_1744602985_q43,Where is Lettuce now?,['DiningTable'],0.0,1,1,[517],[325],floorplan9_20_418_1744602985,1.0,0.0,0.0,1.0
+floorplan209_23_701_1746947737_q33,How many objects were on the ArmChair?,[2],1.0,1,1,[751],[519],floorplan209_23_701_1746947737,1.0,1.0,1.0,3.0
+floorplan210_19_642_1745033594_q12,Where is Newspaper now?,['CoffeeTable'],0.0,1,1,[336],[253],floorplan210_19_642_1745033594,0.0,1.0,1.0,1.0
+floorplan230_11_503_1746036310_q14,Is RemoteControl on the ArmChair?,['Yes'],1.0,1,1,[609],[436],floorplan230_11_503_1746036310,1.0,1.0,1.0,3.0
+floorplan213_13_442_1746335424_q14,How many objects were on the CoffeeTable?,[3],0.0,1,1,[308],[227],floorplan213_13_442_1746335424,0.0,1.0,1.0,1.0
+floorplan218_17_885_1747074471_q29,Is Statue on the CoffeeTable?,['Yes'],0.0,1,1,[883],[671],floorplan218_17_885_1747074471,1.0,1.0,1.0,2.0
+floorplan229_15_456_1746034837_q15,Where is Pencil now?,['SideTable'],1.0,1,1,[183],[131],floorplan229_15_456_1746034837,1.0,1.0,1.0,3.0
+floorplan28_17_440_1745299490_q8,What object did you put on the Sink?,['Knife'],0.0,1,2,"[585, 586]",[407],floorplan28_17_440_1745299490,0.0,1.0,0.0,1.0
+floorplan218_16_717_1746904521_q9,How many objects were on the Dresser?,[3],1.0,1,1,[956],[716],floorplan218_16_717_1746904521,0.0,1.0,1.0,2.0
+floorplan218_15_787_1747025912_q11,Is CreditCard on the CoffeeTable?,['Yes'],1.0,1,1,[794],[583],floorplan218_15_787_1747025912,1.0,1.0,1.0,3.0
+floorplan211_24_728_1747232896_q16,How many objects were on the Drawer?,[2],0.0,1,1,[975],[698],floorplan211_24_728_1747232896,1.0,0.0,0.0,1.0
+floorplan210_25_865_1747054518_q30,Is Watch in the Drawer?,['Yes'],1.0,1,1,[1000],[729],floorplan210_25_865_1747054518,1.0,0.0,0.0,2.0
+floorplan224_17_557_1746850496_q5,Is CreditCard on the Sofa?,['Yes'],1.0,1,1,[755],[556],floorplan224_17_557_1746850496,1.0,1.0,0.0,3.0
+floorplan9_30_739_1746977821_q35,Is DishSponge in the Drawer?,['Yes'],1.0,1,1,[857],[577],floorplan9_30_739_1746977821,0.0,0.0,0.0,1.0
+floorplan18_12_465_1745198823_q3,What object did you put on the Microwave?,['Potato'],1.0,1,2,"[576, 577]",[404],floorplan18_12_465_1745198823,0.0,1.0,1.0,2.0
+floorplan230_11_562_1746362156_q3,What object did you put on the ArmChair?,['RemoteControl'],1.0,1,2,"[385, 386]",[283],floorplan230_11_562_1746362156,1.0,1.0,1.0,3.0
+floorplan323_19_802_1747083560_q6,Is Mug on the Desk?,['Yes'],1.0,1,1,[129],[103],floorplan323_19_802_1747083560,1.0,1.0,1.0,3.0
+floorplan305_30_633_1745061112_q32,Is AlarmClock in the Dresser?,['Yes'],0.0,1,1,[852],[578],floorplan305_30_633_1745061112,0.0,1.0,1.0,1.0
+floorplan211_25_698_1746910764_q0,Is there any Painting in this room?,['Yes'],1.0,1,1,[110],[77],floorplan211_25_698_1746910764,1.0,1.0,1.0,3.0
+floorplan211_16_428_1746018300_q0,Is there any Vase in this room?,['Yes'],1.0,1,1,[7],[2],floorplan211_16_428_1746018300,1.0,0.0,1.0,2.0
+floorplan211_32_822_1746985748_q1,Have you seen a Drawer?,['Yes'],1.0,1,1,[54],[36],floorplan211_32_822_1746985748,0.0,1.0,0.0,2.0
+floorplan204_25_861_1747031544_q36,Where is Laptop now?,['DiningTable'],0.0,1,1,[1124],[808],floorplan204_25_861_1747031544,1.0,0.0,0.0,1.0
+floorplan22_24_419_1745155479_q0,Is there any Lettuce in this room?,['Yes'],0.0,1,1,[343],[218],floorplan22_24_419_1745155479,0.0,1.0,1.0,1.0
+floorplan303_28_811_1747035692_q17,Is Pencil in the GarbageCan?,['Yes'],0.0,1,1,[1003],[706],floorplan303_28_811_1747035692,1.0,0.0,1.0,1.0
+floorplan204_25_861_1747031544_q15,What objects are on the ArmChair?,"['RemoteControl', 'KeyChain']",0.5,1,1,[738],[519],floorplan204_25_861_1747031544,0.5,0.5,0.5,1.5
+floorplan9_31_709_1747114738_q31,Where is Fork now?,['Sink'],1.0,1,1,[210],[134],floorplan9_31_709_1747114738,1.0,1.0,0.0,3.0
+floorplan323_12_513_1745033040_q10,Where is Pen now?,['Desk'],0.0,1,1,[318],[250],floorplan323_12_513_1745033040,1.0,0.0,0.0,1.0
+floorplan9_31_709_1747114738_q6,Is Apple on the DiningTable?,['Yes'],1.0,1,1,[663],[438],floorplan9_31_709_1747114738,0.0,1.0,1.0,2.0
+floorplan221_27_826_1746972286_q21,Is CreditCard in the Drawer?,['Yes'],1.0,1,1,[993],[680],floorplan221_27_826_1746972286,1.0,1.0,1.0,3.0
+floorplan210_22_741_1746800271_q12,Where is Watch now?,['CoffeeTable'],1.0,1,1,[137],[100],floorplan210_22_741_1746800271,1.0,1.0,1.0,3.0
+floorplan18_12_465_1745198823_q24,Where is ButterKnife now?,['DiningTable'],0.0,1,1,[420],[297],floorplan18_12_465_1745198823,1.0,0.0,0.0,1.0
+floorplan209_25_782_1747045307_q1,Have you seen a Window?,['Yes'],1.0,1,1,[458],[335],floorplan209_25_782_1747045307,1.0,1.0,1.0,3.0
+floorplan221_25_720_1746886407_q3,Is CreditCard on the DiningTable?,['Yes'],1.0,1,1,[1022],[719],floorplan221_25_720_1746886407,1.0,1.0,1.0,3.0
+floorplan218_11_541_1744826145_q27,Is Plate on the DiningTable?,['Yes'],1.0,1,1,[731],[540],floorplan218_11_541_1744826145,1.0,0.0,1.0,2.0
+floorplan202_17_427_1746001351_q1,Have you seen a FloorLamp?,['Yes'],1.0,1,1,[145],[99],floorplan202_17_427_1746001351,1.0,1.0,1.0,3.0
+floorplan211_17_426_1745423379_q25,Where is KeyChain now?,['Shelf'],0.0,1,1,[146],[94],floorplan211_17_426_1745423379,0.0,1.0,0.0,1.0
+floorplan218_14_797_1746913294_q5,Is KeyChain on the SideTable?,['Yes'],1.0,1,1,[1042],[796],floorplan218_14_797_1746913294,1.0,1.0,1.0,3.0
+floorplan221_14_426_1745982489_q1,Have you seen a Pillow?,['Yes'],1.0,1,1,[355],[244],floorplan221_14_426_1745982489,1.0,1.0,1.0,3.0
+floorplan26_30_702_1747072764_q23,How many objects were on the Sink?,[3],1.0,1,1,[899],[601],floorplan26_30_702_1747072764,1.0,1.0,0.0,3.0
+floorplan301_25_421_1744331002_q28,Is KeyChain on the Shelf?,['Yes'],0.0,1,1,[518],[329],floorplan301_25_421_1744331002,1.0,0.0,1.0,1.0
+floorplan221_16_442_1744749839_q30,Is Pen on the CoffeeTable?,['Yes'],1.0,1,1,[629],[441],floorplan221_16_442_1744749839,1.0,1.0,1.0,3.0
+floorplan28_17_440_1745299490_q33,What objects are on the GarbageCan?,['Tomato'],1.0,1,1,[464],[326],floorplan28_17_440_1745299490,0.0,0.0,0.0,1.0
+floorplan201_12_483_1744793947_q5,Is Plate on the CoffeeTable?,['Yes'],1.0,1,1,[668],[482],floorplan201_12_483_1744793947,1.0,1.0,1.0,3.0
+floorplan18_18_657_1747219088_q28,How many objects were on the Fridge?,[2],1.0,1,1,[496],[376],floorplan18_18_657_1747219088,1.0,1.0,1.0,3.0
+floorplan218_11_472_1746000725_q12,How many objects were on the SideTable?,[4],1.0,1,1,[442],[318],floorplan218_11_472_1746000725,1.0,0.0,1.0,2.0
+floorplan229_27_853_1747097312_q47,Is WateringCan in the Drawer?,['Yes'],1.0,1,1,[1022],[729],floorplan229_27_853_1747097312,1.0,0.0,1.0,2.0
+floorplan211_27_719_1746910536_q31,Where is CellPhone now?,['SideTable'],1.0,1,1,[309],[212],floorplan211_27_719_1746910536,1.0,1.0,1.0,3.0
+floorplan229_13_443_1745412661_q25,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[264],[190],floorplan229_13_443_1745412661,1.0,0.0,1.0,2.0
+floorplan210_23_877_1747091726_q4,What object did you put on the Dresser?,['KeyChain'],1.0,1,2,"[751, 752]",[549],floorplan210_23_877_1747091726,0.0,0.0,1.0,1.0
+floorplan323_16_700_1746801654_q25,What objects are on the Bed?,"['Pillow', 'Laptop', 'Pillow', 'TeddyBear', 'CellPhone']",0.8,1,1,[937],[699],floorplan323_16_700_1746801654,0.4,0.8,0.2,2.0
+floorplan311_20_802_1747029800_q0,Is there any LightSwitch in this room?,['Yes'],0.0,1,1,[819],[592],floorplan311_20_802_1747029800,1.0,0.0,0.0,1.0
+floorplan303_30_832_1746979469_q55,Where is Book now?,['Dresser'],1.0,1,1,[1007],[711],floorplan303_30_832_1746979469,0.0,1.0,1.0,2.0
+floorplan301_25_421_1744331002_q1,Have you seen a BaseballBat?,['Yes'],1.0,1,1,[181],[120],floorplan301_25_421_1744331002,1.0,1.0,1.0,3.0
+floorplan7_23_794_1747205386_q10,What object did you put on the Fridge?,['Bread'],1.0,1,2,"[1029, 1030]",[740],floorplan7_23_794_1747205386,0.0,1.0,1.0,2.0
+floorplan18_18_657_1747219088_q27,What objects are on the Fridge?,"['Egg', 'Tomato']",0.5,1,1,[496],[376],floorplan18_18_657_1747219088,0.0,0.5,0.0,1.0
+floorplan209_28_784_1747108090_q2,Where is Vase now?,['SideTable'],1.0,1,1,[39],[28],floorplan209_28_784_1747108090,1.0,1.0,1.0,3.0
+floorplan303_27_719_1746840170_q29,Where is Mug now?,['Desk'],0.0,1,1,[487],[338],floorplan303_27_719_1746840170,1.0,0.0,0.0,1.0
+floorplan209_23_701_1746947737_q5,Is Book on the CoffeeTable?,['Yes'],1.0,1,1,[938],[654],floorplan209_23_701_1746947737,1.0,1.0,1.0,3.0
+floorplan215_13_445_1745958202_q19,Is Bowl on the SideTable?,['Yes'],1.0,1,1,[418],[306],floorplan215_13_445_1745958202,1.0,1.0,1.0,3.0
+floorplan9_20_418_1744602985_q29,Is Knife in the Sink?,['Yes'],1.0,1,1,[449],[279],floorplan9_20_418_1744602985,1.0,1.0,1.0,3.0
+floorplan210_17_727_1746875757_q1,Have you seen a WateringCan?,['Yes'],1.0,1,1,[210],[160],floorplan210_17_727_1746875757,1.0,1.0,1.0,3.0
+floorplan210_15_464_1744755675_q10,How many objects were on the Ottoman?,[2],1.0,1,1,[526],[375],floorplan210_15_464_1744755675,0.0,1.0,1.0,2.0
+floorplan204_14_640_1744937110_q17,How many objects were on the Sofa?,[4],1.0,1,1,[584],[431],floorplan204_14_640_1744937110,1.0,0.0,0.0,2.0
+floorplan221_27_826_1746972286_q6,Is KeyChain on the DiningTable?,['Yes'],1.0,1,1,[1202],[825],floorplan221_27_826_1746972286,1.0,1.0,1.0,3.0
+floorplan215_13_446_1745401264_q28,Is Watch on the SideTable?,['Yes'],0.0,1,1,[606],[445],floorplan215_13_446_1745401264,1.0,1.0,1.0,2.0
+floorplan209_21_641_1746939338_q25,Is Pen on the SideTable?,['Yes'],1.0,1,1,[412],[289],floorplan209_21_641_1746939338,1.0,1.0,1.0,3.0
+floorplan7_13_494_1744636544_q8,What objects are on the CounterTop?,"['Bowl', 'Pot', 'Fork', 'DishSponge', 'ButterKnife', 'CoffeeMachine', 'Lettuce', 'SaltShaker', 'Sink']",0.2222222222222222,1,1,[543],[396],floorplan7_13_494_1744636544,0.2222222222222222,0.3333333333333333,0.2222222222222222,0.7777777777777777
+floorplan204_25_861_1747031544_q9,Is KeyChain on the ArmChair?,['Yes'],1.0,1,1,[738],[519],floorplan204_25_861_1747031544,1.0,1.0,1.0,3.0
+floorplan215_23_701_1746907273_q33,Where is WateringCan now?,['CoffeeTable'],1.0,1,1,[953],[700],floorplan215_23_701_1746907273,1.0,1.0,1.0,3.0
+floorplan305_30_633_1745061112_q27,Is Bowl in the Dresser?,['Yes'],0.0,1,1,[896],[609],floorplan305_30_633_1745061112,1.0,1.0,1.0,2.0
+floorplan230_11_463_1745413405_q17,Is Watch on the DiningTable?,['Yes'],0.0,1,1,[614],[436],floorplan230_11_463_1745413405,1.0,0.0,1.0,1.0
+floorplan323_16_700_1746801654_q0,Is there any Blinds in this room?,['Yes'],1.0,1,1,[829],[621],floorplan323_16_700_1746801654,1.0,1.0,0.0,3.0
+floorplan210_15_500_1746335965_q0,Is there any FloorLamp in this room?,['Yes'],0.0,1,1,[59],[41],floorplan210_15_500_1746335965,1.0,0.0,0.0,1.0
+floorplan218_18_800_1746997071_q22,Where is Box now?,['SideTable'],1.0,1,1,[498],[382],floorplan218_18_800_1746997071,1.0,1.0,1.0,3.0
+floorplan213_26_838_1747110471_q22,Is Book in the Dresser?,['Yes'],0.0,1,1,[1013],[738],floorplan213_26_838_1747110471,1.0,1.0,1.0,2.0
+floorplan229_29_836_1747014376_q43,Is Pen in the Dresser?,['Yes'],0.0,1,1,[1130],[810],floorplan229_29_836_1747014376,1.0,1.0,1.0,2.0
+floorplan7_13_494_1744636544_q24,Where is Knife now?,['Sink'],1.0,1,1,[326],[242],floorplan7_13_494_1744636544,1.0,1.0,0.0,3.0
+floorplan18_12_465_1745198823_q22,Where is Pan now?,['DiningTable'],0.0,1,1,[284],[203],floorplan18_12_465_1745198823,1.0,0.0,0.0,1.0
+floorplan223_17_453_1745400822_q14,Is Candle on the CoffeeTable?,['Yes'],1.0,1,1,[616],[426],floorplan223_17_453_1745400822,1.0,1.0,1.0,3.0
+floorplan211_16_428_1746018300_q28,Is CellPhone on the Shelf?,['Yes'],1.0,1,1,[611],[427],floorplan211_16_428_1746018300,1.0,1.0,1.0,3.0
+floorplan230_13_700_1746917689_q8,Is KeyChain on the Sofa?,['Yes'],1.0,1,1,[515],[370],floorplan230_13_700_1746917689,1.0,0.0,1.0,2.0
+floorplan218_20_823_1747084244_q36,How many objects were on the GarbageCan?,[1],0.0,1,1,[685],[492],floorplan218_20_823_1747084244,0.0,1.0,1.0,1.0
+floorplan18_18_657_1747219088_q24,Is Tomato in the Fridge?,['Yes'],1.0,1,1,[496],[376],floorplan18_18_657_1747219088,1.0,1.0,1.0,3.0
+floorplan9_31_693_1747150877_q7,Is Potato in the Sink?,['Yes'],1.0,1,1,[1028],[668],floorplan9_31_693_1747150877,1.0,1.0,1.0,3.0
+floorplan321_26_629_1745035560_q2,What object did you put on the Bed?,['CellPhone'],1.0,1,2,"[520, 521]",[351],floorplan321_26_629_1745035560,0.0,1.0,0.0,2.0
+floorplan303_27_719_1746840170_q43,Is Cloth on the Shelf?,['Yes'],0.0,1,1,[760],[534],floorplan303_27_719_1746840170,1.0,1.0,1.0,2.0
+floorplan205_13_438_1745416055_q0,Is there any Drawer in this room?,['Yes'],1.0,1,1,[408],[297],floorplan205_13_438_1745416055,1.0,1.0,1.0,3.0
+floorplan323_19_730_1746848930_q18,Is Pencil in the Drawer?,['Yes'],1.0,1,1,[367],[280],floorplan323_19_730_1746848930,0.0,0.0,1.0,1.0
+floorplan201_24_804_1746980690_q38,Is Book on the Sofa?,['Yes'],1.0,1,1,[1119],[803],floorplan201_24_804_1746980690,1.0,1.0,1.0,3.0
+floorplan204_20_713_1746902051_q1,Have you seen a Painting?,['Yes'],1.0,1,1,[584],[429],floorplan204_20_713_1746902051,1.0,1.0,1.0,3.0
+floorplan218_17_749_1746865593_q27,Is CellPhone on the SideTable?,['Yes'],0.0,1,1,[606],[444],floorplan218_17_749_1746865593,1.0,1.0,1.0,2.0
+floorplan211_24_728_1747232896_q18,Is CellPhone on the CoffeeTable?,['Yes'],1.0,1,1,[860],[611],floorplan211_24_728_1747232896,1.0,1.0,1.0,3.0
+floorplan305_17_436_1744353928_q1,Have you seen a LaundryHamper?,['Yes'],1.0,1,1,[43],[29],floorplan305_17_436_1744353928,1.0,1.0,0.0,3.0
+floorplan212_18_424_1745965456_q2,What object did you put on the SideTable?,['KeyChain'],1.0,1,2,"[297, 298]",[201],floorplan212_18_424_1745965456,0.0,0.0,0.0,1.0
+floorplan303_28_701_1746815644_q14,Is CellPhone on the Bed?,['Yes'],0.0,1,1,[1014],[700],floorplan303_28_701_1746815644,1.0,0.0,0.0,1.0
+floorplan230_11_498_1745411198_q33,Is TissueBox on the DiningTable?,['Yes'],1.0,1,1,[589],[425],floorplan230_11_498_1745411198,1.0,1.0,1.0,3.0
+floorplan209_15_431_1745402895_q22,Is Pen in the GarbageCan?,['Yes'],0.0,1,1,[565],[403],floorplan209_15_431_1745402895,1.0,0.0,1.0,1.0
+floorplan211_29_729_1746916895_q49,Is Pillow on the Sofa?,['Yes'],1.0,1,1,[947],[655],floorplan211_29_729_1746916895,1.0,1.0,1.0,3.0
+floorplan201_19_729_1746905161_q18,Is TissueBox in the GarbageCan?,['Yes'],0.0,1,1,[791],[570],floorplan201_19_729_1746905161,1.0,1.0,1.0,2.0
+floorplan210_25_724_1746881128_q1,Have you seen a DeskLamp?,['Yes'],1.0,1,1,[387],[278],floorplan210_25_724_1746881128,1.0,1.0,1.0,3.0
+floorplan210_15_500_1746335965_q4,Is RemoteControl on the Ottoman?,['Yes'],1.0,1,1,[464],[328],floorplan210_15_500_1746335965,1.0,1.0,1.0,3.0
+floorplan303_27_699_1746943704_q34,Where is CD now?,['SideTable'],0.0,1,1,[737],[507],floorplan303_27_699_1746943704,1.0,1.0,0.0,2.0
+floorplan210_25_714_1746921166_q13,Is CreditCard on the Ottoman?,['Yes'],1.0,1,1,[1006],[713],floorplan210_25_714_1746921166,1.0,0.0,1.0,2.0
+floorplan306_15_455_1746260330_q32,Is AlarmClock on the Desk?,['Yes'],1.0,1,1,[609],[427],floorplan306_15_455_1746260330,1.0,1.0,1.0,3.0
+floorplan213_26_838_1747110471_q1,Have you seen a HousePlant?,['Yes'],1.0,1,1,[622],[456],floorplan213_26_838_1747110471,1.0,1.0,1.0,3.0
+floorplan303_28_701_1746815644_q45,Where is BaseballBat now?,['Bed'],1.0,1,1,[564],[390],floorplan303_28_701_1746815644,0.0,1.0,1.0,2.0
+floorplan215_13_446_1745401264_q36,Is Newspaper on the CoffeeTable?,['Yes'],0.0,1,1,[569],[421],floorplan215_13_446_1745401264,1.0,1.0,0.0,2.0
+floorplan303_28_701_1746815644_q43,Where is AlarmClock now?,['Desk'],0.0,1,1,[386],[268],floorplan303_28_701_1746815644,1.0,1.0,0.0,2.0
+floorplan229_20_720_1746854284_q21,Is Book on the ArmChair?,['Yes'],1.0,1,1,[995],[719],floorplan229_20_720_1746854284,1.0,1.0,1.0,3.0
+floorplan223_15_437_1746024482_q0,Is there any WateringCan in this room?,['Yes'],0.0,1,1,[254],[176],floorplan223_15_437_1746024482,1.0,0.0,0.0,1.0
+floorplan311_13_434_1746113811_q26,Is AlarmClock on the SideTable?,['Yes'],1.0,1,1,[493],[353],floorplan311_13_434_1746113811,1.0,1.0,1.0,3.0
+floorplan204_12_454_1746034353_q8,Is CreditCard on the ArmChair?,['Yes'],1.0,1,1,[101],[71],floorplan204_12_454_1746034353,1.0,1.0,1.0,3.0
+floorplan18_18_657_1747219088_q7,What object did you put on the Cabinet?,['Cup'],1.0,1,2,"[609, 610]",[447],floorplan18_18_657_1747219088,1.0,0.0,1.0,2.0
+floorplan22_24_419_1745155479_q30,Is Egg on the CounterTop?,['Yes'],0.0,1,1,[602],[382],floorplan22_24_419_1745155479,1.0,1.0,1.0,2.0
+floorplan306_15_455_1746260330_q16,Is CellPhone in the Drawer?,['Yes'],1.0,1,1,[550],[381],floorplan306_15_455_1746260330,1.0,0.0,1.0,2.0
+floorplan303_27_699_1746943704_q48,Is CreditCard on the Shelf?,['Yes'],1.0,1,1,[846],[583],floorplan303_27_699_1746943704,1.0,0.0,0.0,2.0
+floorplan204_25_861_1747031544_q24,Is Vase on the Desk?,['Yes'],0.0,1,1,[874],[619],floorplan204_25_861_1747031544,1.0,0.0,1.0,1.0
+floorplan303_27_699_1746943704_q2,Is Mug on the SideTable?,['Yes'],1.0,1,1,[929],[642],floorplan303_27_699_1746943704,1.0,0.0,1.0,2.0
+floorplan9_30_739_1746977821_q6,What objects were in Microwave?,['Apple'],1.0,1,1,[35],[22],floorplan9_30_739_1746977821,1.0,1.0,1.0,3.0
+floorplan311_11_446_1744821200_q27,Is Mug on the CounterTop?,['Yes'],1.0,1,1,[540],[404],floorplan311_11_446_1744821200,1.0,1.0,1.0,3.0
+floorplan305_30_633_1745061112_q10,How many objects were on the Desk?,[5],0.0,1,1,[930],[632],floorplan305_30_633_1745061112,1.0,0.0,0.0,1.0
+floorplan215_14_422_1746006324_q26,Is Bowl on the CoffeeTable?,['Yes'],1.0,1,1,[581],[421],floorplan215_14_422_1746006324,1.0,1.0,1.0,3.0
+floorplan7_23_794_1747205386_q3,What objects were in DiningTable when you slice Apple?,"['Bread', 'WineBottle', 'Tomato', 'PepperShaker', 'SaltShaker']",0.2,1,1,[464],[325],floorplan7_23_794_1747205386,0.0,0.2,0.0,0.4
+floorplan7_13_494_1744636544_q14,Is Book on the DiningTable?,['Yes'],1.0,1,1,[516],[376],floorplan7_13_494_1744636544,0.0,1.0,1.0,2.0
+floorplan210_25_865_1747054518_q16,Is RemoteControl on the Drawer?,['Yes'],1.0,1,1,[1027],[747],floorplan210_25_865_1747054518,1.0,1.0,1.0,3.0
+floorplan230_14_713_1746889211_q17,Is TissueBox on the CoffeeTable?,['Yes'],0.0,1,1,[819],[595],floorplan230_14_713_1746889211,1.0,1.0,1.0,2.0
+floorplan7_13_494_1744636544_q6,Is ButterKnife on the CounterTop?,['Yes'],0.0,1,1,[543],[396],floorplan7_13_494_1744636544,1.0,0.0,1.0,1.0
+floorplan7_16_562_1747133949_q14,Where is DishSponge now?,['Shelf'],1.0,1,1,[237],[173],floorplan7_16_562_1747133949,0.0,0.0,1.0,1.0
+floorplan9_30_739_1746977821_q57,Where is Spoon now?,['DiningTable'],0.0,1,1,[830],[559],floorplan9_30_739_1746977821,1.0,0.0,1.0,1.0
+floorplan28_17_440_1745299490_q30,Is Tomato in the GarbageCan?,['Yes'],1.0,1,1,[464],[326],floorplan28_17_440_1745299490,1.0,1.0,1.0,3.0
+floorplan301_25_421_1744331002_q15,Is CellPhone on the Desk?,['Yes'],1.0,1,1,[675],[420],floorplan301_25_421_1744331002,1.0,1.0,1.0,3.0
+floorplan210_24_872_1746994237_q34,Is Pillow on the ArmChair?,['Yes'],1.0,1,1,[1112],[811],floorplan210_24_872_1746994237,1.0,0.0,1.0,2.0
+floorplan9_31_709_1747114738_q38,What objects are on the Sink?,"['Fork', 'ButterKnife', 'Tomato', 'Spatula']",0.25,1,1,[941],[616],floorplan9_31_709_1747114738,0.0,0.25,0.25,0.5
+floorplan211_32_822_1746985748_q19,Is RemoteControl on the Shelf?,['Yes'],1.0,1,1,[1097],[767],floorplan211_32_822_1746985748,1.0,1.0,1.0,3.0
+floorplan213_26_838_1747110471_q0,Is there any HousePlant in this room?,['Yes'],1.0,1,1,[622],[456],floorplan213_26_838_1747110471,1.0,1.0,1.0,3.0
+floorplan9_30_739_1746977821_q52,Where is Spatula now?,['Sink'],1.0,1,1,[950],[639],floorplan9_30_739_1746977821,0.0,0.0,0.0,1.0
+floorplan7_16_562_1747133949_q34,Is Tomato on the DiningTable?,['Yes'],1.0,1,1,[731],[532],floorplan7_16_562_1747133949,1.0,1.0,0.0,3.0
+floorplan303_28_811_1747035692_q34,Is Cloth in the Dresser?,['Yes'],0.0,1,1,[909],[636],floorplan303_28_811_1747035692,1.0,1.0,0.0,2.0
+floorplan311_13_434_1746113811_q35,Is Bowl on the DiningTable?,['Yes'],1.0,1,1,[566],[404],floorplan311_13_434_1746113811,1.0,1.0,1.0,3.0
+floorplan228_15_450_1744494306_q6,Is Watch on the CoffeeTable?,['Yes'],1.0,1,1,[120],[87],floorplan228_15_450_1744494306,1.0,1.0,1.0,3.0
+floorplan210_22_826_1747086223_q5,Is KeyChain on the Ottoman?,['Yes'],0.0,1,1,[1113],[825],floorplan210_22_826_1747086223,1.0,0.0,1.0,1.0
+floorplan204_20_713_1746902051_q36,Is Vase on the CoffeeTable?,['Yes'],1.0,1,1,[855],[627],floorplan204_20_713_1746902051,1.0,0.0,1.0,2.0
+floorplan314_16_421_1744810639_q21,Is KeyChain on the Desk?,['Yes'],0.0,1,1,[243],[165],floorplan314_16_421_1744810639,1.0,0.0,1.0,1.0
+floorplan303_27_719_1746840170_q24,Is Pen on the Shelf?,['Yes'],0.0,1,1,[672],[472],floorplan303_27_719_1746840170,1.0,0.0,1.0,1.0
+floorplan303_30_832_1746979469_q61,Where is TennisRacket now?,['SideTable'],0.0,1,1,[1177],[831],floorplan303_30_832_1746979469,0.0,1.0,0.0,1.0
+floorplan211_24_728_1747232896_q0,Is there any Newspaper in this room?,['Yes'],0.0,1,1,[974],[697],floorplan211_24_728_1747232896,1.0,0.0,0.0,1.0
+floorplan207_18_414_1745999762_q17,Is Watch on the Shelf?,['Yes'],0.0,1,1,[532],[366],floorplan207_18_414_1745999762,1.0,0.0,0.0,1.0
+floorplan218_17_749_1746865593_q13,Is Statue on the SideTable?,['Yes'],1.0,1,1,[875],[640],floorplan218_17_749_1746865593,1.0,0.0,1.0,2.0
+floorplan211_20_616_1744949025_q31,How many objects were on the Shelf?,[2],1.0,1,1,[877],[615],floorplan211_20_616_1744949025,0.0,1.0,0.0,2.0
+floorplan229_15_456_1746034837_q17,Is KeyChain in the Dresser?,['Yes'],0.0,1,1,[414],[290],floorplan229_15_456_1746034837,1.0,1.0,1.0,2.0
+floorplan311_13_434_1746113811_q7,Is CD in the Dresser?,['Yes'],0.0,1,1,[162],[121],floorplan311_13_434_1746113811,1.0,1.0,1.0,2.0
+floorplan212_24_603_1745121556_q1,Have you seen a Pencil?,['Yes'],1.0,1,1,[9],[4],floorplan212_24_603_1745121556,1.0,0.0,1.0,2.0
+floorplan228_15_450_1744494306_q12,Is Vase on the SideTable?,['Yes'],1.0,1,1,[607],[427],floorplan228_15_450_1744494306,1.0,1.0,1.0,3.0
+floorplan204_12_454_1746034353_q2,What object did you put on the Desk?,['CreditCard'],1.0,1,2,"[62, 63]",[46],floorplan204_12_454_1746034353,0.0,1.0,0.0,2.0
+floorplan211_32_841_1747100482_q29,Is Newspaper in the GarbageCan?,['Yes'],0.0,1,1,[908],[633],floorplan211_32_841_1747100482,1.0,0.0,1.0,1.0
+floorplan221_27_826_1746972286_q53,Is Laptop on the DiningTable?,['Yes'],1.0,1,1,[1161],[797],floorplan221_27_826_1746972286,1.0,1.0,1.0,3.0
+floorplan9_20_418_1744602985_q1,Have you seen a Cup?,['Yes'],1.0,1,1,[389],[241],floorplan9_20_418_1744602985,0.0,1.0,0.0,2.0
+floorplan229_13_430_1744565220_q15,Is Pencil in the Dresser?,['Yes'],0.0,1,1,[445],[325],floorplan229_13_430_1744565220,0.0,1.0,0.0,1.0
+floorplan7_16_562_1747133949_q25,Is Lettuce in the Sink?,['Yes'],1.0,1,1,[467],[341],floorplan7_16_562_1747133949,1.0,1.0,1.0,3.0
+floorplan28_17_440_1745299490_q38,Where is Egg now?,['SideTable'],1.0,1,1,[377],[261],floorplan28_17_440_1745299490,1.0,0.0,1.0,2.0
+floorplan211_20_571_1746843099_q31,Is Newspaper on the Shelf?,['Yes'],1.0,1,1,[812],[570],floorplan211_20_571_1746843099,0.0,0.0,1.0,1.0
+floorplan28_17_440_1745299490_q28,Where is Potato now?,['DiningTable'],0.0,1,1,[184],[129],floorplan28_17_440_1745299490,1.0,0.0,0.0,1.0
+floorplan230_13_700_1746917689_q17,Is TissueBox on the SideTable?,['Yes'],1.0,1,1,[848],[626],floorplan230_13_700_1746917689,1.0,1.0,1.0,3.0
+floorplan7_12_471_1744791924_q28,Where is Bread now?,['Fridge'],0.0,1,1,[551],[404],floorplan7_12_471_1744791924,0.0,1.0,0.0,1.0
+floorplan323_15_654_1745056238_q0,Is there any CreditCard in this room?,['Yes'],0.0,1,1,[835],[650],floorplan323_15_654_1745056238,1.0,0.0,0.0,1.0
+floorplan221_14_439_1745416077_q15,Is Statue on the DiningTable?,['Yes'],0.0,1,1,[345],[240],floorplan221_14_439_1745416077,0.0,1.0,0.0,1.0
+floorplan26_30_702_1747072764_q35,Is Apple in the Microwave?,['Yes'],1.0,1,1,[654],[434],floorplan26_30_702_1747072764,1.0,1.0,1.0,3.0
+floorplan204_20_713_1746902051_q21,Is CellPhone on the DiningTable?,['Yes'],1.0,1,1,[324],[230],floorplan204_20_713_1746902051,1.0,1.0,1.0,3.0
+floorplan216_19_431_1746040311_q2,What object did you put on the DiningTable?,['CreditCard'],1.0,1,2,"[48, 49]",[36],floorplan216_19_431_1746040311,1.0,1.0,1.0,3.0
+floorplan211_15_431_1744415677_q3,What object did you put on the Shelf?,['Newspaper'],1.0,1,2,"[450, 451]",[318],floorplan211_15_431_1744415677,0.0,1.0,1.0,2.0
+floorplan229_29_836_1747014376_q13,Is Pencil on the CoffeeTable?,['Yes'],1.0,1,1,[1166],[835],floorplan229_29_836_1747014376,0.0,1.0,1.0,2.0
+floorplan314_16_421_1744810639_q16,Where is BasketBall now?,['Dresser'],1.0,1,1,[475],[328],floorplan314_16_421_1744810639,1.0,0.0,0.0,2.0
+floorplan9_30_739_1746977821_q1,Have you seen a SoapBottle?,['Yes'],1.0,1,1,[577],[389],floorplan9_30_739_1746977821,1.0,1.0,1.0,3.0
+floorplan22_24_419_1745155479_q44,Where is Cup now?,['Microwave'],1.0,1,1,[626],[399],floorplan22_24_419_1745155479,0.0,1.0,1.0,2.0
+floorplan9_30_739_1746977821_q0,Is there any SoapBottle in this room?,['Yes'],1.0,1,1,[577],[389],floorplan9_30_739_1746977821,1.0,1.0,1.0,3.0
+floorplan303_28_811_1747035692_q30,How many objects were on the Bed?,[5],0.0,1,1,[1098],[773],floorplan303_28_811_1747035692,1.0,0.0,0.0,1.0
+floorplan11_24_422_1744641083_q3,Is Spoon on the CounterTop?,['Yes'],1.0,1,1,[608],[409],floorplan11_24_422_1744641083,1.0,0.0,0.0,2.0
+floorplan323_15_654_1745056238_q1,Have you seen a CreditCard?,['Yes'],0.0,1,1,[835],[650],floorplan323_15_654_1745056238,1.0,0.0,0.0,1.0
+floorplan9_30_739_1746977821_q3,What objects were in DiningTable when you slice Potato?,"['PepperShaker', 'Apple', 'DishSponge']",0.3333333333333333,1,1,[58],[40],floorplan9_30_739_1746977821,0.3333333333333333,0.3333333333333333,0.3333333333333333,1.0
+floorplan306_15_455_1746260330_q12,Is CD in the GarbageCan?,['Yes'],1.0,1,1,[643],[454],floorplan306_15_455_1746260330,1.0,1.0,1.0,3.0
+floorplan9_31_709_1747114738_q12,Is Spoon on the DiningTable?,['Yes'],1.0,1,1,[758],[498],floorplan9_31_709_1747114738,1.0,0.0,1.0,2.0
+floorplan9_30_739_1746977821_q23,Is Potato on the DiningTable?,['Yes'],1.0,1,1,[225],[159],floorplan9_30_739_1746977821,1.0,1.0,1.0,3.0
+floorplan210_15_464_1744755675_q17,Is Box on the Ottoman?,['Yes'],1.0,1,1,[503],[361],floorplan210_15_464_1744755675,1.0,0.0,1.0,2.0
+floorplan204_11_488_1746010864_q1,Have you seen a TVStand?,['Yes'],1.0,1,1,[221],[155],floorplan204_11_488_1746010864,0.0,0.0,0.0,1.0
+floorplan7_23_794_1747205386_q40,Is ButterKnife in the Cabinet?,['Yes'],0.0,1,1,[504],[355],floorplan7_23_794_1747205386,1.0,0.0,0.0,1.0
+floorplan210_26_851_1747152608_q22,Is Watch in the Dresser?,['Yes'],0.0,1,1,[1104],[807],floorplan210_26_851_1747152608,1.0,0.0,1.0,1.0
+floorplan13_16_427_1745291369_q37,Is Mug in the Fridge?,['Yes'],1.0,1,1,[611],[425],floorplan13_16_427_1745291369,1.0,1.0,1.0,3.0
+floorplan323_12_521_1746288027_q14,Is Pencil on the SideTable?,['Yes'],1.0,1,1,[432],[332],floorplan323_12_521_1746288027,0.0,1.0,0.0,2.0
+floorplan28_17_440_1745299490_q46,Where is Apple now?,['SideTable'],1.0,1,1,[630],[439],floorplan28_17_440_1745299490,1.0,0.0,1.0,2.0
+floorplan311_13_450_1746282275_q12,Is Mug on the DiningTable?,['Yes'],1.0,1,1,[520],[379],floorplan311_13_450_1746282275,1.0,1.0,1.0,3.0
+floorplan9_31_693_1747150877_q48,Is Spatula in the Sink?,['Yes'],1.0,1,1,[655],[431],floorplan9_31_693_1747150877,1.0,1.0,0.0,3.0
+floorplan9_31_709_1747114738_q43,Where is SaltShaker now?,['DiningTable'],0.0,1,1,[894],[586],floorplan9_31_709_1747114738,1.0,0.0,0.0,1.0
+floorplan311_11_446_1744821200_q7,Is RemoteControl in the Dresser?,['Yes'],0.0,1,1,[338],[245],floorplan311_11_446_1744821200,1.0,1.0,1.0,2.0
+floorplan323_19_802_1747083560_q12,Is CD in the Drawer?,['Yes'],1.0,1,1,[710],[548],floorplan323_19_802_1747083560,1.0,0.0,1.0,2.0
+floorplan323_16_700_1746801654_q5,Is Pencil on the Desk?,['Yes'],0.0,1,1,[840],[630],floorplan323_16_700_1746801654,1.0,1.0,1.0,2.0
+floorplan18_12_465_1745198823_q9,Is DishSponge in the Cabinet?,['Yes'],1.0,1,1,[486],[337],floorplan18_12_465_1745198823,1.0,0.0,1.0,2.0
+floorplan221_15_528_1746883510_q12,Is Pen on the DiningTable?,['Yes'],1.0,1,1,[425],[303],floorplan221_15_528_1746883510,1.0,1.0,1.0,3.0
+floorplan18_18_657_1747219088_q11,Is Lettuce on the DiningTable?,['Yes'],1.0,1,1,[83],[65],floorplan18_18_657_1747219088,1.0,1.0,1.0,3.0
+floorplan314_16_421_1744810639_q17,Is BasketBall in the Dresser?,['Yes'],0.0,1,1,[475],[328],floorplan314_16_421_1744810639,1.0,1.0,0.0,2.0
+floorplan210_21_711_1746861109_q1,Have you seen a KeyChain?,['Yes'],1.0,1,1,[874],[648],floorplan210_21_711_1746861109,0.0,1.0,1.0,2.0
+floorplan230_11_562_1746362156_q0,Is there any Boots in this room?,['Yes'],1.0,1,1,[400],[294],floorplan230_11_562_1746362156,1.0,1.0,1.0,3.0
+floorplan7_16_562_1747133949_q1,Have you seen a Shelf?,['Yes'],1.0,1,1,[235],[171],floorplan7_16_562_1747133949,1.0,1.0,1.0,3.0
+floorplan7_16_562_1747133949_q0,Is there any Shelf in this room?,['Yes'],1.0,1,1,[235],[171],floorplan7_16_562_1747133949,1.0,1.0,1.0,3.0
+floorplan201_24_804_1746980690_q2,What object did you put on the TVStand?,['TissueBox'],1.0,1,2,"[191, 192]",[137],floorplan201_24_804_1746980690,0.0,0.0,1.0,1.0
+floorplan11_24_422_1744641083_q12,Is Spatula on the CounterTop?,['Yes'],1.0,1,1,[321],[211],floorplan11_24_422_1744641083,1.0,1.0,1.0,3.0
+floorplan9_31_693_1747150877_q40,Is Knife in the Cabinet?,['Yes'],1.0,1,1,[855],[557],floorplan9_31_693_1747150877,1.0,1.0,1.0,3.0
+floorplan221_14_426_1745982489_q0,Is there any Pillow in this room?,['Yes'],1.0,1,1,[355],[244],floorplan221_14_426_1745982489,1.0,1.0,1.0,3.0
+floorplan9_31_693_1747150877_q21,What objects are on the Cabinet?,"['DishSponge', 'SaltShaker', 'ButterKnife']",0.3333333333333333,1,1,[304],[199],floorplan9_31_693_1747150877,0.0,0.0,0.0,0.3333333333333333
+floorplan22_24_419_1745155479_q15,Is Tomato on the CounterTop?,['Yes'],1.0,1,1,[656],[418],floorplan22_24_419_1745155479,1.0,0.0,0.0,2.0
+floorplan22_24_419_1745155479_q1,Have you seen a Lettuce?,['Yes'],0.0,1,1,[343],[218],floorplan22_24_419_1745155479,0.0,1.0,1.0,1.0
+floorplan28_17_440_1745299490_q1,Have you seen a Faucet?,['Yes'],1.0,1,1,[405],[282],floorplan28_17_440_1745299490,1.0,0.0,1.0,2.0
+floorplan9_20_418_1744602985_q6,Is ButterKnife on the DiningTable?,['Yes'],1.0,1,1,[350],[219],floorplan9_20_418_1744602985,1.0,0.0,0.0,2.0
+floorplan7_13_494_1744636544_q33,How many objects were on the Cabinet?,[2],1.0,1,1,[673],[492],floorplan7_13_494_1744636544,1.0,0.0,1.0,2.0
+floorplan209_21_641_1746939338_q14,Is Book on the SideTable?,['Yes'],1.0,1,1,[737],[527],floorplan209_21_641_1746939338,1.0,1.0,1.0,3.0
+floorplan210_27_795_1747100232_q30,Is Box on the Sofa?,['Yes'],1.0,1,1,[1053],[756],floorplan210_27_795_1747100232,0.0,0.0,1.0,1.0
+floorplan26_30_702_1747072764_q1,Have you seen a StoveKnob?,['Yes'],0.0,1,1,[719],[477],floorplan26_30_702_1747072764,1.0,1.0,0.0,2.0
+floorplan311_13_434_1746113811_q2,What object did you put on the CounterTop?,['CD'],1.0,1,2,"[56, 57]",[46],floorplan311_13_434_1746113811,1.0,1.0,1.0,3.0
+floorplan209_28_784_1747108090_q0,Is there any Television in this room?,['Yes'],0.0,1,1,[91],[66],floorplan209_28_784_1747108090,1.0,1.0,0.0,2.0
+floorplan18_12_465_1745198823_q15,Is Spoon in the Sink?,['Yes'],1.0,1,1,[660],[464],floorplan18_12_465_1745198823,1.0,1.0,1.0,3.0
+floorplan18_18_657_1747219088_q17,Is Knife on the DiningTable?,['Yes'],1.0,1,1,[851],[615],floorplan18_18_657_1747219088,1.0,1.0,1.0,3.0
+floorplan303_30_832_1746979469_q28,Is Cloth on the Desk?,['Yes'],1.0,1,1,[968],[687],floorplan303_30_832_1746979469,1.0,1.0,1.0,3.0
+floorplan305_17_436_1744353928_q0,Is there any LaundryHamper in this room?,['Yes'],1.0,1,1,[43],[29],floorplan305_17_436_1744353928,1.0,1.0,0.0,3.0
+floorplan211_24_724_1746845009_q16,What objects are on the Shelf?,"['RemoteControl', 'KeyChain']",0.0,1,1,[1025],[723],floorplan211_24_724_1746845009,0.5,0.5,0.5,1.0
+floorplan212_24_603_1745121556_q0,Is there any Pencil in this room?,['Yes'],0.0,1,1,[9],[4],floorplan212_24_603_1745121556,1.0,0.0,1.0,1.0
+floorplan301_25_421_1744331002_q4,Is Pencil on the Shelf?,['Yes'],0.0,1,1,[504],[320],floorplan301_25_421_1744331002,0.0,1.0,0.0,1.0
+floorplan211_27_719_1746910536_q0,Is there any Box in this room?,['Yes'],1.0,1,1,[951],[663],floorplan211_27_719_1746910536,1.0,1.0,1.0,3.0
+floorplan323_16_700_1746801654_q1,Have you seen a Blinds?,['Yes'],1.0,1,1,[829],[621],floorplan323_16_700_1746801654,1.0,1.0,1.0,3.0
+floorplan9_31_693_1747150877_q36,Is DishSponge on the CounterTop?,['Yes'],1.0,1,1,[549],[360],floorplan9_31_693_1747150877,1.0,1.0,1.0,3.0
+floorplan218_13_551_1746888708_q0,Is there any RemoteControl in this room?,['Yes'],1.0,1,1,[336],[251],floorplan218_13_551_1746888708,1.0,0.0,1.0,2.0
+floorplan323_19_932_1747200603_q20,Is Bowl on the Desk?,['Yes'],0.0,1,1,[1196],[931],floorplan323_19_932_1747200603,0.0,1.0,0.0,1.0
+floorplan11_24_422_1744641083_q35,Is Lettuce on the CounterTop?,['Yes'],0.0,1,1,[562],[375],floorplan11_24_422_1744641083,1.0,1.0,0.0,2.0
+floorplan209_20_584_1745084716_q12,Is WateringCan on the CoffeeTable?,['Yes'],1.0,1,1,[817],[583],floorplan209_20_584_1745084716,1.0,1.0,1.0,3.0
+floorplan230_11_565_1744826842_q4,What object did you put on the CoffeeTable?,['Plate'],1.0,1,2,"[645, 646]",[495],floorplan230_11_565_1744826842,1.0,1.0,1.0,3.0
+floorplan9_30_739_1746977821_q41,Is Tomato in the Sink?,['Yes'],1.0,1,1,[1022],[689],floorplan9_30_739_1746977821,1.0,1.0,1.0,3.0
+floorplan230_17_755_1747026012_q29,Is Box on the CoffeeTable?,['Yes'],1.0,1,1,[903],[658],floorplan230_17_755_1747026012,1.0,1.0,1.0,3.0
+floorplan9_20_418_1744602985_q22,Is DishSponge on the DiningTable?,['Yes'],0.0,1,1,[419],[262],floorplan9_20_418_1744602985,1.0,1.0,1.0,2.0
+floorplan303_28_811_1747035692_q46,Is CD on the SideTable?,['Yes'],1.0,1,1,[1050],[740],floorplan303_28_811_1747035692,1.0,1.0,1.0,3.0
+floorplan7_12_471_1744791924_q9,Where is Tomato now?,['Fridge'],0.0,1,1,[420],[311],floorplan7_12_471_1744791924,0.0,1.0,0.0,1.0
+floorplan28_17_440_1745299490_q12,Is Mug in the Cabinet?,['Yes'],1.0,1,1,[532],[372],floorplan28_17_440_1745299490,1.0,0.0,1.0,2.0
+floorplan11_24_422_1744641083_q0,Is there any Apple in this room?,['Yes'],1.0,1,1,[296],[195],floorplan11_24_422_1744641083,1.0,1.0,1.0,3.0
+floorplan311_13_450_1746282275_q26,Is Pencil on the DiningTable?,['Yes'],1.0,1,1,[616],[449],floorplan311_13_450_1746282275,1.0,1.0,0.0,3.0
+floorplan22_24_419_1745155479_q33,Is Knife in the agent?,['Yes'],0.0,1,1,[361],[232],floorplan22_24_419_1745155479,1.0,1.0,1.0,2.0
+floorplan11_24_422_1744641083_q15,Is Fork on the DiningTable?,['Yes'],1.0,1,1,[348],[231],floorplan11_24_422_1744641083,1.0,1.0,1.0,3.0
+floorplan213_20_698_1746915078_q3,Is Book in the Drawer?,['Yes'],1.0,1,1,[867],[645],floorplan213_20_698_1746915078,1.0,1.0,1.0,3.0
+floorplan210_24_872_1746994237_q20,Is Newspaper in the Dresser?,['Yes'],0.0,1,1,[1076],[786],floorplan210_24_872_1746994237,1.0,1.0,1.0,2.0
+floorplan211_33_852_1747047910_q1,Have you seen a Plate?,['Yes'],0.0,1,1,[463],[321],floorplan211_33_852_1747047910,0.0,1.0,0.0,1.0
+floorplan18_18_657_1747219088_q30,Is ButterKnife in the Sink?,['Yes'],0.0,1,1,[918],[656],floorplan18_18_657_1747219088,1.0,0.0,0.0,1.0
+floorplan212_24_603_1745121556_q2,What objects were in Drawer?,['Pencil'],1.0,1,1,[818],[554],floorplan212_24_603_1745121556,0.0,1.0,1.0,2.0
+floorplan18_18_657_1747219088_q2,What did you slice?,['Lettuce'],1.0,1,2,"[172, 173]",[135],floorplan18_18_657_1747219088,1.0,1.0,1.0,3.0
+floorplan210_25_865_1747054518_q10,Is Newspaper on the Ottoman?,['Yes'],0.0,1,1,[1102],[804],floorplan210_25_865_1747054518,1.0,0.0,0.0,1.0
+floorplan22_24_419_1745155479_q4,What objects were in SinkBasin when you slice Tomato?,"['Kettle', 'Spoon', 'DishSponge', 'Faucet', 'Fork']",0.4,1,1,[67],[41],floorplan22_24_419_1745155479,0.2,0.2,0.2,0.8
+floorplan301_25_421_1744331002_q0,Is there any BaseballBat in this room?,['Yes'],1.0,1,1,[181],[120],floorplan301_25_421_1744331002,1.0,1.0,1.0,3.0
+floorplan26_30_702_1747072764_q39,What objects are on the Microwave?,"['Potato', 'Egg', 'Cup', 'ButterKnife', 'Apple']",0.2,1,1,[654],[434],floorplan26_30_702_1747072764,0.0,0.0,0.2,0.2
+floorplan218_10_567_1745407406_q14,Is Plate on the SideTable?,['Yes'],1.0,1,1,[508],[394],floorplan218_10_567_1745407406,1.0,1.0,1.0,3.0
+floorplan211_27_719_1746910536_q1,Have you seen a Box?,['Yes'],1.0,1,1,[951],[663],floorplan211_27_719_1746910536,1.0,1.0,1.0,3.0
+floorplan323_12_513_1745033040_q11,Is Pen on the Desk?,['Yes'],0.0,1,1,[318],[250],floorplan323_12_513_1745033040,1.0,1.0,0.0,2.0
+floorplan213_20_698_1746915078_q37,Is Laptop on the CoffeeTable?,['Yes'],1.0,1,1,[486],[362],floorplan213_20_698_1746915078,0.0,1.0,1.0,2.0
+floorplan303_28_701_1746815644_q1,Have you seen a Mirror?,['Yes'],1.0,1,1,[48],[36],floorplan303_28_701_1746815644,1.0,1.0,1.0,3.0
+floorplan201_19_686_1746847543_q1,Have you seen a Lamp?,['Yes'],1.0,1,1,[133],[95],floorplan201_19_686_1746847543,1.0,1.0,1.0,3.0
+floorplan9_30_739_1746977821_q5,What objects were in CounterTop when you slice Tomato?,"['Sink', 'Plate']",0.0,1,1,[1056],[711],floorplan9_30_739_1746977821,0.5,0.0,0.5,0.5
+floorplan323_12_471_1744538860_q1,Have you seen a CD?,['Yes'],1.0,1,1,[52],[40],floorplan323_12_471_1744538860,1.0,1.0,1.0,3.0
+floorplan303_28_701_1746815644_q0,Is there any Mirror in this room?,['Yes'],1.0,1,1,[48],[36],floorplan303_28_701_1746815644,1.0,1.0,1.0,3.0
+floorplan28_17_440_1745299490_q26,Where is SoapBottle now?,['Cabinet'],1.0,1,1,[138],[100],floorplan28_17_440_1745299490,0.0,0.0,0.0,1.0
+floorplan201_19_686_1746847543_q0,Is there any Lamp in this room?,['Yes'],1.0,1,1,[133],[95],floorplan201_19_686_1746847543,1.0,1.0,1.0,3.0
+floorplan7_23_794_1747205386_q0,Is there any Cup in this room?,['Yes'],1.0,1,1,[1029],[739],floorplan7_23_794_1747205386,1.0,1.0,1.0,3.0
+floorplan28_17_440_1745299490_q0,Is there any Faucet in this room?,['Yes'],1.0,1,1,[405],[282],floorplan28_17_440_1745299490,1.0,0.0,0.0,2.0
+floorplan210_21_711_1746861109_q0,Is there any KeyChain in this room?,['Yes'],1.0,1,1,[874],[648],floorplan210_21_711_1746861109,1.0,1.0,1.0,3.0
+floorplan323_12_471_1744538860_q0,Is there any CD in this room?,['Yes'],1.0,1,1,[52],[40],floorplan323_12_471_1744538860,1.0,1.0,0.0,3.0
+floorplan18_18_657_1747219088_q3,What objects were in DiningTable when you slice Lettuce?,"['Cup', 'Plate', 'Spoon', 'HousePlant', 'PepperShaker', 'Bowl', 'SaltShaker']",0.0,1,1,[173],[135],floorplan18_18_657_1747219088,0.0,0.5714285714285714,0.1428571428571428,0.5714285714285714
+floorplan212_24_603_1745121556_q13,Is TissueBox on the Shelf?,['Yes'],1.0,1,1,[753],[513],floorplan212_24_603_1745121556,0.0,1.0,1.0,2.0
+floorplan26_30_702_1747072764_q0,Is there any StoveKnob in this room?,['Yes'],0.0,1,1,[719],[477],floorplan26_30_702_1747072764,1.0,0.0,0.0,1.0
+floorplan18_12_465_1745198823_q35,How many objects were on the Microwave?,[1],0.0,1,1,[577],[404],floorplan18_12_465_1745198823,1.0,0.0,1.0,1.0
+floorplan7_13_494_1744636544_q0,Is there any Kettle in this room?,['Yes'],1.0,1,1,[672],[491],floorplan7_13_494_1744636544,1.0,0.0,1.0,2.0
+floorplan7_13_494_1744636544_q1,Have you seen a Kettle?,['Yes'],1.0,1,1,[672],[491],floorplan7_13_494_1744636544,1.0,0.0,1.0,2.0
+floorplan314_17_418_1744520906_q34,Is CD on the Desk?,['Yes'],0.0,1,1,[526],[362],floorplan314_17_418_1744520906,1.0,1.0,1.0,2.0
+floorplan201_19_686_1746847543_q32,Is Newspaper on the ArmChair?,['Yes'],0.0,1,1,[924],[685],floorplan201_19_686_1746847543,1.0,1.0,1.0,2.0
+floorplan9_20_418_1744602985_q14,Is Apple in the GarbageCan?,['Yes'],0.0,1,1,[583],[367],floorplan9_20_418_1744602985,1.0,1.0,1.0,2.0
+floorplan28_17_440_1745299490_q21,Is ButterKnife on the SideTable?,['Yes'],0.0,1,1,[219],[151],floorplan28_17_440_1745299490,1.0,1.0,1.0,2.0
+floorplan11_24_422_1744641083_q1,Have you seen an Apple?,['Yes'],1.0,1,1,[296],[195],floorplan11_24_422_1744641083,1.0,1.0,1.0,3.0
+floorplan218_13_551_1746888708_q1,Have you seen a RemoteControl?,['Yes'],1.0,1,1,[336],[251],floorplan218_13_551_1746888708,1.0,0.0,1.0,2.0
+floorplan204_11_488_1746010864_q0,Is there any TVStand in this room?,['Yes'],1.0,1,1,[221],[155],floorplan204_11_488_1746010864,0.0,0.0,0.0,1.0
+floorplan230_11_562_1746362156_q1,Have you seen a Boots?,['Yes'],1.0,1,1,[400],[294],floorplan230_11_562_1746362156,1.0,1.0,1.0,3.0
+floorplan209_28_784_1747108090_q1,Have you seen a Television?,['Yes'],0.0,1,1,[91],[66],floorplan209_28_784_1747108090,1.0,1.0,0.0,2.0
+floorplan18_12_465_1745198823_q31,Is Potato in the Microwave?,['Yes'],1.0,1,1,[577],[404],floorplan18_12_465_1745198823,1.0,1.0,1.0,3.0
+floorplan204_14_640_1744937110_q22,Is CreditCard on the Desk?,['Yes'],1.0,1,1,[511],[373],floorplan204_14_640_1744937110,1.0,1.0,1.0,3.0
+floorplan13_16_427_1745291369_q47,Is Egg in the GarbageCan?,['Yes'],0.0,1,1,[423],[294],floorplan13_16_427_1745291369,1.0,0.0,0.0,1.0
+floorplan13_16_427_1745291369_q0,Is there any GarbageCan in this room?,['Yes'],1.0,1,1,[421],[292],floorplan13_16_427_1745291369,1.0,1.0,1.0,3.0
+floorplan9_31_709_1747114738_q4,What object did you put on the Microwave?,['Apple'],1.0,1,2,"[41, 42]",[27],floorplan9_31_709_1747114738,1.0,1.0,1.0,3.0
+floorplan9_31_709_1747114738_q36,Is Spatula in the Sink?,['Yes'],1.0,1,1,[941],[616],floorplan9_31_709_1747114738,1.0,1.0,1.0,3.0
+floorplan11_24_422_1744641083_q21,Is Knife in the Sink?,['Yes'],1.0,1,1,[629],[421],floorplan11_24_422_1744641083,1.0,1.0,1.0,3.0
+floorplan9_31_709_1747114738_q35,Where is Spatula now?,['Sink'],1.0,1,1,[941],[616],floorplan9_31_709_1747114738,1.0,1.0,0.0,3.0
+floorplan13_16_427_1745291369_q1,Have you seen a GarbageCan?,['Yes'],1.0,1,1,[421],[292],floorplan13_16_427_1745291369,1.0,1.0,1.0,3.0
+floorplan11_24_422_1744641083_q30,Where is Potato now?,['Microwave'],1.0,1,1,[366],[244],floorplan11_24_422_1744641083,1.0,1.0,1.0,3.0
+floorplan218_17_885_1747074471_q8,Where is KeyChain now?,['Sofa'],1.0,1,1,[596],[452],floorplan218_17_885_1747074471,1.0,1.0,0.0,3.0
+floorplan218_17_885_1747074471_q9,Is KeyChain on the Sofa?,['Yes'],1.0,1,1,[596],[452],floorplan218_17_885_1747074471,1.0,1.0,1.0,3.0
+floorplan218_17_889_1747021157_q1,Have you seen a GarbageCan?,['Yes'],1.0,1,1,[95],[78],floorplan218_17_889_1747021157,1.0,1.0,0.0,3.0
+floorplan218_17_889_1747021157_q17,Is Plate on the DiningTable?,['Yes'],1.0,1,1,[623],[487],floorplan218_17_889_1747021157,1.0,1.0,1.0,3.0
+floorplan218_17_889_1747021157_q2,What object did you put on the GarbageCan?,['Newspaper'],1.0,1,2,"[101, 102]",[83],floorplan218_17_889_1747021157,1.0,1.0,0.0,3.0
+floorplan218_17_889_1747021157_q24,Where is RemoteControl now?,['SideTable'],1.0,1,1,[839],[643],floorplan218_17_889_1747021157,1.0,1.0,1.0,3.0
+floorplan218_17_889_1747021157_q3,What object did you put on the Sofa?,['CellPhone'],1.0,1,2,"[734, 735]",[573],floorplan218_17_889_1747021157,1.0,1.0,1.0,3.0
+floorplan218_17_889_1747021157_q6,Is CreditCard on the SideTable?,['Yes'],1.0,1,1,[890],[677],floorplan218_17_889_1747021157,1.0,1.0,1.0,3.0
+floorplan218_17_815_1747114987_q29,Where is Plate now?,['CoffeeTable'],1.0,1,1,[1095],[814],floorplan218_17_815_1747114987,1.0,1.0,1.0,3.0
+floorplan218_17_815_1747114987_q3,Is KeyChain on the CoffeeTable?,['Yes'],1.0,1,1,[880],[654],floorplan218_17_815_1747114987,1.0,1.0,1.0,3.0
+floorplan218_17_885_1747074471_q2,Was Laptop open?,['Yes'],1.0,1,1,[1177],[884],floorplan218_17_885_1747074471,1.0,1.0,1.0,3.0
+floorplan218_17_885_1747074471_q21,Is CreditCard on the Sofa?,['Yes'],1.0,1,1,[1058],[790],floorplan218_17_885_1747074471,1.0,1.0,1.0,3.0
+floorplan201_12_483_1744793947_q15,Is Pen on the CoffeeTable?,['Yes'],1.0,1,1,[605],[436],floorplan201_12_483_1744793947,1.0,1.0,1.0,3.0
+floorplan201_12_493_1745419940_q0,Is there any Window in this room?,['Yes'],1.0,1,1,[487],[358],floorplan201_12_493_1745419940,1.0,1.0,1.0,3.0
+floorplan201_12_493_1745419940_q1,Have you seen a Window?,['Yes'],1.0,1,1,[487],[358],floorplan201_12_493_1745419940,1.0,1.0,1.0,3.0
+floorplan7_23_794_1747205386_q31,Is Lettuce on the DiningTable?,['Yes'],1.0,1,1,[1104],[793],floorplan7_23_794_1747205386,1.0,1.0,1.0,3.0
+floorplan7_23_794_1747205386_q35,Is DishSponge on the DiningTable?,['Yes'],1.0,1,1,[847],[608],floorplan7_23_794_1747205386,1.0,1.0,1.0,3.0
+floorplan9_20_418_1744602985_q18,How many objects were on the GarbageCan?,[1],1.0,1,1,[583],[367],floorplan9_20_418_1744602985,1.0,1.0,1.0,3.0
+floorplan9_20_418_1744602985_q20,Where is Spoon now?,['Sink'],1.0,1,1,[123],[75],floorplan9_20_418_1744602985,1.0,1.0,0.0,3.0
+floorplan9_20_418_1744602985_q38,Is Potato in the Sink?,['Yes'],1.0,1,1,[657],[417],floorplan9_20_418_1744602985,1.0,1.0,1.0,3.0
+floorplan201_12_493_1745419940_q20,Where is Plate now?,['SideTable'],1.0,1,1,[200],[146],floorplan201_12_493_1745419940,1.0,1.0,1.0,3.0
+floorplan201_12_493_1745419940_q25,Is TissueBox on the DiningTable?,['Yes'],1.0,1,1,[674],[492],floorplan201_12_493_1745419940,1.0,1.0,1.0,3.0
+floorplan201_12_493_1745419940_q29,Is KeyChain on the Sofa?,['Yes'],1.0,1,1,[526],[386],floorplan201_12_493_1745419940,1.0,1.0,1.0,3.0
+floorplan201_12_493_1745419940_q6,Where is Newspaper now?,['CoffeeTable'],1.0,1,1,[36],[23],floorplan201_12_493_1745419940,1.0,1.0,1.0,3.0
+floorplan201_12_493_1745419940_q8,Is CreditCard on the DiningTable?,['Yes'],1.0,1,1,[581],[424],floorplan201_12_493_1745419940,1.0,1.0,1.0,3.0
+floorplan201_19_686_1746847543_q21,Is CreditCard on the Sofa?,['Yes'],1.0,1,1,[752],[552],floorplan201_19_686_1746847543,1.0,1.0,0.0,3.0
+floorplan201_19_686_1746847543_q27,Where is Statue now?,['SideTable'],1.0,1,1,[417],[304],floorplan201_19_686_1746847543,1.0,1.0,1.0,3.0
+floorplan201_12_445_1746046052_q8,Where is KeyChain now?,['SideTable'],1.0,1,1,[159],[112],floorplan201_12_445_1746046052,1.0,1.0,1.0,3.0
+floorplan201_12_445_1746046052_q9,Is KeyChain on the SideTable?,['Yes'],1.0,1,1,[159],[112],floorplan201_12_445_1746046052,1.0,1.0,1.0,3.0
+floorplan218_17_885_1747074471_q28,Where is Statue now?,['CoffeeTable'],1.0,1,1,[883],[671],floorplan218_17_885_1747074471,1.0,1.0,1.0,3.0
+floorplan218_17_885_1747074471_q32,How many objects were on the CoffeeTable?,[5],1.0,1,1,[883],[671],floorplan218_17_885_1747074471,1.0,1.0,1.0,3.0
+floorplan218_17_885_1747074471_q36,Where is Newspaper now?,['Sofa'],1.0,1,1,[768],[586],floorplan218_17_885_1747074471,1.0,1.0,1.0,3.0
+floorplan218_17_885_1747074471_q39,Where is Newspaper now?,['Sofa'],1.0,1,1,[768],[586],floorplan218_17_885_1747074471,1.0,1.0,1.0,3.0
+floorplan218_17_885_1747074471_q4,Where is CellPhone now?,['SideTable'],1.0,1,1,[151],[122],floorplan218_17_885_1747074471,1.0,1.0,1.0,3.0
+floorplan218_18_800_1746997071_q11,Is Plate on the DiningTable?,['Yes'],1.0,1,1,[734],[550],floorplan218_18_800_1746997071,1.0,1.0,1.0,3.0
+floorplan218_18_800_1746997071_q24,Where is RemoteControl now?,['CoffeeTable'],1.0,1,1,[536],[407],floorplan218_18_800_1746997071,1.0,1.0,1.0,3.0
+floorplan218_18_800_1746997071_q3,Is CreditCard on the SideTable?,['Yes'],1.0,1,1,[1075],[799],floorplan218_18_800_1746997071,1.0,1.0,1.0,3.0
+floorplan218_18_800_1746997071_q9,How many objects were on the SideTable?,[2],1.0,1,1,[1075],[799],floorplan218_18_800_1746997071,1.0,1.0,0.0,3.0
+floorplan218_20_806_1747163851_q0,Is there any LightSwitch in this room?,['Yes'],1.0,1,1,[935],[658],floorplan218_20_806_1747163851,1.0,1.0,1.0,3.0
+floorplan218_20_806_1747163851_q10,Is CreditCard on the DiningTable?,['Yes'],1.0,1,1,[958],[675],floorplan218_20_806_1747163851,1.0,1.0,1.0,3.0
+floorplan7_16_562_1747133949_q12,Where is Fork now?,['Sink'],1.0,1,1,[207],[150],floorplan7_16_562_1747133949,1.0,1.0,0.0,3.0
+floorplan7_16_562_1747133949_q8,Where is Spoon now?,['Sink'],1.0,1,1,[121],[91],floorplan7_16_562_1747133949,1.0,1.0,0.0,3.0
+floorplan7_23_794_1747205386_q1,Have you seen a Cup?,['Yes'],1.0,1,1,[1029],[739],floorplan7_23_794_1747205386,1.0,1.0,1.0,3.0
+floorplan201_19_686_1746847543_q36,How many objects were on the ArmChair?,[1],1.0,1,1,[924],[685],floorplan201_19_686_1746847543,1.0,1.0,1.0,3.0
+floorplan201_19_686_1746847543_q38,How many objects were on the ArmChair?,[1],1.0,1,1,[924],[685],floorplan201_19_686_1746847543,1.0,1.0,1.0,3.0
+floorplan201_19_686_1746847543_q6,Where is Plate now?,['CoffeeTable'],1.0,1,1,[63],[47],floorplan201_19_686_1746847543,1.0,1.0,1.0,3.0
+floorplan201_19_686_1746847543_q7,Is Plate on the CoffeeTable?,['Yes'],1.0,1,1,[63],[47],floorplan201_19_686_1746847543,1.0,1.0,1.0,3.0
+floorplan201_19_729_1746905161_q0,Is there any FloorLamp in this room?,['Yes'],1.0,1,1,[185],[130],floorplan201_19_729_1746905161,1.0,1.0,1.0,3.0
+floorplan201_19_729_1746905161_q1,Have you seen a FloorLamp?,['Yes'],1.0,1,1,[185],[130],floorplan201_19_729_1746905161,1.0,1.0,1.0,3.0
+floorplan201_19_729_1746905161_q11,Where is CreditCard now?,['CoffeeTable'],1.0,1,1,[113],[76],floorplan201_19_729_1746905161,1.0,1.0,1.0,3.0
+floorplan201_19_729_1746905161_q29,Where is Bowl now?,['CoffeeTable'],1.0,1,1,[524],[380],floorplan201_19_729_1746905161,1.0,1.0,1.0,3.0
+floorplan201_19_729_1746905161_q4,Is KeyChain on the CoffeeTable?,['Yes'],1.0,1,1,[1005],[728],floorplan201_19_729_1746905161,1.0,1.0,1.0,3.0
+floorplan201_12_493_1745419940_q17,Is Pencil on the DiningTable?,['Yes'],1.0,1,1,[277],[206],floorplan201_12_493_1745419940,1.0,1.0,1.0,3.0
+floorplan201_12_493_1745419940_q2,Was Laptop open?,['Yes'],1.0,1,1,[674],[492],floorplan201_12_493_1745419940,1.0,1.0,1.0,3.0
+floorplan323_19_802_1747083560_q32,How many objects were on the SideTable?,[3],1.0,1,1,[922],[715],floorplan323_19_802_1747083560,1.0,1.0,0.0,3.0
+floorplan7_12_471_1744791924_q10,Is Tomato in the Fridge?,['Yes'],1.0,1,1,[420],[311],floorplan7_12_471_1744791924,1.0,1.0,1.0,3.0
+floorplan7_12_471_1744791924_q20,Is Spoon in the Sink?,['Yes'],1.0,1,1,[638],[470],floorplan7_12_471_1744791924,1.0,1.0,1.0,3.0
+floorplan7_12_471_1744791924_q26,Where is Lettuce now?,['Sink'],1.0,1,1,[385],[285],floorplan7_12_471_1744791924,1.0,1.0,1.0,3.0
+floorplan201_20_599_1745096264_q0,Is there any FloorLamp in this room?,['Yes'],1.0,1,1,[268],[194],floorplan201_20_599_1745096264,1.0,1.0,1.0,3.0
+floorplan201_20_599_1745096264_q1,Have you seen a FloorLamp?,['Yes'],1.0,1,1,[268],[194],floorplan201_20_599_1745096264,1.0,1.0,1.0,3.0
+floorplan201_20_599_1745096264_q16,Is KeyChain on the Sofa?,['Yes'],1.0,1,1,[840],[598],floorplan201_20_599_1745096264,1.0,1.0,1.0,3.0
+floorplan201_20_599_1745096264_q2,Was Box open?,['Yes'],1.0,1,1,[840],[598],floorplan201_20_599_1745096264,1.0,1.0,1.0,3.0
+floorplan7_13_494_1744636544_q20,Where is Mug now?,['Sink'],1.0,1,1,[212],[158],floorplan7_13_494_1744636544,1.0,1.0,1.0,3.0
+floorplan7_13_494_1744636544_q4,What object did you put on the Shelf?,['Book'],1.0,1,2,"[91, 92]",[70],floorplan7_13_494_1744636544,1.0,1.0,1.0,3.0
+floorplan218_20_806_1747163851_q20,Is RemoteControl on the CoffeeTable?,['Yes'],1.0,1,1,[813],[568],floorplan218_20_806_1747163851,1.0,1.0,1.0,3.0
+floorplan218_17_749_1746865593_q26,Where is CellPhone now?,['SideTable'],1.0,1,1,[606],[444],floorplan218_17_749_1746865593,1.0,1.0,1.0,3.0
+floorplan218_17_749_1746865593_q3,What object did you put on the GarbageCan?,['Newspaper'],1.0,1,2,"[1018, 1019]",[748],floorplan218_17_749_1746865593,1.0,1.0,0.0,3.0
+floorplan218_17_749_1746865593_q31,Where is WateringCan now?,['SideTable'],1.0,1,1,[555],[410],floorplan218_17_749_1746865593,1.0,1.0,1.0,3.0
+floorplan218_17_749_1746865593_q33,Where is Plate now?,['CoffeeTable'],1.0,1,1,[741],[545],floorplan218_17_749_1746865593,1.0,1.0,1.0,3.0
+floorplan218_17_749_1746865593_q4,Is RemoteControl on the CoffeeTable?,['Yes'],1.0,1,1,[778],[569],floorplan218_17_749_1746865593,1.0,1.0,0.0,3.0
+floorplan218_17_815_1747114987_q0,Is there any GarbageCan in this room?,['Yes'],1.0,1,1,[1021],[758],floorplan218_17_815_1747114987,1.0,1.0,1.0,3.0
+floorplan218_17_815_1747114987_q1,Have you seen a GarbageCan?,['Yes'],1.0,1,1,[1021],[758],floorplan218_17_815_1747114987,1.0,1.0,1.0,3.0
+floorplan218_17_815_1747114987_q19,Where is RemoteControl now?,['SideTable'],1.0,1,1,[370],[281],floorplan218_17_815_1747114987,1.0,1.0,1.0,3.0
+floorplan218_17_815_1747114987_q2,Was Laptop open?,['Yes'],1.0,1,1,[1095],[814],floorplan218_17_815_1747114987,1.0,1.0,1.0,3.0
+floorplan218_17_815_1747114987_q21,Where is WateringCan now?,['SideTable'],1.0,1,1,[441],[331],floorplan218_17_815_1747114987,1.0,1.0,1.0,3.0
+floorplan218_17_815_1747114987_q25,Where is Plate now?,['CoffeeTable'],1.0,1,1,[1095],[814],floorplan218_17_815_1747114987,1.0,1.0,1.0,3.0
+floorplan218_16_805_1747099776_q2,What object did you put on the DiningTable?,['RemoteControl'],1.0,1,2,"[117, 118]",[88],floorplan218_16_805_1747099776,1.0,1.0,0.0,3.0
+floorplan218_16_805_1747099776_q20,Is KeyChain on the SideTable?,['Yes'],1.0,1,1,[916],[682],floorplan218_16_805_1747099776,1.0,1.0,1.0,3.0
+floorplan218_16_805_1747099776_q27,Where is CellPhone now?,['SideTable'],1.0,1,1,[592],[452],floorplan218_16_805_1747099776,1.0,1.0,1.0,3.0
+floorplan201_20_714_1746850044_q28,Where is KeyChain now?,['SideTable'],1.0,1,1,[350],[254],floorplan201_20_714_1746850044,1.0,1.0,1.0,3.0
+floorplan201_20_714_1746850044_q30,Where is Bowl now?,['CoffeeTable'],1.0,1,1,[398],[291],floorplan201_20_714_1746850044,1.0,1.0,1.0,3.0
+floorplan201_20_714_1746850044_q36,Where is Vase now?,['CoffeeTable'],1.0,1,1,[969],[713],floorplan201_20_714_1746850044,1.0,1.0,1.0,3.0
+floorplan201_20_714_1746850044_q40,Where is Vase now?,['CoffeeTable'],1.0,1,1,[969],[713],floorplan201_20_714_1746850044,1.0,1.0,1.0,3.0
+floorplan201_24_804_1746980690_q0,Is there any HousePlant in this room?,['Yes'],1.0,1,1,[578],[415],floorplan201_24_804_1746980690,1.0,1.0,1.0,3.0
+floorplan201_24_804_1746980690_q1,Have you seen a HousePlant?,['Yes'],1.0,1,1,[578],[415],floorplan201_24_804_1746980690,1.0,1.0,1.0,3.0
+floorplan201_24_804_1746980690_q14,Is TissueBox in the GarbageCan?,['Yes'],1.0,1,1,[589],[424],floorplan201_24_804_1746980690,1.0,1.0,1.0,3.0
+floorplan201_24_804_1746980690_q23,Where is KeyChain now?,['CoffeeTable'],1.0,1,1,[820],[594],floorplan201_24_804_1746980690,1.0,1.0,1.0,3.0
+floorplan323_19_730_1746848930_q35,How many objects were on the GarbageCan?,[1],1.0,1,1,[866],[651],floorplan323_19_730_1746848930,1.0,1.0,1.0,3.0
+floorplan323_19_802_1747083560_q0,Is there any LightSwitch in this room?,['Yes'],1.0,1,1,[66],[53],floorplan323_19_802_1747083560,1.0,1.0,1.0,3.0
+floorplan323_19_802_1747083560_q1,Have you seen a LightSwitch?,['Yes'],1.0,1,1,[66],[53],floorplan323_19_802_1747083560,1.0,1.0,0.0,3.0
+floorplan323_19_802_1747083560_q22,Is CellPhone on the Desk?,['Yes'],1.0,1,1,[359],[281],floorplan323_19_802_1747083560,1.0,1.0,1.0,3.0
+floorplan323_19_802_1747083560_q28,Is CreditCard on the SideTable?,['Yes'],1.0,1,1,[922],[715],floorplan323_19_802_1747083560,1.0,1.0,1.0,3.0
+floorplan323_19_730_1746848930_q31,Is CD in the GarbageCan?,['Yes'],1.0,1,1,[866],[651],floorplan323_19_730_1746848930,1.0,1.0,1.0,3.0
+floorplan201_24_804_1746980690_q4,Is Bowl on the CoffeeTable?,['Yes'],1.0,1,1,[881],[638],floorplan201_24_804_1746980690,1.0,1.0,1.0,3.0
+floorplan201_24_804_1746980690_q42,Is Book on the Sofa?,['Yes'],1.0,1,1,[1119],[803],floorplan201_24_804_1746980690,1.0,1.0,1.0,3.0
+floorplan201_26_812_1747064607_q0,Is there any FloorLamp in this room?,['Yes'],1.0,1,1,[208],[148],floorplan201_26_812_1747064607,1.0,1.0,1.0,3.0
+floorplan201_26_812_1747064607_q1,Have you seen a FloorLamp?,['Yes'],1.0,1,1,[208],[148],floorplan201_26_812_1747064607,1.0,1.0,1.0,3.0
+floorplan201_26_812_1747064607_q21,Where is Plate now?,['SideTable'],1.0,1,1,[283],[198],floorplan201_26_812_1747064607,1.0,1.0,1.0,3.0
+floorplan201_20_714_1746850044_q0,Is there any Window in this room?,['Yes'],1.0,1,1,[882],[652],floorplan201_20_714_1746850044,1.0,1.0,1.0,3.0
+floorplan201_20_714_1746850044_q1,Have you seen a Window?,['Yes'],1.0,1,1,[882],[652],floorplan201_20_714_1746850044,1.0,1.0,1.0,3.0
+floorplan201_20_714_1746850044_q11,Is Watch on the CoffeeTable?,['Yes'],1.0,1,1,[613],[449],floorplan201_20_714_1746850044,1.0,1.0,1.0,3.0
+floorplan201_26_812_1747064607_q3,What object did you put on the GarbageCan?,['Pen'],1.0,1,2,"[921, 922]",[657],floorplan201_26_812_1747064607,1.0,1.0,1.0,3.0
+floorplan201_26_812_1747064607_q33,Where is Bowl now?,['SideTable'],1.0,1,1,[902],[640],floorplan201_26_812_1747064607,1.0,1.0,1.0,3.0
+floorplan201_26_812_1747064607_q41,Where is Bowl now?,['SideTable'],1.0,1,1,[902],[640],floorplan201_26_812_1747064607,1.0,1.0,1.0,3.0
+floorplan202_17_427_1746001351_q0,Is there any FloorLamp in this room?,['Yes'],1.0,1,1,[145],[99],floorplan202_17_427_1746001351,1.0,1.0,1.0,3.0
+floorplan202_17_427_1746001351_q13,Is Book on the Sofa?,['Yes'],1.0,1,1,[617],[426],floorplan202_17_427_1746001351,1.0,1.0,1.0,3.0
+floorplan323_16_700_1746801654_q2,Was Laptop open?,['Yes'],1.0,1,1,[937],[699],floorplan323_16_700_1746801654,1.0,1.0,1.0,3.0
+floorplan323_16_700_1746801654_q22,Is CellPhone on the Bed?,['Yes'],1.0,1,1,[937],[699],floorplan323_16_700_1746801654,1.0,1.0,1.0,3.0
+floorplan323_19_730_1746848930_q0,Is there any LightSwitch in this room?,['Yes'],1.0,1,1,[64],[52],floorplan323_19_730_1746848930,1.0,1.0,1.0,3.0
+floorplan323_19_730_1746848930_q2,What object did you put on the GarbageCan?,['CD'],1.0,1,2,"[865, 866]",[651],floorplan323_19_730_1746848930,1.0,1.0,1.0,3.0
+floorplan323_19_730_1746848930_q3,Is Bowl on the Desk?,['Yes'],1.0,1,1,[922],[694],floorplan323_19_730_1746848930,1.0,1.0,1.0,3.0
+floorplan218_16_805_1747099776_q29,Where is Plate now?,['SideTable'],1.0,1,1,[731],[548],floorplan218_16_805_1747099776,1.0,1.0,1.0,3.0
+floorplan218_16_805_1747099776_q3,What object did you put on the GarbageCan?,['Newspaper'],1.0,1,2,"[1077, 1078]",[804],floorplan218_16_805_1747099776,1.0,1.0,0.0,3.0
+floorplan218_16_805_1747099776_q4,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[963],[716],floorplan218_16_805_1747099776,1.0,1.0,1.0,3.0
+floorplan218_17_749_1746865593_q1,Have you seen a LightSwitch?,['Yes'],1.0,1,1,[82],[67],floorplan218_17_749_1746865593,1.0,1.0,0.0,3.0
+floorplan218_17_749_1746865593_q11,Where is KeyChain now?,['CoffeeTable'],1.0,1,1,[189],[147],floorplan218_17_749_1746865593,1.0,1.0,1.0,3.0
+floorplan218_17_749_1746865593_q17,How many objects were on the SideTable?,[3],1.0,1,1,[875],[640],floorplan218_17_749_1746865593,1.0,1.0,1.0,3.0
+floorplan218_17_749_1746865593_q19,Is CreditCard on the SideTable?,['Yes'],1.0,1,1,[926],[674],floorplan218_17_749_1746865593,1.0,1.0,1.0,3.0
+floorplan218_17_749_1746865593_q2,What object did you put on the DiningTable?,['RemoteControl'],1.0,1,2,"[106, 107]",[86],floorplan218_17_749_1746865593,1.0,1.0,1.0,3.0
+floorplan218_20_806_1747163851_q26,Is RemoteControl on the CoffeeTable?,['Yes'],1.0,1,1,[813],[568],floorplan218_20_806_1747163851,1.0,1.0,1.0,3.0
+floorplan218_20_806_1747163851_q3,Was Laptop open?,['Yes'],1.0,1,1,[1121],[805],floorplan218_20_806_1747163851,1.0,1.0,1.0,3.0
+floorplan218_20_806_1747163851_q4,Is CellPhone on the CoffeeTable?,['Yes'],1.0,1,1,[764],[532],floorplan218_20_806_1747163851,1.0,1.0,1.0,3.0
+floorplan218_20_823_1747084244_q0,Is there any LightSwitch in this room?,['Yes'],1.0,1,1,[422],[293],floorplan218_20_823_1747084244,1.0,1.0,1.0,3.0
+floorplan218_20_823_1747084244_q1,Have you seen a LightSwitch?,['Yes'],1.0,1,1,[422],[293],floorplan218_20_823_1747084244,1.0,1.0,1.0,3.0
+floorplan202_17_427_1746001351_q2,Was Laptop open?,['Yes'],1.0,1,1,[617],[426],floorplan202_17_427_1746001351,1.0,1.0,0.0,3.0
+floorplan202_17_427_1746001351_q25,Where is Statue now?,['CoffeeTable'],1.0,1,1,[411],[286],floorplan202_17_427_1746001351,1.0,1.0,1.0,3.0
+floorplan202_17_427_1746001351_q6,Is CreditCard on the SideTable?,['Yes'],1.0,1,1,[586],[404],floorplan202_17_427_1746001351,1.0,1.0,1.0,3.0
+floorplan202_18_450_1744426417_q0,Is there any FloorLamp in this room?,['Yes'],1.0,1,1,[52],[34],floorplan202_18_450_1744426417,1.0,1.0,1.0,3.0
+floorplan202_18_450_1744426417_q1,Have you seen a FloorLamp?,['Yes'],1.0,1,1,[52],[34],floorplan202_18_450_1744426417,1.0,1.0,1.0,3.0
+floorplan202_18_450_1744426417_q18,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[196],[131],floorplan202_18_450_1744426417,1.0,1.0,1.0,3.0
+floorplan201_26_812_1747064607_q23,Is CreditCard on the CoffeeTable?,['Yes'],1.0,1,1,[785],[555],floorplan201_26_812_1747064607,1.0,1.0,1.0,3.0
+floorplan202_18_450_1744426417_q31,Where is Statue now?,['CoffeeTable'],1.0,1,1,[274],[187],floorplan202_18_450_1744426417,1.0,1.0,1.0,3.0
+floorplan204_11_488_1746010864_q10,How many objects were on the ArmChair?,[1],1.0,1,1,[202],[143],floorplan204_11_488_1746010864,1.0,1.0,1.0,3.0
+floorplan204_11_488_1746010864_q12,Is RemoteControl on the ArmChair?,['Yes'],1.0,1,1,[574],[409],floorplan204_11_488_1746010864,1.0,1.0,1.0,3.0
+floorplan204_11_488_1746010864_q2,What object did you put on the Sofa?,['RemoteControl'],1.0,1,2,"[119, 120]",[84],floorplan204_11_488_1746010864,1.0,1.0,0.0,3.0
+floorplan204_11_488_1746010864_q23,Is KeyChain on the ArmChair?,['Yes'],1.0,1,1,[682],[487],floorplan204_11_488_1746010864,1.0,1.0,1.0,3.0
+floorplan204_11_488_1746010864_q6,Is CreditCard on the ArmChair?,['Yes'],1.0,1,1,[202],[143],floorplan204_11_488_1746010864,1.0,1.0,1.0,3.0
+floorplan323_12_521_1746288027_q2,Is Mug on the SideTable?,['Yes'],1.0,1,1,[591],[448],floorplan323_12_521_1746288027,1.0,1.0,1.0,3.0
+floorplan323_12_521_1746288027_q5,Is Pen on the SideTable?,['Yes'],1.0,1,1,[684],[520],floorplan323_12_521_1746288027,1.0,1.0,1.0,3.0
+floorplan218_20_823_1747084244_q22,Is RemoteControl on the SideTable?,['Yes'],1.0,1,1,[1128],[822],floorplan218_20_823_1747084244,1.0,1.0,1.0,3.0
+floorplan218_20_823_1747084244_q27,How many objects were on the SideTable?,[3],1.0,1,1,[1128],[822],floorplan218_20_823_1747084244,1.0,1.0,1.0,3.0
+floorplan218_20_823_1747084244_q3,What object did you put on the GarbageCan?,['Newspaper'],1.0,1,2,"[684, 685]",[492],floorplan218_20_823_1747084244,1.0,1.0,0.0,3.0
+floorplan218_20_823_1747084244_q4,Is KeyChain on the Sofa?,['Yes'],1.0,1,1,[1022],[750],floorplan218_20_823_1747084244,1.0,1.0,1.0,3.0
+floorplan218_16_717_1746904521_q20,Where is Statue now?,['CoffeeTable'],1.0,1,1,[441],[328],floorplan218_16_717_1746904521,1.0,1.0,1.0,3.0
+floorplan218_16_717_1746904521_q25,How many objects were on the CoffeeTable?,[2],1.0,1,1,[441],[328],floorplan218_16_717_1746904521,1.0,1.0,0.0,3.0
+floorplan218_16_717_1746904521_q27,Where is CellPhone now?,['SideTable'],1.0,1,1,[383],[283],floorplan218_16_717_1746904521,1.0,1.0,1.0,3.0
+floorplan218_16_717_1746904521_q33,Where is Plate now?,['CoffeeTable'],1.0,1,1,[832],[630],floorplan218_16_717_1746904521,1.0,1.0,1.0,3.0
+floorplan218_16_717_1746904521_q4,What object did you put on the GarbageCan?,['Newspaper'],1.0,1,2,"[753, 754]",[571],floorplan218_16_717_1746904521,1.0,1.0,0.0,3.0
+floorplan218_16_717_1746904521_q5,Is CreditCard in the Dresser?,['Yes'],1.0,1,1,[956],[716],floorplan218_16_717_1746904521,1.0,1.0,1.0,3.0
+floorplan218_16_805_1747099776_q10,How many objects were on the Sofa?,[3],1.0,1,1,[963],[716],floorplan218_16_805_1747099776,1.0,1.0,1.0,3.0
+floorplan218_16_805_1747099776_q14,Where is Statue now?,['CoffeeTable'],1.0,1,1,[554],[427],floorplan218_16_805_1747099776,1.0,1.0,0.0,3.0
+floorplan323_12_471_1744538860_q4,Is Pen in the GarbageCan?,['Yes'],1.0,1,1,[439],[330],floorplan323_12_471_1744538860,1.0,1.0,1.0,3.0
+floorplan323_12_513_1745033040_q0,Is there any Blinds in this room?,['Yes'],1.0,1,1,[463],[354],floorplan323_12_513_1745033040,1.0,1.0,0.0,3.0
+floorplan323_12_513_1745033040_q1,Have you seen a Blinds?,['Yes'],1.0,1,1,[463],[354],floorplan323_12_513_1745033040,1.0,1.0,1.0,3.0
+floorplan323_12_521_1746288027_q0,Is there any LightSwitch in this room?,['Yes'],1.0,1,1,[67],[51],floorplan323_12_521_1746288027,1.0,1.0,1.0,3.0
+floorplan323_12_521_1746288027_q1,Have you seen a LightSwitch?,['Yes'],1.0,1,1,[67],[51],floorplan323_12_521_1746288027,1.0,1.0,0.0,3.0
+floorplan204_12_454_1746034353_q13,Is CellPhone on the ArmChair?,['Yes'],1.0,1,1,[425],[317],floorplan204_12_454_1746034353,1.0,1.0,1.0,3.0
+floorplan204_12_454_1746034353_q18,Is RemoteControl on the ArmChair?,['Yes'],1.0,1,1,[621],[453],floorplan204_12_454_1746034353,1.0,1.0,1.0,3.0
+floorplan204_12_454_1746034353_q22,Where is Vase now?,['CoffeeTable'],1.0,1,1,[245],[180],floorplan204_12_454_1746034353,1.0,1.0,0.0,3.0
+floorplan204_13_425_1745433327_q13,Is CreditCard on the ArmChair?,['Yes'],1.0,1,1,[579],[424],floorplan204_13_425_1745433327,1.0,1.0,1.0,3.0
+floorplan204_13_425_1745433327_q17,How many objects were on the ArmChair?,[1],1.0,1,1,[579],[424],floorplan204_13_425_1745433327,1.0,1.0,1.0,3.0
+floorplan202_18_450_1744426417_q24,Is Book on the Sofa?,['Yes'],1.0,1,1,[603],[411],floorplan202_18_450_1744426417,1.0,1.0,1.0,3.0
+floorplan323_11_501_1746090509_q8,How many objects were on the SideTable?,[2],1.0,1,1,[512],[390],floorplan323_11_501_1746090509,1.0,1.0,1.0,3.0
+floorplan204_14_640_1744937110_q12,Where is RemoteControl now?,['Sofa'],1.0,1,1,[584],[431],floorplan204_14_640_1744937110,1.0,1.0,1.0,3.0
+floorplan204_14_640_1744937110_q13,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[584],[431],floorplan204_14_640_1744937110,1.0,1.0,1.0,3.0
+floorplan204_14_640_1744937110_q2,Was Laptop open?,['Yes'],1.0,1,1,[875],[639],floorplan204_14_640_1744937110,1.0,1.0,1.0,3.0
+floorplan204_14_640_1744937110_q28,Is KeyChain on the Desk?,['Yes'],1.0,1,1,[875],[639],floorplan204_14_640_1744937110,1.0,1.0,1.0,3.0
+floorplan204_14_640_1744937110_q3,Is CellPhone on the ArmChair?,['Yes'],1.0,1,1,[762],[556],floorplan204_14_640_1744937110,1.0,1.0,1.0,3.0
+floorplan204_19_719_1746845878_q12,Is CreditCard on the Sofa?,['Yes'],1.0,1,1,[922],[666],floorplan204_19_719_1746845878,1.0,1.0,0.0,3.0
+floorplan204_19_719_1746845878_q19,Is CellPhone on the Sofa?,['Yes'],1.0,1,1,[1001],[718],floorplan204_19_719_1746845878,1.0,1.0,1.0,3.0
+floorplan204_19_719_1746845878_q2,Was Box open?,['Yes'],1.0,1,1,[1001],[718],floorplan204_19_719_1746845878,1.0,1.0,0.0,3.0
+floorplan323_12_471_1744538860_q30,Is Mug on the Desk?,['Yes'],1.0,1,1,[421],[317],floorplan323_12_471_1744538860,1.0,1.0,1.0,3.0
+floorplan218_15_815_1747046962_q12,Where is CreditCard now?,['CoffeeTable'],1.0,1,1,[264],[205],floorplan218_15_815_1747046962,1.0,1.0,1.0,3.0
+floorplan218_15_815_1747046962_q16,Where is KeyChain now?,['CoffeeTable'],1.0,1,1,[568],[433],floorplan218_15_815_1747046962,1.0,1.0,1.0,3.0
+floorplan218_15_815_1747046962_q2,What object did you put on the Sofa?,['RemoteControl'],1.0,1,2,"[974, 975]",[734],floorplan218_15_815_1747046962,1.0,1.0,1.0,3.0
+floorplan218_15_815_1747046962_q3,What object did you put on the GarbageCan?,['Newspaper'],1.0,1,2,"[1086, 1087]",[814],floorplan218_15_815_1747046962,1.0,1.0,0.0,3.0
+floorplan218_15_815_1747046962_q4,Where is CellPhone now?,['CoffeeTable'],1.0,1,1,[64],[47],floorplan218_15_815_1747046962,1.0,1.0,1.0,3.0
+floorplan218_16_717_1746904521_q11,Is KeyChain on the DiningTable?,['Yes'],1.0,1,1,[635],[471],floorplan218_16_717_1746904521,1.0,1.0,1.0,3.0
+floorplan218_20_823_1747084244_q9,How many objects were on the Sofa?,[3],1.0,1,1,[1022],[750],floorplan218_20_823_1747084244,1.0,1.0,1.0,3.0
+floorplan218_8_522_1747086125_q1,Have you seen a DeskLamp?,['Yes'],1.0,1,1,[543],[410],floorplan218_8_522_1747086125,1.0,1.0,1.0,3.0
+floorplan218_8_522_1747086125_q12,Where is Statue now?,['SideTable'],1.0,1,1,[327],[245],floorplan218_8_522_1747086125,1.0,1.0,1.0,3.0
+floorplan218_8_522_1747086125_q2,Was Laptop open?,['Yes'],1.0,1,1,[683],[521],floorplan218_8_522_1747086125,1.0,1.0,1.0,3.0
+floorplan204_19_720_1746870949_q13,How many objects were on the Drawer?,[1],1.0,1,1,[510],[373],floorplan204_19_720_1746870949,1.0,1.0,1.0,3.0
+floorplan204_19_720_1746870949_q15,Is CellPhone on the ArmChair?,['Yes'],1.0,1,1,[745],[549],floorplan204_19_720_1746870949,1.0,1.0,1.0,3.0
+floorplan204_19_720_1746870949_q20,What objects are on the ArmChair?,['CellPhone'],1.0,1,1,[745],[549],floorplan204_19_720_1746870949,1.0,1.0,1.0,3.0
+floorplan204_19_720_1746870949_q21,How many objects were on the ArmChair?,[1],1.0,1,1,[745],[549],floorplan204_19_720_1746870949,1.0,1.0,1.0,3.0
+floorplan323_11_501_1746090509_q0,Is there any LightSwitch in this room?,['Yes'],1.0,1,1,[142],[107],floorplan323_11_501_1746090509,1.0,1.0,1.0,3.0
+floorplan323_11_501_1746090509_q1,Have you seen a LightSwitch?,['Yes'],1.0,1,1,[142],[107],floorplan323_11_501_1746090509,1.0,1.0,0.0,3.0
+floorplan323_11_501_1746090509_q10,Is Pen on the SideTable?,['Yes'],1.0,1,1,[657],[500],floorplan323_11_501_1746090509,1.0,1.0,1.0,3.0
+floorplan323_11_501_1746090509_q14,Is KeyChain in the Drawer?,['Yes'],1.0,1,1,[579],[440],floorplan323_11_501_1746090509,1.0,1.0,1.0,3.0
+floorplan323_11_501_1746090509_q5,Is Bowl on the SideTable?,['Yes'],1.0,1,1,[512],[390],floorplan323_11_501_1746090509,1.0,1.0,1.0,3.0
+floorplan218_8_522_1747086125_q4,What object did you put on the Sofa?,['RemoteControl'],1.0,1,2,"[275, 276]",[211],floorplan218_8_522_1747086125,1.0,1.0,1.0,3.0
+floorplan218_8_522_1747086125_q6,Where is CellPhone now?,['SideTable'],1.0,1,1,[64],[45],floorplan218_8_522_1747086125,1.0,1.0,1.0,3.0
+floorplan218_8_522_1747086125_q8,Where is CreditCard now?,['SideTable'],1.0,1,1,[141],[101],floorplan218_8_522_1747086125,1.0,1.0,1.0,3.0
+floorplan218_15_720_1746886874_q3,Where is WateringCan now?,['CoffeeTable'],1.0,1,1,[40],[29],floorplan218_15_720_1746886874,1.0,1.0,1.0,3.0
+floorplan218_15_720_1746886874_q5,Where is CellPhone now?,['SideTable'],1.0,1,1,[78],[54],floorplan218_15_720_1746886874,1.0,1.0,1.0,3.0
+floorplan218_15_787_1747025912_q20,Where is Statue now?,['SideTable'],1.0,1,1,[707],[526],floorplan218_15_787_1747025912,1.0,1.0,1.0,3.0
+floorplan218_15_787_1747025912_q26,Where is Plate now?,['CoffeeTable'],1.0,1,1,[486],[373],floorplan218_15_787_1747025912,1.0,1.0,1.0,3.0
+floorplan218_15_787_1747025912_q3,What object did you put on the GarbageCan?,['Newspaper'],1.0,1,2,"[1048, 1049]",[786],floorplan218_15_787_1747025912,1.0,1.0,0.0,3.0
+floorplan218_15_787_1747025912_q30,Where is RemoteControl now?,['SideTable'],1.0,1,1,[630],[470],floorplan218_15_787_1747025912,1.0,1.0,1.0,3.0
+floorplan218_15_787_1747025912_q31,Is RemoteControl on the SideTable?,['Yes'],1.0,1,1,[630],[470],floorplan218_15_787_1747025912,1.0,1.0,1.0,3.0
+floorplan218_15_700_1747010205_q14,Is CellPhone in the Drawer?,['Yes'],1.0,1,1,[908],[684],floorplan218_15_700_1747010205,1.0,1.0,1.0,3.0
+floorplan314_17_418_1744520906_q2,What object did you put on the Bed?,['CellPhone'],1.0,1,2,"[59, 60]",[40],floorplan314_17_418_1744520906,1.0,1.0,1.0,3.0
+floorplan314_17_418_1744520906_q9,Where is CellPhone now?,['Bed'],1.0,1,1,[60],[40],floorplan314_17_418_1744520906,1.0,1.0,1.0,3.0
+floorplan321_26_629_1745035560_q12,Is CD in the Drawer?,['Yes'],1.0,1,1,[786],[535],floorplan321_26_629_1745035560,1.0,1.0,1.0,3.0
+floorplan321_26_629_1745035560_q18,Is TissueBox in the GarbageCan?,['Yes'],1.0,1,1,[887],[606],floorplan321_26_629_1745035560,1.0,1.0,1.0,3.0
+floorplan321_26_629_1745035560_q26,Is Pencil on the SideTable?,['Yes'],1.0,1,1,[922],[628],floorplan321_26_629_1745035560,1.0,1.0,1.0,3.0
+floorplan204_20_713_1746902051_q0,Is there any Painting in this room?,['Yes'],1.0,1,1,[584],[429],floorplan204_20_713_1746902051,1.0,1.0,1.0,3.0
+floorplan204_20_713_1746902051_q27,Is RemoteControl on the Shelf?,['Yes'],1.0,1,1,[732],[540],floorplan204_20_713_1746902051,1.0,1.0,1.0,3.0
+floorplan204_19_719_1746845878_q6,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[132],[94],floorplan204_19_719_1746845878,1.0,1.0,1.0,3.0
+floorplan311_20_802_1747029800_q29,Where is CreditCard now?,['SideTable'],1.0,1,1,[650],[468],floorplan311_20_802_1747029800,1.0,1.0,1.0,3.0
+floorplan311_20_802_1747029800_q33,Where is CreditCard now?,['SideTable'],1.0,1,1,[650],[468],floorplan311_20_802_1747029800,1.0,1.0,1.0,3.0
+floorplan314_16_421_1744810639_q5,What object did you put on the Drawer?,['Pen'],1.0,1,2,"[56, 57]",[37],floorplan314_16_421_1744810639,1.0,1.0,1.0,3.0
+floorplan218_15_700_1747010205_q2,What object did you put on the GarbageCan?,['Newspaper'],1.0,1,2,"[41, 42]",[33],floorplan218_15_700_1747010205,1.0,1.0,0.0,3.0
+floorplan218_15_700_1747010205_q22,Where is Statue now?,['CoffeeTable'],1.0,1,1,[423],[336],floorplan218_15_700_1747010205,1.0,1.0,1.0,3.0
+floorplan218_15_700_1747010205_q3,What object did you put on the Drawer?,['CellPhone'],1.0,1,2,"[907, 908]",[684],floorplan218_15_700_1747010205,1.0,1.0,1.0,3.0
+floorplan218_15_720_1746886874_q15,Where is Plate now?,['CoffeeTable'],1.0,1,1,[193],[139],floorplan218_15_720_1746886874,1.0,1.0,1.0,3.0
+floorplan218_15_720_1746886874_q19,Where is CreditCard now?,['SideTable'],1.0,1,1,[492],[366],floorplan218_15_720_1746886874,1.0,1.0,1.0,3.0
+floorplan218_15_720_1746886874_q21,Where is Statue now?,['SideTable'],1.0,1,1,[740],[560],floorplan218_15_720_1746886874,1.0,1.0,1.0,3.0
+floorplan218_15_720_1746886874_q24,Where is Statue now?,['SideTable'],1.0,1,1,[740],[560],floorplan218_15_720_1746886874,1.0,1.0,1.0,3.0
+floorplan218_14_797_1746913294_q16,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[778],[596],floorplan218_14_797_1746913294,1.0,1.0,1.0,3.0
+floorplan218_14_797_1746913294_q2,Was Box open?,['Yes'],1.0,1,1,[1042],[796],floorplan218_14_797_1746913294,1.0,1.0,1.0,3.0
+floorplan218_14_797_1746913294_q24,Where is Statue now?,['SideTable'],1.0,1,1,[620],[472],floorplan218_14_797_1746913294,1.0,1.0,1.0,3.0
+floorplan218_14_797_1746913294_q29,Where is Plate now?,['CoffeeTable'],1.0,1,1,[660],[499],floorplan218_14_797_1746913294,1.0,1.0,1.0,3.0
+floorplan218_14_797_1746913294_q3,Where is CreditCard now?,['SideTable'],1.0,1,1,[75],[54],floorplan218_14_797_1746913294,1.0,1.0,1.0,3.0
+floorplan218_15_700_1747010205_q12,How many objects were on the SideTable?,[3],1.0,1,1,[850],[643],floorplan218_15_700_1747010205,1.0,1.0,1.0,3.0
+floorplan219_14_457_1746025505_q4,Is CreditCard on the ArmChair?,['Yes'],1.0,1,1,[604],[456],floorplan219_14_457_1746025505,1.0,1.0,1.0,3.0
+floorplan220_14_459_1745999102_q16,Is CreditCard on the Sofa?,['Yes'],1.0,1,1,[628],[458],floorplan220_14_459_1745999102,1.0,1.0,1.0,3.0
+floorplan311_13_434_1746113811_q3,What object did you put on the ArmChair?,['Pillow'],1.0,1,2,"[203, 204]",[154],floorplan311_13_434_1746113811,1.0,1.0,1.0,3.0
+floorplan311_13_434_1746113811_q30,How many objects were on the SideTable?,[3],1.0,1,1,[493],[353],floorplan311_13_434_1746113811,1.0,1.0,1.0,3.0
+floorplan204_25_861_1747031544_q18,Is RemoteControl on the ArmChair?,['Yes'],1.0,1,1,[1197],[860],floorplan204_25_861_1747031544,1.0,1.0,1.0,3.0
+floorplan204_25_861_1747031544_q29,Is CellPhone on the Sofa?,['Yes'],1.0,1,1,[1058],[757],floorplan204_25_861_1747031544,1.0,1.0,1.0,3.0
+floorplan205_13_438_1745416055_q1,Have you seen a Drawer?,['Yes'],1.0,1,1,[408],[297],floorplan205_13_438_1745416055,1.0,1.0,0.0,3.0
+floorplan311_13_434_1746113811_q42,Where is Pen now?,['SideTable'],1.0,1,1,[604],[433],floorplan311_13_434_1746113811,1.0,1.0,1.0,3.0
+floorplan311_20_802_1747029800_q23,Where is RemoteControl now?,['SideTable'],1.0,1,1,[341],[250],floorplan311_20_802_1747029800,1.0,1.0,1.0,3.0
+floorplan218_14_706_1746947607_q9,Is CreditCard in the Dresser?,['Yes'],1.0,1,1,[945],[705],floorplan218_14_706_1746947607,1.0,1.0,1.0,3.0
+floorplan218_14_708_1746911462_q0,Is there any DeskLamp in this room?,['Yes'],1.0,1,1,[384],[285],floorplan218_14_708_1746911462,1.0,1.0,1.0,3.0
+floorplan218_14_708_1746911462_q1,Have you seen a DeskLamp?,['Yes'],1.0,1,1,[384],[285],floorplan218_14_708_1746911462,1.0,1.0,1.0,3.0
+floorplan218_14_708_1746911462_q10,Is Plate on the DiningTable?,['Yes'],1.0,1,1,[866],[651],floorplan218_14_708_1746911462,1.0,1.0,1.0,3.0
+floorplan218_14_708_1746911462_q16,Where is CreditCard now?,['Sofa'],1.0,1,1,[939],[707],floorplan218_14_708_1746911462,1.0,1.0,1.0,3.0
+floorplan218_14_708_1746911462_q2,Is KeyChain on the SideTable?,['Yes'],1.0,1,1,[585],[429],floorplan218_14_708_1746911462,1.0,1.0,1.0,3.0
+floorplan218_14_708_1746911462_q21,Where is CreditCard now?,['Sofa'],1.0,1,1,[939],[707],floorplan218_14_708_1746911462,1.0,1.0,1.0,3.0
+floorplan218_14_797_1746913294_q1,Have you seen a DeskLamp?,['Yes'],1.0,1,1,[1000],[762],floorplan218_14_797_1746913294,1.0,1.0,1.0,3.0
+floorplan207_13_424_1744784737_q0,Is there any GarbageCan in this room?,['Yes'],1.0,1,1,[121],[81],floorplan207_13_424_1744784737,1.0,1.0,1.0,3.0
+floorplan207_13_424_1744784737_q1,Have you seen a GarbageCan?,['Yes'],1.0,1,1,[121],[81],floorplan207_13_424_1744784737,1.0,1.0,1.0,3.0
+floorplan207_13_424_1744784737_q12,How many objects were on the ArmChair?,[1],1.0,1,1,[600],[423],floorplan207_13_424_1744784737,1.0,1.0,1.0,3.0
+floorplan207_13_424_1744784737_q14,Is RemoteControl on the CoffeeTable?,['Yes'],1.0,1,1,[582],[412],floorplan207_13_424_1744784737,1.0,1.0,1.0,3.0
+floorplan207_17_434_1745411855_q0,Is there any HousePlant in this room?,['Yes'],1.0,1,1,[59],[41],floorplan207_17_434_1745411855,1.0,1.0,1.0,3.0
+floorplan207_17_434_1745411855_q1,Have you seen a HousePlant?,['Yes'],1.0,1,1,[59],[41],floorplan207_17_434_1745411855,1.0,1.0,1.0,3.0
+floorplan305_30_633_1745061112_q47,Where is BasketBall now?,['Bed'],1.0,1,1,[677],[458],floorplan305_30_633_1745061112,1.0,1.0,1.0,3.0
+floorplan305_30_633_1745061112_q5,What object did you put on the Bed?,['BasketBall'],1.0,1,2,"[676, 677]",[458],floorplan305_30_633_1745061112,1.0,1.0,1.0,3.0
+floorplan305_30_633_1745061112_q6,Is Mug on the Desk?,['Yes'],1.0,1,1,[930],[632],floorplan305_30_633_1745061112,1.0,1.0,1.0,3.0
+floorplan306_15_455_1746260330_q0,Is there any Window in this room?,['Yes'],1.0,1,1,[129],[90],floorplan306_15_455_1746260330,1.0,1.0,1.0,3.0
+floorplan306_15_455_1746260330_q1,Have you seen a Window?,['Yes'],1.0,1,1,[129],[90],floorplan306_15_455_1746260330,1.0,1.0,1.0,3.0
+floorplan218_13_604_1744950483_q14,Is KeyChain on the SideTable?,['Yes'],1.0,1,1,[354],[265],floorplan218_13_604_1744950483,1.0,1.0,1.0,3.0
+floorplan218_13_604_1744950483_q18,Where is Newspaper now?,['SideTable'],1.0,1,1,[333],[253],floorplan218_13_604_1744950483,1.0,1.0,1.0,3.0
+floorplan218_13_604_1744950483_q2,Is RemoteControl on the SideTable?,['Yes'],1.0,1,1,[820],[603],floorplan218_13_604_1744950483,1.0,1.0,1.0,3.0
+floorplan218_13_604_1744950483_q22,Where is Newspaper now?,['SideTable'],1.0,1,1,[333],[253],floorplan218_13_604_1744950483,1.0,1.0,1.0,3.0
+floorplan218_14_706_1746947607_q0,Is there any LightSwitch in this room?,['Yes'],1.0,1,1,[303],[219],floorplan218_14_706_1746947607,1.0,1.0,1.0,3.0
+floorplan218_14_706_1746947607_q1,Have you seen a LightSwitch?,['Yes'],1.0,1,1,[303],[219],floorplan218_14_706_1746947607,1.0,1.0,1.0,3.0
+floorplan218_14_706_1746947607_q24,Where is Plate now?,['SideTable'],1.0,1,1,[644],[478],floorplan218_14_706_1746947607,1.0,1.0,1.0,3.0
+floorplan218_14_706_1746947607_q26,Where is Plate now?,['SideTable'],1.0,1,1,[644],[478],floorplan218_14_706_1746947607,1.0,1.0,1.0,3.0
+floorplan218_14_706_1746947607_q3,Where is CellPhone now?,['Sofa'],1.0,1,1,[49],[36],floorplan218_14_706_1746947607,1.0,1.0,1.0,3.0
+floorplan218_14_706_1746947607_q5,Where is RemoteControl now?,['SideTable'],1.0,1,1,[83],[59],floorplan218_14_706_1746947607,1.0,1.0,1.0,3.0
+floorplan221_14_426_1745982489_q27,Is RemoteControl on the DiningTable?,['Yes'],1.0,1,1,[621],[425],floorplan221_14_426_1745982489,1.0,1.0,1.0,3.0
+floorplan221_14_426_1745982489_q6,Is CreditCard on the DiningTable?,['Yes'],1.0,1,1,[498],[341],floorplan221_14_426_1745982489,1.0,1.0,1.0,3.0
+floorplan305_17_436_1744353928_q3,What object did you put on the GarbageCan?,['CD'],1.0,1,2,"[488, 489]",[343],floorplan305_17_436_1744353928,1.0,1.0,1.0,3.0
+floorplan305_30_633_1745061112_q0,Is there any LaundryHamper in this room?,['Yes'],1.0,1,1,[640],[429],floorplan305_30_633_1745061112,1.0,1.0,0.0,3.0
+floorplan305_30_633_1745061112_q1,Have you seen a LaundryHamper?,['Yes'],1.0,1,1,[640],[429],floorplan305_30_633_1745061112,1.0,1.0,0.0,3.0
+floorplan305_30_633_1745061112_q2,Was Laptop open?,['Yes'],1.0,1,1,[930],[632],floorplan305_30_633_1745061112,1.0,1.0,1.0,3.0
+floorplan207_18_414_1745999762_q12,Is KeyChain on the CoffeeTable?,['Yes'],1.0,1,1,[605],[413],floorplan207_18_414_1745999762,1.0,1.0,1.0,3.0
+floorplan207_18_414_1745999762_q2,Was Laptop open?,['Yes'],1.0,1,1,[605],[413],floorplan207_18_414_1745999762,1.0,1.0,1.0,3.0
+floorplan207_18_414_1745999762_q23,Is CreditCard on the CoffeeTable?,['Yes'],1.0,1,1,[472],[324],floorplan207_18_414_1745999762,1.0,1.0,1.0,3.0
+floorplan205_13_438_1745416055_q3,Is RemoteControl on the SideTable?,['Yes'],1.0,1,1,[594],[437],floorplan205_13_438_1745416055,1.0,1.0,1.0,3.0
+floorplan207_18_414_1745999762_q7,Is RemoteControl on the CoffeeTable?,['Yes'],1.0,1,1,[385],[260],floorplan207_18_414_1745999762,1.0,1.0,1.0,3.0
+floorplan209_15_431_1745402895_q12,Is CreditCard on the Sofa?,['Yes'],1.0,1,1,[522],[373],floorplan209_15_431_1745402895,1.0,1.0,0.0,3.0
+floorplan209_15_431_1745402895_q17,How many objects were on the Sofa?,[4],1.0,1,1,[522],[373],floorplan209_15_431_1745402895,1.0,1.0,0.0,3.0
+floorplan209_15_431_1745402895_q33,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[327],[231],floorplan209_15_431_1745402895,1.0,1.0,1.0,3.0
+floorplan209_15_431_1745402895_q37,Where is Vase now?,['CoffeeTable'],1.0,1,1,[471],[335],floorplan209_15_431_1745402895,1.0,1.0,1.0,3.0
+floorplan209_15_431_1745402895_q39,Where is Book now?,['SideTable'],1.0,1,1,[607],[430],floorplan209_15_431_1745402895,1.0,1.0,1.0,3.0
+floorplan209_15_431_1745402895_q7,Is KeyChain on the ArmChair?,['Yes'],1.0,1,1,[402],[284],floorplan209_15_431_1745402895,1.0,1.0,1.0,3.0
+floorplan221_14_439_1745416077_q10,Where is Pen now?,['CoffeeTable'],1.0,1,1,[82],[56],floorplan221_14_439_1745416077,1.0,1.0,1.0,3.0
+floorplan221_14_439_1745416077_q3,Is KeyChain on the CoffeeTable?,['Yes'],1.0,1,1,[624],[438],floorplan221_14_439_1745416077,1.0,1.0,1.0,3.0
+floorplan221_15_436_1745405876_q11,Where is CreditCard now?,['CoffeeTable'],1.0,1,1,[83],[55],floorplan221_15_436_1745405876,1.0,1.0,1.0,3.0
+floorplan221_15_436_1745405876_q13,Is Plate on the DiningTable?,['Yes'],1.0,1,1,[648],[435],floorplan221_15_436_1745405876,1.0,1.0,1.0,3.0
+floorplan218_12_808_1747020722_q18,Is KeyChain on the Sofa?,['Yes'],1.0,1,1,[1035],[807],floorplan218_12_808_1747020722,1.0,1.0,1.0,3.0
+floorplan218_12_808_1747020722_q8,Where is Statue now?,['SideTable'],1.0,1,1,[515],[401],floorplan218_12_808_1747020722,1.0,1.0,1.0,3.0
+floorplan218_12_808_1747020722_q9,Is Statue on the SideTable?,['Yes'],1.0,1,1,[515],[401],floorplan218_12_808_1747020722,1.0,1.0,1.0,3.0
+floorplan218_13_551_1746888708_q3,Is CreditCard on the CoffeeTable?,['Yes'],1.0,1,1,[700],[510],floorplan218_13_551_1746888708,1.0,1.0,1.0,3.0
+floorplan218_13_604_1744950483_q13,Where is KeyChain now?,['SideTable'],1.0,1,1,[354],[265],floorplan218_13_604_1744950483,1.0,1.0,1.0,3.0
+floorplan221_15_436_1745405876_q4,Is KeyChain on the CoffeeTable?,['Yes'],1.0,1,1,[424],[285],floorplan221_15_436_1745405876,1.0,1.0,1.0,3.0
+floorplan221_15_528_1746883510_q0,Is there any FloorLamp in this room?,['Yes'],1.0,1,1,[4],[1],floorplan221_15_528_1746883510,1.0,1.0,1.0,3.0
+floorplan303_30_832_1746979469_q1,Have you seen a GarbageCan?,['Yes'],1.0,1,1,[160],[113],floorplan303_30_832_1746979469,1.0,1.0,1.0,3.0
+floorplan303_30_832_1746979469_q3,What object did you put on the GarbageCan?,['Pencil'],1.0,1,2,"[766, 767]",[547],floorplan303_30_832_1746979469,1.0,1.0,1.0,3.0
+floorplan303_30_832_1746979469_q36,Is CreditCard on the Shelf?,['Yes'],1.0,1,1,[1134],[799],floorplan303_30_832_1746979469,1.0,1.0,1.0,3.0
+floorplan209_15_434_1746022835_q0,Is there any HousePlant in this room?,['Yes'],1.0,1,1,[263],[178],floorplan209_15_434_1746022835,1.0,1.0,1.0,3.0
+floorplan209_15_434_1746022835_q1,Have you seen a HousePlant?,['Yes'],1.0,1,1,[263],[178],floorplan209_15_434_1746022835,1.0,1.0,1.0,3.0
+floorplan209_15_434_1746022835_q11,Is CreditCard on the SideTable?,['Yes'],1.0,1,1,[589],[415],floorplan209_15_434_1746022835,1.0,1.0,1.0,3.0
+floorplan209_15_434_1746022835_q29,Where is Pen now?,['CoffeeTable'],1.0,1,1,[461],[324],floorplan209_15_434_1746022835,1.0,1.0,1.0,3.0
+floorplan209_15_434_1746022835_q5,Is Book on the CoffeeTable?,['Yes'],1.0,1,1,[561],[394],floorplan209_15_434_1746022835,1.0,1.0,1.0,3.0
+floorplan209_20_584_1745084716_q0,Is there any HousePlant in this room?,['Yes'],1.0,1,1,[98],[69],floorplan209_20_584_1745084716,1.0,1.0,1.0,3.0
+floorplan209_20_584_1745084716_q1,Have you seen a HousePlant?,['Yes'],1.0,1,1,[98],[69],floorplan209_20_584_1745084716,1.0,1.0,1.0,3.0
+floorplan221_15_528_1746883510_q1,Have you seen a FloorLamp?,['Yes'],1.0,1,1,[4],[1],floorplan221_15_528_1746883510,1.0,1.0,1.0,3.0
+floorplan221_15_528_1746883510_q18,Is Plate on the CoffeeTable?,['Yes'],1.0,1,1,[378],[269],floorplan221_15_528_1746883510,1.0,1.0,1.0,3.0
+floorplan221_15_528_1746883510_q21,Is CreditCard on the DiningTable?,['Yes'],1.0,1,1,[675],[479],floorplan221_15_528_1746883510,1.0,1.0,1.0,3.0
+floorplan218_11_791_1746844704_q10,How many objects were on the CoffeeTable?,[3],1.0,1,1,[871],[678],floorplan218_11_791_1746844704,1.0,1.0,1.0,3.0
+floorplan218_11_791_1746844704_q21,Where is CreditCard now?,['SideTable'],1.0,1,1,[298],[235],floorplan218_11_791_1746844704,1.0,1.0,1.0,3.0
+floorplan218_11_791_1746844704_q5,Where is Plate now?,['CoffeeTable'],1.0,1,1,[871],[678],floorplan218_11_791_1746844704,1.0,1.0,1.0,3.0
+floorplan218_11_791_1746844704_q6,Is Plate on the CoffeeTable?,['Yes'],1.0,1,1,[871],[678],floorplan218_11_791_1746844704,1.0,1.0,1.0,3.0
+floorplan218_12_808_1747020722_q14,Where is RemoteControl now?,['CoffeeTable'],1.0,1,1,[96],[70],floorplan218_12_808_1747020722,1.0,1.0,0.0,3.0
+floorplan218_11_699_1745402568_q2,Was Laptop open?,['Yes'],1.0,1,1,[909],[698],floorplan218_11_699_1745402568,1.0,1.0,1.0,3.0
+floorplan303_28_811_1747035692_q2,Was Laptop open?,['Yes'],1.0,1,1,[1146],[810],floorplan303_28_811_1747035692,1.0,1.0,1.0,3.0
+floorplan303_28_811_1747035692_q3,What object did you put on the GarbageCan?,['Pencil'],1.0,1,2,"[1002, 1003]",[706],floorplan303_28_811_1747035692,1.0,1.0,1.0,3.0
+floorplan303_28_811_1747035692_q5,Is KeyChain on the SideTable?,['Yes'],1.0,1,1,[1146],[810],floorplan303_28_811_1747035692,1.0,1.0,1.0,3.0
+floorplan303_28_811_1747035692_q53,Is CD on the SideTable?,['Yes'],1.0,1,1,[1050],[740],floorplan303_28_811_1747035692,1.0,1.0,1.0,3.0
+floorplan209_20_584_1745084716_q2,Was Laptop open?,['Yes'],1.0,1,1,[817],[583],floorplan209_20_584_1745084716,1.0,1.0,1.0,3.0
+floorplan209_20_584_1745084716_q26,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[766],[545],floorplan209_20_584_1745084716,1.0,1.0,1.0,3.0
+floorplan209_21_641_1746939338_q1,Have you seen a Window?,['Yes'],1.0,1,1,[804],[578],floorplan209_21_641_1746939338,1.0,1.0,1.0,3.0
+floorplan209_21_641_1746939338_q12,Where is KeyChain now?,['Dresser'],1.0,1,1,[74],[52],floorplan209_21_641_1746939338,1.0,1.0,0.0,3.0
+floorplan303_30_832_1746979469_q0,Is there any GarbageCan in this room?,['Yes'],1.0,1,1,[160],[113],floorplan303_30_832_1746979469,1.0,1.0,1.0,3.0
+floorplan218_11_699_1745402568_q5,What object did you put on the Dresser?,['CellPhone'],1.0,1,2,"[834, 835]",[643],floorplan218_11_699_1745402568,1.0,1.0,1.0,3.0
+floorplan218_11_719_1745311812_q2,What object did you put on the GarbageCan?,['Newspaper'],1.0,1,2,"[236, 237]",[184],floorplan218_11_719_1745311812,1.0,1.0,0.0,3.0
+floorplan218_11_719_1745311812_q21,How many objects were on the SideTable?,[3],1.0,1,1,[933],[718],floorplan218_11_719_1745311812,1.0,1.0,1.0,3.0
+floorplan221_16_428_1746002844_q11,Is Pen on the CoffeeTable?,['Yes'],1.0,1,1,[591],[406],floorplan221_16_428_1746002844,1.0,1.0,1.0,3.0
+floorplan221_16_428_1746002844_q17,Is KeyChain on the CoffeeTable?,['Yes'],1.0,1,1,[468],[322],floorplan221_16_428_1746002844,1.0,1.0,1.0,3.0
+floorplan221_16_442_1744749839_q0,Is there any FloorLamp in this room?,['Yes'],1.0,1,1,[570],[399],floorplan221_16_442_1744749839,1.0,1.0,1.0,3.0
+floorplan221_16_442_1744749839_q1,Have you seen a FloorLamp?,['Yes'],1.0,1,1,[570],[399],floorplan221_16_442_1744749839,1.0,1.0,1.0,3.0
+floorplan209_21_641_1746939338_q24,Where is Pen now?,['SideTable'],1.0,1,1,[412],[289],floorplan209_21_641_1746939338,1.0,1.0,1.0,3.0
+floorplan209_21_641_1746939338_q29,Where is Watch now?,['CoffeeTable'],1.0,1,1,[290],[200],floorplan209_21_641_1746939338,1.0,1.0,1.0,3.0
+floorplan209_21_641_1746939338_q33,Where is RemoteControl now?,['Dresser'],1.0,1,1,[634],[454],floorplan209_21_641_1746939338,1.0,1.0,1.0,3.0
+floorplan209_23_701_1746947737_q12,Where is Statue now?,['CoffeeTable'],1.0,1,1,[131],[90],floorplan209_23_701_1746947737,1.0,1.0,1.0,3.0
+floorplan209_23_701_1746947737_q23,Is KeyChain on the CoffeeTable?,['Yes'],1.0,1,1,[997],[700],floorplan209_23_701_1746947737,1.0,1.0,1.0,3.0
+floorplan303_28_701_1746815644_q3,What object did you put on the GarbageCan?,['CD'],1.0,1,2,"[785, 786]",[544],floorplan303_28_701_1746815644,1.0,1.0,1.0,3.0
+floorplan303_28_701_1746815644_q34,Is Mug on the SideTable?,['Yes'],1.0,1,1,[649],[446],floorplan303_28_701_1746815644,1.0,1.0,1.0,3.0
+floorplan303_28_701_1746815644_q6,Is Cloth on the Shelf?,['Yes'],1.0,1,1,[986],[681],floorplan303_28_701_1746815644,1.0,1.0,1.0,3.0
+floorplan218_11_541_1744826145_q2,Was Laptop open?,['Yes'],1.0,1,1,[731],[540],floorplan218_11_541_1744826145,1.0,1.0,1.0,3.0
+floorplan218_11_541_1744826145_q33,Where is CellPhone now?,['Sofa'],1.0,1,1,[416],[292],floorplan218_11_541_1744826145,1.0,1.0,1.0,3.0
+floorplan218_11_541_1744826145_q4,What object did you put on the Sofa?,['CellPhone'],1.0,1,2,"[415, 416]",[292],floorplan218_11_541_1744826145,1.0,1.0,1.0,3.0
+floorplan218_11_541_1744826145_q5,What object did you put on the GarbageCan?,['Newspaper'],1.0,1,2,"[565, 566]",[406],floorplan218_11_541_1744826145,1.0,1.0,0.0,3.0
+floorplan218_11_699_1745402568_q16,Where is Plate now?,['SideTable'],1.0,1,1,[355],[280],floorplan218_11_699_1745402568,1.0,1.0,1.0,3.0
+floorplan218_11_699_1745402568_q18,Is KeyChain on the DiningTable?,['Yes'],1.0,1,1,[909],[698],floorplan218_11_699_1745402568,1.0,1.0,1.0,3.0
+floorplan221_25_720_1746886407_q17,Where is Vase now?,['CoffeeTable'],1.0,1,1,[290],[201],floorplan221_25_720_1746886407,1.0,1.0,1.0,3.0
+floorplan209_23_701_1746947737_q3,Was Laptop open?,['Yes'],1.0,1,1,[997],[700],floorplan209_23_701_1746947737,1.0,1.0,1.0,3.0
+floorplan209_23_701_1746947737_q35,Where is Vase now?,['SideTable'],1.0,1,1,[677],[469],floorplan209_23_701_1746947737,1.0,1.0,1.0,3.0
+floorplan209_23_701_1746947737_q40,Where is Vase now?,['SideTable'],1.0,1,1,[677],[469],floorplan209_23_701_1746947737,1.0,1.0,1.0,3.0
+floorplan209_25_782_1747045307_q0,Is there any Window in this room?,['Yes'],1.0,1,1,[458],[335],floorplan209_25_782_1747045307,1.0,1.0,1.0,3.0
+floorplan209_25_782_1747045307_q10,Is RemoteControl on the SideTable?,['Yes'],1.0,1,1,[1084],[781],floorplan209_25_782_1747045307,1.0,1.0,1.0,3.0
+floorplan209_25_782_1747045307_q17,Is KeyChain on the Sofa?,['Yes'],1.0,1,1,[875],[635],floorplan209_25_782_1747045307,1.0,1.0,1.0,3.0
+floorplan303_27_719_1746840170_q2,What object did you put on the GarbageCan?,['Pencil'],1.0,1,2,"[979, 980]",[686],floorplan303_27_719_1746840170,1.0,1.0,1.0,3.0
+floorplan303_28_701_1746815644_q2,Was Laptop open?,['Yes'],1.0,1,1,[1014],[700],floorplan303_28_701_1746815644,1.0,1.0,1.0,3.0
+floorplan221_25_720_1746886407_q21,Where is Plate now?,['CoffeeTable'],1.0,1,1,[577],[405],floorplan221_25_720_1746886407,1.0,1.0,1.0,3.0
+floorplan221_25_720_1746886407_q26,Where is Vase now?,['CoffeeTable'],1.0,1,1,[290],[201],floorplan221_25_720_1746886407,1.0,1.0,1.0,3.0
+floorplan221_25_720_1746886407_q30,Where is Plate now?,['CoffeeTable'],1.0,1,1,[577],[405],floorplan221_25_720_1746886407,1.0,1.0,1.0,3.0
+floorplan218_11_511_1746023560_q2,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[687],[510],floorplan218_11_511_1746023560,1.0,1.0,1.0,3.0
+floorplan218_11_541_1744826145_q0,Is there any DeskLamp in this room?,['Yes'],1.0,1,1,[43],[34],floorplan218_11_541_1744826145,1.0,1.0,1.0,3.0
+floorplan218_11_541_1744826145_q1,Have you seen a DeskLamp?,['Yes'],1.0,1,1,[43],[34],floorplan218_11_541_1744826145,1.0,1.0,1.0,3.0
+floorplan221_27_826_1746972286_q3,Was Laptop open?,['Yes'],1.0,1,1,[1202],[825],floorplan221_27_826_1746972286,1.0,1.0,1.0,3.0
+floorplan209_25_782_1747045307_q29,Is Watch on the SideTable?,['Yes'],1.0,1,1,[913],[662],floorplan209_25_782_1747045307,1.0,1.0,1.0,3.0
+floorplan209_25_782_1747045307_q34,Where is WateringCan now?,['CoffeeTable'],1.0,1,1,[512],[381],floorplan209_25_782_1747045307,1.0,1.0,0.0,3.0
+floorplan209_25_782_1747045307_q40,Where is WateringCan now?,['CoffeeTable'],1.0,1,1,[512],[381],floorplan209_25_782_1747045307,1.0,1.0,0.0,3.0
+floorplan209_28_784_1747108090_q12,Where is Watch now?,['CoffeeTable'],1.0,1,1,[157],[117],floorplan209_28_784_1747108090,1.0,1.0,1.0,3.0
+floorplan209_28_784_1747108090_q14,Is Book on the CoffeeTable?,['Yes'],1.0,1,1,[973],[693],floorplan209_28_784_1747108090,1.0,1.0,1.0,3.0
+floorplan303_27_699_1746943704_q17,Is CellPhone on the Shelf?,['Yes'],1.0,1,1,[700],[481],floorplan303_27_699_1746943704,1.0,1.0,1.0,3.0
+floorplan303_27_699_1746943704_q28,Is Cloth on the Shelf?,['Yes'],1.0,1,1,[1009],[698],floorplan303_27_699_1746943704,1.0,1.0,1.0,3.0
+floorplan303_27_719_1746840170_q0,Is there any GarbageCan in this room?,['Yes'],1.0,1,1,[402],[274],floorplan303_27_719_1746840170,1.0,1.0,1.0,3.0
+floorplan303_27_719_1746840170_q1,Have you seen a GarbageCan?,['Yes'],1.0,1,1,[402],[274],floorplan303_27_719_1746840170,1.0,1.0,1.0,3.0
+floorplan221_27_826_1746972286_q43,Is Laptop on the DiningTable?,['Yes'],1.0,1,1,[1161],[797],floorplan221_27_826_1746972286,1.0,1.0,1.0,3.0
+floorplan218_11_472_1746000725_q14,Is Plate on the DiningTable?,['Yes'],1.0,1,1,[539],[394],floorplan218_11_472_1746000725,1.0,1.0,1.0,3.0
+floorplan218_11_472_1746000725_q2,Was Box open?,['Yes'],1.0,1,1,[642],[471],floorplan218_11_472_1746000725,1.0,1.0,1.0,3.0
+floorplan218_11_472_1746000725_q21,Is CellPhone on the CoffeeTable?,['Yes'],1.0,1,1,[642],[471],floorplan218_11_472_1746000725,1.0,1.0,1.0,3.0
+floorplan218_11_472_1746000725_q32,Is CreditCard on the CoffeeTable?,['Yes'],1.0,1,1,[351],[257],floorplan218_11_472_1746000725,1.0,1.0,1.0,3.0
+floorplan218_11_472_1746000725_q4,What object did you put on the Sofa?,['CellPhone'],1.0,1,2,"[607, 608]",[450],floorplan218_11_472_1746000725,1.0,1.0,1.0,3.0
+floorplan218_11_472_1746000725_q8,Is RemoteControl on the SideTable?,['Yes'],1.0,1,1,[442],[318],floorplan218_11_472_1746000725,1.0,1.0,1.0,3.0
+floorplan218_10_567_1745407406_q21,Where is RemoteControl now?,['SideTable'],1.0,1,1,[682],[523],floorplan218_10_567_1745407406,1.0,1.0,1.0,3.0
+floorplan28_17_440_1745299490_q34,How many objects were on the GarbageCan?,[1],1.0,1,1,[464],[326],floorplan28_17_440_1745299490,1.0,1.0,1.0,3.0
+floorplan210_11_482_1745446449_q0,Is there any DeskLamp in this room?,['Yes'],1.0,1,1,[101],[75],floorplan210_11_482_1745446449,1.0,1.0,1.0,3.0
+floorplan210_11_482_1745446449_q1,Have you seen a DeskLamp?,['Yes'],1.0,1,1,[101],[75],floorplan210_11_482_1745446449,1.0,1.0,1.0,3.0
+floorplan210_11_482_1745446449_q16,Is Statue on the CoffeeTable?,['Yes'],1.0,1,1,[455],[343],floorplan210_11_482_1745446449,1.0,1.0,1.0,3.0
+floorplan210_11_482_1745446449_q2,What object did you put on the Sofa?,['RemoteControl'],1.0,1,2,"[52, 53]",[42],floorplan210_11_482_1745446449,1.0,1.0,0.0,3.0
+floorplan210_11_482_1745446449_q3,Is RemoteControl on the Ottoman?,['Yes'],1.0,1,1,[404],[301],floorplan210_11_482_1745446449,1.0,1.0,1.0,3.0
+floorplan209_25_782_1747045307_q24,Where is Vase now?,['SideTable'],1.0,1,1,[328],[234],floorplan209_25_782_1747045307,1.0,1.0,1.0,3.0
+floorplan218_10_567_1745407406_q26,Where is Statue now?,['SideTable'],1.0,1,1,[740],[566],floorplan218_10_567_1745407406,1.0,1.0,1.0,3.0
+floorplan218_10_601_1744774195_q11,Is CreditCard on the SideTable?,['Yes'],1.0,1,1,[780],[600],floorplan218_10_601_1744774195,1.0,1.0,1.0,3.0
+floorplan218_10_601_1744774195_q17,How many objects were on the SideTable?,[2],1.0,1,1,[780],[600],floorplan218_10_601_1744774195,1.0,1.0,0.0,3.0
+floorplan218_10_601_1744774195_q19,Where is CellPhone now?,['SideTable'],1.0,1,1,[297],[225],floorplan218_10_601_1744774195,1.0,1.0,1.0,3.0
+floorplan218_10_601_1744774195_q21,Where is WateringCan now?,['CoffeeTable'],1.0,1,1,[597],[462],floorplan218_10_601_1744774195,1.0,1.0,1.0,3.0
+floorplan218_10_601_1744774195_q4,Where is KeyChain now?,['Sofa'],1.0,1,1,[746],[577],floorplan218_10_601_1744774195,1.0,1.0,1.0,3.0
+floorplan218_10_601_1744774195_q5,Is KeyChain on the Sofa?,['Yes'],1.0,1,1,[746],[577],floorplan218_10_601_1744774195,1.0,1.0,1.0,3.0
+floorplan218_10_601_1744774195_q9,How many objects were on the Sofa?,[3],1.0,1,1,[746],[577],floorplan218_10_601_1744774195,1.0,1.0,1.0,3.0
+floorplan218_11_472_1746000725_q0,Is there any LightSwitch in this room?,['Yes'],1.0,1,1,[516],[377],floorplan218_11_472_1746000725,1.0,1.0,1.0,3.0
+floorplan218_11_472_1746000725_q1,Have you seen a LightSwitch?,['Yes'],1.0,1,1,[516],[377],floorplan218_11_472_1746000725,1.0,1.0,1.0,3.0
+floorplan223_15_437_1746024482_q2,Is KeyChain on the CoffeeTable?,['Yes'],1.0,1,1,[625],[436],floorplan223_15_437_1746024482,1.0,1.0,1.0,3.0
+floorplan210_11_520_1745420423_q23,Where is RemoteControl now?,['CoffeeTable'],1.0,1,1,[368],[286],floorplan210_11_520_1745420423,1.0,1.0,1.0,3.0
+floorplan210_11_520_1745420423_q25,Where is Statue now?,['CoffeeTable'],1.0,1,1,[494],[382],floorplan210_11_520_1745420423,1.0,1.0,1.0,3.0
+floorplan210_12_443_1746033756_q0,Is there any DeskLamp in this room?,['Yes'],1.0,1,1,[268],[194],floorplan210_12_443_1746033756,1.0,1.0,1.0,3.0
+floorplan210_12_443_1746033756_q1,Have you seen a DeskLamp?,['Yes'],1.0,1,1,[268],[194],floorplan210_12_443_1746033756,1.0,1.0,1.0,3.0
+floorplan210_12_443_1746033756_q19,Where is Watch now?,['CoffeeTable'],1.0,1,1,[353],[262],floorplan210_12_443_1746033756,1.0,1.0,1.0,3.0
+floorplan210_13_423_1745411371_q1,Have you seen a DeskLamp?,['Yes'],1.0,1,1,[380],[282],floorplan210_13_423_1745411371,1.0,1.0,1.0,3.0
+floorplan26_30_702_1747072764_q25,Is Spoon on the DiningTable?,['Yes'],1.0,1,1,[1045],[701],floorplan26_30_702_1747072764,1.0,1.0,1.0,3.0
+floorplan26_30_702_1747072764_q31,Is Tomato on the CounterTop?,['Yes'],1.0,1,1,[857],[572],floorplan26_30_702_1747072764,1.0,1.0,1.0,3.0
+floorplan223_17_453_1745400822_q0,Is there any HousePlant in this room?,['Yes'],1.0,1,1,[440],[308],floorplan223_17_453_1745400822,1.0,1.0,1.0,3.0
+floorplan223_17_453_1745400822_q1,Have you seen a HousePlant?,['Yes'],1.0,1,1,[440],[308],floorplan223_17_453_1745400822,1.0,1.0,1.0,3.0
+floorplan218_10_556_1745368595_q2,Was Laptop open?,['Yes'],1.0,1,1,[747],[555],floorplan218_10_556_1745368595,1.0,1.0,1.0,3.0
+floorplan218_10_556_1745368595_q20,Where is Plate now?,['CoffeeTable'],1.0,1,1,[578],[428],floorplan218_10_556_1745368595,1.0,1.0,1.0,3.0
+floorplan218_10_556_1745368595_q21,Is Plate on the CoffeeTable?,['Yes'],1.0,1,1,[578],[428],floorplan218_10_556_1745368595,1.0,1.0,1.0,3.0
+floorplan218_10_556_1745368595_q4,What object did you put on the Sofa?,['RemoteControl'],1.0,1,2,"[139, 140]",[99],floorplan218_10_556_1745368595,1.0,1.0,0.0,3.0
+floorplan218_10_556_1745368595_q5,Where is CreditCard now?,['CoffeeTable'],1.0,1,1,[57],[42],floorplan218_10_556_1745368595,1.0,1.0,1.0,3.0
+floorplan218_10_556_1745368595_q9,Where is KeyChain now?,['SideTable'],1.0,1,1,[351],[251],floorplan218_10_556_1745368595,1.0,1.0,1.0,3.0
+floorplan218_10_567_1745407406_q13,Where is Plate now?,['SideTable'],1.0,1,1,[508],[394],floorplan218_10_567_1745407406,1.0,1.0,1.0,3.0
+floorplan216_20_416_1746045195_q0,Is there any LightSwitch in this room?,['Yes'],1.0,1,1,[13],[8],floorplan216_20_416_1746045195,1.0,1.0,1.0,3.0
+floorplan216_20_416_1746045195_q1,Have you seen a LightSwitch?,['Yes'],1.0,1,1,[13],[8],floorplan216_20_416_1746045195,1.0,1.0,1.0,3.0
+floorplan230_17_831_1747084973_q26,Where is Plate now?,['CoffeeTable'],1.0,1,1,[323],[238],floorplan230_17_831_1747084973,1.0,1.0,1.0,3.0
+floorplan230_17_831_1747084973_q28,Where is Statue now?,['CoffeeTable'],1.0,1,1,[388],[286],floorplan230_17_831_1747084973,1.0,1.0,1.0,3.0
+floorplan230_17_831_1747084973_q6,Is KeyChain on the ArmChair?,['Yes'],1.0,1,1,[921],[689],floorplan230_17_831_1747084973,1.0,1.0,1.0,3.0
+floorplan230_9_507_1746931717_q10,Is Candle on the CoffeeTable?,['Yes'],1.0,1,1,[613],[457],floorplan230_9_507_1746931717,1.0,1.0,1.0,3.0
+floorplan230_9_507_1746931717_q17,Is Plate on the DiningTable?,['Yes'],1.0,1,1,[679],[506],floorplan230_9_507_1746931717,1.0,1.0,1.0,3.0
+floorplan230_9_507_1746931717_q2,Was Laptop open?,['Yes'],1.0,1,1,[679],[506],floorplan230_9_507_1746931717,1.0,1.0,1.0,3.0
+floorplan230_9_507_1746931717_q25,Is CreditCard on the ArmChair?,['Yes'],1.0,1,1,[518],[397],floorplan230_9_507_1746931717,1.0,1.0,1.0,3.0
+floorplan230_17_755_1747026012_q27,Where is Statue now?,['CoffeeTable'],1.0,1,1,[624],[448],floorplan230_17_755_1747026012,1.0,1.0,1.0,3.0
+floorplan230_17_755_1747026012_q3,Is CreditCard on the SideTable?,['Yes'],1.0,1,1,[755],[549],floorplan230_17_755_1747026012,1.0,1.0,1.0,3.0
+floorplan230_17_755_1747026012_q36,Where is Newspaper now?,['CoffeeTable'],1.0,1,1,[1029],[754],floorplan230_17_755_1747026012,1.0,1.0,0.0,3.0
+floorplan230_17_755_1747026012_q37,Is Newspaper on the CoffeeTable?,['Yes'],1.0,1,1,[1029],[754],floorplan230_17_755_1747026012,1.0,1.0,1.0,3.0
+floorplan230_17_831_1747084973_q10,How many objects were on the ArmChair?,[1],1.0,1,1,[921],[689],floorplan230_17_831_1747084973,1.0,1.0,1.0,3.0
+floorplan230_17_831_1747084973_q20,Is Watch on the SideTable?,['Yes'],1.0,1,1,[1053],[789],floorplan230_17_831_1747084973,1.0,1.0,1.0,3.0
+floorplan210_15_464_1744755675_q20,Is RemoteControl on the CoffeeTable?,['Yes'],1.0,1,1,[575],[415],floorplan210_15_464_1744755675,1.0,1.0,1.0,3.0
+floorplan210_15_500_1746335965_q2,What object did you put on the Sofa?,['RemoteControl'],1.0,1,2,"[161, 162]",[112],floorplan210_15_500_1746335965,1.0,1.0,0.0,3.0
+floorplan210_13_423_1745411371_q2,Was Laptop open?,['Yes'],1.0,1,1,[569],[422],floorplan210_13_423_1745411371,1.0,1.0,0.0,3.0
+floorplan218_10_556_1745368595_q10,Is KeyChain on the SideTable?,['Yes'],1.0,1,1,[351],[251],floorplan218_10_556_1745368595,1.0,1.0,1.0,3.0
+floorplan223_17_453_1745400822_q9,Is RemoteControl on the ArmChair?,['Yes'],1.0,1,1,[651],[452],floorplan223_17_453_1745400822,1.0,1.0,1.0,3.0
+floorplan223_26_749_1746930005_q0,Is there any GarbageCan in this room?,['Yes'],1.0,1,1,[267],[190],floorplan223_26_749_1746930005,1.0,1.0,1.0,3.0
+floorplan223_26_749_1746930005_q2,Where is Statue now?,['CoffeeTable'],1.0,1,1,[52],[33],floorplan223_26_749_1746930005,1.0,1.0,1.0,3.0
+floorplan223_26_749_1746930005_q4,Is RemoteControl on the ArmChair?,['Yes'],1.0,1,1,[790],[553],floorplan223_26_749_1746930005,1.0,1.0,1.0,3.0
+floorplan223_26_749_1746930005_q9,Is CreditCard on the ArmChair?,['Yes'],1.0,1,1,[1072],[748],floorplan223_26_749_1746930005,1.0,1.0,1.0,3.0
+floorplan230_17_718_1746781702_q3,Was Laptop open?,['Yes'],1.0,1,1,[964],[717],floorplan230_17_718_1746781702,1.0,1.0,0.0,3.0
+floorplan230_17_718_1746781702_q5,Is TissueBox on the CoffeeTable?,['Yes'],1.0,1,1,[929],[691],floorplan230_17_718_1746781702,1.0,1.0,1.0,3.0
+floorplan210_16_441_1746043075_q0,Is there any Window in this room?,['Yes'],1.0,1,1,[335],[239],floorplan210_16_441_1746043075,1.0,1.0,1.0,3.0
+floorplan210_16_441_1746043075_q1,Have you seen a Window?,['Yes'],1.0,1,1,[335],[239],floorplan210_16_441_1746043075,1.0,1.0,1.0,3.0
+floorplan210_16_441_1746043075_q4,What object did you put on the Dresser?,['RemoteControl'],1.0,1,2,"[501, 502]",[361],floorplan210_16_441_1746043075,1.0,1.0,1.0,3.0
+floorplan210_17_453_1745408324_q0,Is there any DeskLamp in this room?,['Yes'],1.0,1,1,[484],[333],floorplan210_17_453_1745408324,1.0,1.0,1.0,3.0
+floorplan210_17_453_1745408324_q1,Have you seen a DeskLamp?,['Yes'],1.0,1,1,[484],[333],floorplan210_17_453_1745408324,1.0,1.0,1.0,3.0
+floorplan230_17_755_1747026012_q25,Where is KeyChain now?,['CoffeeTable'],1.0,1,1,[520],[370],floorplan230_17_755_1747026012,1.0,1.0,1.0,3.0
+floorplan224_17_557_1746850496_q0,Is there any HousePlant in this room?,['Yes'],1.0,1,1,[348],[251],floorplan224_17_557_1746850496,1.0,1.0,1.0,3.0
+floorplan224_17_557_1746850496_q1,Have you seen a HousePlant?,['Yes'],1.0,1,1,[348],[251],floorplan224_17_557_1746850496,1.0,1.0,1.0,3.0
+floorplan215_23_701_1746907273_q21,Is CreditCard on the SideTable?,['Yes'],1.0,1,1,[885],[654],floorplan215_23_701_1746907273,1.0,1.0,1.0,3.0
+floorplan215_23_701_1746907273_q26,Where is Vase now?,['SideTable'],1.0,1,1,[456],[335],floorplan215_23_701_1746907273,1.0,1.0,1.0,3.0
+floorplan215_23_701_1746907273_q38,Where is WateringCan now?,['CoffeeTable'],1.0,1,1,[953],[700],floorplan215_23_701_1746907273,1.0,1.0,1.0,3.0
+floorplan215_23_701_1746907273_q9,Is Bowl on the SideTable?,['Yes'],1.0,1,1,[922],[678],floorplan215_23_701_1746907273,1.0,1.0,1.0,3.0
+floorplan216_19_431_1746040311_q15,Is KeyChain on the ArmChair?,['Yes'],1.0,1,1,[526],[374],floorplan216_19_431_1746040311,1.0,1.0,1.0,3.0
+floorplan224_17_557_1746850496_q12,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[633],[464],floorplan224_17_557_1746850496,1.0,1.0,1.0,3.0
+floorplan224_17_557_1746850496_q16,Is CellPhone on the Sofa?,['Yes'],1.0,1,1,[602],[442],floorplan224_17_557_1746850496,1.0,1.0,1.0,3.0
+floorplan230_14_713_1746889211_q22,Is KeyChain on the CoffeeTable?,['Yes'],1.0,1,1,[720],[533],floorplan230_14_713_1746889211,1.0,1.0,1.0,3.0
+floorplan210_17_453_1745408324_q22,Where is Watch now?,['CoffeeTable'],1.0,1,1,[461],[319],floorplan210_17_453_1745408324,1.0,1.0,1.0,3.0
+floorplan210_17_453_1745408324_q28,Where is Watch now?,['CoffeeTable'],1.0,1,1,[461],[319],floorplan210_17_453_1745408324,1.0,1.0,1.0,3.0
+floorplan210_17_453_1745408324_q8,Is RemoteControl on the Ottoman?,['Yes'],1.0,1,1,[337],[235],floorplan210_17_453_1745408324,1.0,1.0,1.0,3.0
+floorplan210_17_727_1746875757_q0,Is there any WateringCan in this room?,['Yes'],1.0,1,1,[210],[160],floorplan210_17_727_1746875757,1.0,1.0,0.0,3.0
+floorplan230_17_718_1746781702_q24,Where is RemoteControl now?,['CoffeeTable'],1.0,1,1,[842],[621],floorplan230_17_718_1746781702,1.0,1.0,1.0,3.0
+floorplan230_17_718_1746781702_q25,Is RemoteControl on the CoffeeTable?,['Yes'],1.0,1,1,[842],[621],floorplan230_17_718_1746781702,1.0,1.0,1.0,3.0
+floorplan227_15_448_1746001612_q11,Is CreditCard on the ArmChair?,['Yes'],1.0,1,1,[658],[447],floorplan227_15_448_1746001612,1.0,1.0,1.0,3.0
+floorplan227_15_448_1746001612_q19,Is RemoteControl on the CoffeeTable?,['Yes'],1.0,1,1,[351],[243],floorplan227_15_448_1746001612,1.0,1.0,1.0,3.0
+floorplan227_15_448_1746001612_q5,Is KeyChain on the Sofa?,['Yes'],1.0,1,1,[403],[280],floorplan227_15_448_1746001612,1.0,1.0,1.0,3.0
+floorplan227_23_699_1746879051_q0,Is there any Window in this room?,['Yes'],1.0,1,1,[204],[148],floorplan227_23_699_1746879051,1.0,1.0,1.0,3.0
+floorplan215_22_754_1746884994_q18,Is Watch on the CoffeeTable?,['Yes'],1.0,1,1,[963],[726],floorplan215_22_754_1746884994,1.0,1.0,1.0,3.0
+floorplan215_22_754_1746884994_q24,Where is Bowl now?,['SideTable'],1.0,1,1,[375],[288],floorplan215_22_754_1746884994,1.0,1.0,1.0,3.0
+floorplan215_22_754_1746884994_q33,Where is Bowl now?,['SideTable'],1.0,1,1,[375],[288],floorplan215_22_754_1746884994,1.0,1.0,1.0,3.0
+floorplan215_22_754_1746884994_q9,Where is RemoteControl now?,['CoffeeTable'],1.0,1,1,[130],[104],floorplan215_22_754_1746884994,1.0,1.0,1.0,3.0
+floorplan215_23_701_1746907273_q0,Is there any Painting in this room?,['Yes'],1.0,1,1,[265],[192],floorplan215_23_701_1746907273,1.0,1.0,1.0,3.0
+floorplan215_23_701_1746907273_q1,Have you seen a Painting?,['Yes'],1.0,1,1,[265],[192],floorplan215_23_701_1746907273,1.0,1.0,1.0,3.0
+floorplan215_23_701_1746907273_q13,Where is Statue now?,['SideTable'],1.0,1,1,[194],[139],floorplan215_23_701_1746907273,1.0,1.0,1.0,3.0
+floorplan215_23_701_1746907273_q15,Is Watch on the CoffeeTable?,['Yes'],1.0,1,1,[826],[608],floorplan215_23_701_1746907273,1.0,1.0,1.0,3.0
+floorplan215_23_701_1746907273_q2,Is KeyChain on the SideTable?,['Yes'],1.0,1,1,[771],[566],floorplan215_23_701_1746907273,1.0,1.0,1.0,3.0
+floorplan210_17_727_1746875757_q3,Is Statue on the CoffeeTable?,['Yes'],1.0,1,1,[566],[422],floorplan210_17_727_1746875757,1.0,1.0,1.0,3.0
+floorplan210_17_727_1746875757_q6,How many objects were on the CoffeeTable?,[2],1.0,1,1,[566],[422],floorplan210_17_727_1746875757,1.0,1.0,1.0,3.0
+floorplan210_17_804_1746994276_q0,Is there any FloorLamp in this room?,['Yes'],1.0,1,1,[44],[31],floorplan210_17_804_1746994276,1.0,1.0,1.0,3.0
+floorplan210_17_804_1746994276_q1,Have you seen a FloorLamp?,['Yes'],1.0,1,1,[44],[31],floorplan210_17_804_1746994276,1.0,1.0,1.0,3.0
+floorplan210_17_804_1746994276_q20,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[361],[275],floorplan210_17_804_1746994276,1.0,1.0,1.0,3.0
+floorplan230_13_700_1746917689_q1,Have you seen a Boots?,['Yes'],1.0,1,1,[176],[127],floorplan230_13_700_1746917689,1.0,1.0,1.0,3.0
+floorplan230_13_700_1746917689_q15,Where is Statue now?,['CoffeeTable'],1.0,1,1,[270],[196],floorplan230_13_700_1746917689,1.0,1.0,1.0,3.0
+floorplan230_14_713_1746889211_q0,Is there any GarbageCan in this room?,['Yes'],1.0,1,1,[23],[14],floorplan230_14_713_1746889211,1.0,1.0,1.0,3.0
+floorplan230_14_713_1746889211_q1,Have you seen a GarbageCan?,['Yes'],1.0,1,1,[23],[14],floorplan230_14_713_1746889211,1.0,1.0,1.0,3.0
+floorplan215_15_472_1746024565_q2,Was Laptop open?,['Yes'],1.0,1,1,[648],[471],floorplan215_15_472_1746024565,1.0,1.0,1.0,3.0
+floorplan215_15_472_1746024565_q26,Is RemoteControl on the CoffeeTable?,['Yes'],1.0,1,1,[648],[471],floorplan215_15_472_1746024565,1.0,1.0,1.0,3.0
+floorplan215_15_472_1746024565_q36,Where is Statue now?,['SideTable'],1.0,1,1,[546],[395],floorplan215_15_472_1746024565,1.0,1.0,1.0,3.0
+floorplan215_22_754_1746884994_q0,Is there any Painting in this room?,['Yes'],1.0,1,1,[197],[153],floorplan215_22_754_1746884994,1.0,1.0,1.0,3.0
+floorplan215_22_754_1746884994_q1,Have you seen a Painting?,['Yes'],1.0,1,1,[197],[153],floorplan215_22_754_1746884994,1.0,1.0,1.0,3.0
+floorplan227_23_699_1746879051_q1,Have you seen a Window?,['Yes'],1.0,1,1,[204],[148],floorplan227_23_699_1746879051,1.0,1.0,1.0,3.0
+floorplan227_23_699_1746879051_q13,Is KeyChain on the ArmChair?,['Yes'],1.0,1,1,[609],[425],floorplan227_23_699_1746879051,1.0,1.0,1.0,3.0
+floorplan227_23_699_1746879051_q16,Is RemoteControl on the CoffeeTable?,['Yes'],1.0,1,1,[940],[666],floorplan227_23_699_1746879051,1.0,1.0,1.0,3.0
+floorplan230_11_565_1744826842_q9,Is KeyChain on the SideTable?,['Yes'],1.0,1,1,[733],[564],floorplan230_11_565_1744826842,1.0,1.0,1.0,3.0
+floorplan230_12_473_1745431565_q14,Is KeyChain on the ArmChair?,['Yes'],1.0,1,1,[333],[220],floorplan230_12_473_1745431565,1.0,1.0,1.0,3.0
+floorplan230_12_473_1745431565_q22,Is RemoteControl on the Sofa?,['Yes'],1.0,1,1,[672],[472],floorplan230_12_473_1745431565,1.0,1.0,1.0,3.0
+floorplan230_12_473_1745431565_q28,Where is TissueBox now?,['SideTable'],1.0,1,1,[289],[191],floorplan230_12_473_1745431565,1.0,1.0,1.0,3.0
+floorplan230_13_700_1746917689_q0,Is there any Boots in this room?,['Yes'],1.0,1,1,[176],[127],floorplan230_13_700_1746917689,1.0,1.0,1.0,3.0
+floorplan210_19_618_1746864406_q12,Where is Statue now?,['CoffeeTable'],1.0,1,1,[388],[287],floorplan210_19_618_1746864406,1.0,1.0,1.0,3.0
