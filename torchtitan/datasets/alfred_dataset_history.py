@@ -279,8 +279,8 @@ class ALFREDDataset(IterableDataset, Stateful):
 
                 logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] traj_idx: {self._traj_idx} sample_idx: {self._sample_idx} input_ids: {output.input_ids.shape} n_img: {len(img_list)} prompt:\n{prompt}")
                 logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] labels: {self.processor.tokenizer.decode(labels[0, assistant_start_idx:]).strip()}")
-                print(f"[rank{self.rank}][dp_rank{self.dp_rank}] traj_idx: {self._traj_idx} sample_idx: {self._sample_idx} input_ids: {output.input_ids.shape} n_img: {len(img_list)} prompt:\n{prompt}")
-                print(f"[rank{self.rank}][dp_rank{self.dp_rank}] labels: {self.processor.tokenizer.decode(labels[0, assistant_start_idx:]).strip()}")
+                # print(f"[rank{self.rank}][dp_rank{self.dp_rank}] traj_idx: {self._traj_idx} sample_idx: {self._sample_idx} input_ids: {output.input_ids.shape} n_img: {len(img_list)} prompt:\n{prompt}")
+                # print(f"[rank{self.rank}][dp_rank{self.dp_rank}] labels: {self.processor.tokenizer.decode(labels[0, assistant_start_idx:]).strip()}")
                 
                 yield {
                     'input_ids': shift_input_ids,
@@ -437,15 +437,25 @@ class ALFREDDataset(IterableDataset, Stateful):
         return templated_str
 
 
-class AlfredDataLoader(ParallelAwareDataloader):
+class AlfredValidActDataLoader(ParallelAwareDataloader):
+    def __init__(self, hf_ds: IterableDataset, dp_rank: int, dp_world_size: int,
+                 batch_size: int,
+                 eos_tok_id: int,
+                 ignore_index: int = -100,
+                 pin_memory: bool = True):
+        # ds = BucketByLen(hf_ds)
+        super().__init__(hf_ds, dp_rank, dp_world_size, batch_size, collate_fn=partial(self.collate_fn, eos_id=eos_tok_id))
+        self.eos_tok_id = eos_tok_id
+        self.ignore_index = ignore_index
 
-    def __init__(self, 
-        hf_ds: IterableDataset,
-        dp_rank: int,
-        dp_world_size: int,
-        batch_size: int,
-        pin_memory: bool = True):
-        super().__init__(hf_ds, dp_rank, dp_world_size, batch_size, collate_fn=self.collate_fn)    
+    @staticmethod
+    def _pad_1d(x: torch.Tensor, target_len: int, pad_id: int) -> torch.Tensor:
+        # x shape: [1, L]
+        need = target_len - x.shape[1]
+        if need <= 0:
+            return x
+        pad = torch.full((x.shape[0], need), pad_id, dtype=x.dtype)
+        return torch.cat([x, pad], dim=1)
 
     @staticmethod
     def collate_fn(batch, eos_id, ignore_index=-100):
