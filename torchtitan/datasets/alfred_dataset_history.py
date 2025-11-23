@@ -7,6 +7,9 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 import itertools
+from functools import partial
+import random
+import hashlib
 
 import torch
 from torch.distributed.checkpoint.stateful import Stateful
