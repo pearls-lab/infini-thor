@@ -107,6 +107,7 @@ class ALFREDDataset(IterableDataset, Stateful):
         self.img_token = processor.tokenizer.decode([self.img_tok_id])
         self.act_tok_id = processor.tokenizer('<|act|>').input_ids[0]
         self.eos_tok_id = processor.tokenizer.eos_token_id
+        self.pad_tok_id = processor.tokenizer.pad_token_id
         self.ignore_index = ignore_index
         self.eval = eval
         #self.world_size = world_size
@@ -245,8 +246,6 @@ class ALFREDDataset(IterableDataset, Stateful):
 
                 output = self.processor(text=prompt, images=img_list, return_tensors="pt")
 
-                labels = output.input_ids.clone()
-
                 # Tokenize assistant response (without special tokens)
                 assistant_tokens = self.processor.tokenizer(
                     assistant_response, 
@@ -265,22 +264,17 @@ class ALFREDDataset(IterableDataset, Stateful):
                         break
                 
                 if assistant_start_idx is None:
-                    # Fallback: try finding a partial match or key phrase
                     logger.warning(f"Could not find exact assistant token match")
-                    # You might want to handle this case differently
                     assistant_start_idx = 0   
 
-                # Default: mask all; if anchor found, unmask only the target span (after anchor)
+                labels = output.input_ids.clone()
                 labels[:] = self.ignore_index
                 labels[0, assistant_start_idx:] = output.input_ids[0, assistant_start_idx:]
 
                 shift_input_ids = output.input_ids[..., :-1].contiguous()
                 shift_labels = labels[..., 1:].contiguous()
 
-                # input_ids = pad_to_multiple(input_ids, self.pad_to, pad_token=self.eos_tok_id)
-                # labels = pad_to_multiple(labels, self.pad_to, pad_token=self.ignore_index)
-
-                shift_input_ids = pad_to_multiple(shift_input_ids, self.pad_to, pad_token=self.eos_tok_id)
+                shift_input_ids = pad_to_multiple(shift_input_ids, self.pad_to, pad_token=self.pad_tok_id)
                 shift_labels = pad_to_multiple(shift_labels, self.pad_to, pad_token=self.ignore_index)
 
                 logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] traj_idx: {self._traj_idx} sample_idx: {self._sample_idx} input_ids: {output.input_ids.shape} n_img: {len(img_list)} prompt:\n{prompt}")
@@ -341,12 +335,13 @@ class ALFREDDataset(IterableDataset, Stateful):
         contents.append({"type": "text", "text": f"Current state: "})
 
         # get current state (last low_idx's last image)
-        cur_state_img = lowidx2img[low_idx-1][-1]
-        if 'png' in cur_state_img:
-            cur_state_img = cur_state_img.replace("png", "jpg")
+        if len(lowidx2img[low_idx-1]) > 0:
+            cur_state_img = lowidx2img[low_idx-1][-1]
+            if 'png' in cur_state_img:
+                cur_state_img = cur_state_img.replace("png", "jpg")
 
-        contents.append({"type": "image", "image": img_dict[cur_state_img]})
-        imgs.append(img_dict[cur_state_img])
+            contents.append({"type": "image", "image": img_dict[cur_state_img]})
+            imgs.append(img_dict[cur_state_img])
 
         contents.append({"type": "text", "text": f" Next action: "})
         assistant_response = f"{self.act_dict_to_str(low_act)}"

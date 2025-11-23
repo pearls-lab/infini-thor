@@ -350,26 +350,28 @@ class ALFREDDataset(IterableDataset, Stateful):
         else:
             for x in range(low_idx):
                 imgs_at_step = lowidx2img.get(x, [])
-                if 'png' in imgs_at_step[0]:
+                if len(imgs_at_step) > 0 and 'png' in imgs_at_step[0]:
                     imgs_at_step = [x.replace("png", "jpg") for x in imgs_at_step]
+
                 if len(imgs_at_step) >= 2:
                     contents.append({"type": "image", "image": img_dict[imgs_at_step[0]]})
                     imgs.append(img_dict[imgs_at_step[0]])
                     contents.append({"type": "image", "image": img_dict[imgs_at_step[-1]]})
                     imgs.append(img_dict[imgs_at_step[-1]])
-                else:
+                elif len(imgs_at_step) == 1:
                     contents.append({"type": "image", "image": img_dict[imgs_at_step[0]]})
                     imgs.append(img_dict[imgs_at_step[0]])
         
         contents.append({"type": "text", "text": f"\nCurrent state: "})
 
         # get current state (last low_idx's last image)
-        cur_state_img = lowidx2img[low_idx-1][-1]
-        if 'png' in cur_state_img:
-            cur_state_img = cur_state_img.replace("png", "jpg")
+        if len(lowidx2img[low_idx-1]) > 0:
+            cur_state_img = lowidx2img[low_idx-1][-1]
+            if 'png' in cur_state_img:
+                cur_state_img = cur_state_img.replace("png", "jpg")
 
-        contents.append({"type": "image", "image": img_dict[cur_state_img]})
-        imgs.append(img_dict[cur_state_img])
+            contents.append({"type": "image", "image": img_dict[cur_state_img]})
+            imgs.append(img_dict[cur_state_img])
 
         contents.append({"type": "text", "text": f" Next action: "})
         assistant_response = f"{self.act_dict_to_str(low_act)}"
