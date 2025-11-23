@@ -448,44 +448,52 @@ class AlfredDataLoader(ParallelAwareDataloader):
         super().__init__(hf_ds, dp_rank, dp_world_size, batch_size, collate_fn=self.collate_fn)    
 
     @staticmethod
-    def collate_fn(batch):
-        max_img_len = max(sample['pixel_values'].size(0) for sample in batch)
-        
-        input_ids = []
-        pixel_values = []
-        n_image = []
-        labels = []
-        image_grid_thw = []
-        
-        for bi, sample in enumerate(batch):
-            input_ids.append(sample['input_ids'])
+    def collate_fn(batch, eos_id, ignore_index=-100):
+        # Unwrap if dataset already bundled the batch (BucketByLen behavior)
+        if len(batch) == 1 and isinstance(batch[0], (list, tuple)) and batch[0] and isinstance(batch[0][0], dict):
+            samples = batch[0]
+        else:
+            samples = batch
 
-            pad_len = max_img_len - sample['pixel_values'].size(0)
+        # Pad text to max length
+        max_len = max(s['input_ids'].shape[1] for s in samples)
+        if max_len % 4 != 0: # for TP
+            max_len += (4 - (max_len % 4))
 
-            if pad_len > 0:
-                pad_shape = (pad_len, *sample['pixel_values'].shape[1:])
-                # IMPORTANT: keep on CPU here; pinning happens after collate
-                # padding = torch.zeros(pad_shape, dtype=sample['pixel_values'].dtype, 
-                #                 device=sample['pixel_values'].device)
-                padding = torch.zeros(pad_shape, dtype=sample['pixel_values'].dtype)
-                pixel_values.append(torch.cat([sample['pixel_values'], padding], dim=0))
+        input_ids_list: List[torch.Tensor] = []
+        labels_list:    List[torch.Tensor] = []
+
+        # Per-sample image containers (do NOT stack)
+        pixel_values_list: List[Optional[torch.Tensor]] = []
+        image_grid_list:   List[Optional[torch.Tensor]] = []
+
+        for s in samples:
+            input_ids_list.append(
+                AlfredValidActDataLoader._pad_1d(s['input_ids'], max_len, eos_id)
+            )
+            if 'labels' in s and s['labels'] is not None:
+                labels_list.append(
+                    AlfredValidActDataLoader._pad_1d(s['labels'], max_len, ignore_index)
+                )
+
+            # Keep images per-sample (Option A): pass through as-is
+            pv = s.get('pixel_values', None)
+            gh = s.get('image_grid_thw', None)
+
+            # Allow “no image” samples; embed() will skip vision if no image tokens
+            if isinstance(pv, torch.Tensor) and pv.numel() > 0:
+                pixel_values_list.append(pv)
+                image_grid_list.append(gh)
             else:
-                pixel_values.append(sample['pixel_values'])
-            
-            n_image.append([sample['pixel_values'].shape[0]])
-            labels.append(sample['labels'])
-            image_grid_thw.append(sample['image_grid_thw'])
+                pixel_values_list.append(None)
+                image_grid_list.append(None)
 
-        # Keep everything on CPU; DataLoader (or our wrapper) will pin
-        # TODO: visual pad mask ?
         batch_dict = {
-            'input_ids': torch.concat(input_ids, dim=0),
-            'pixel_values': torch.concat(pixel_values, dim=0),
-            'n_image': torch.tensor(n_image, device=input_ids[0].device, dtype=input_ids[0].dtype),
-            'image_grid_thw': torch.concat(image_grid_thw, dim=0),
+            'input_ids': torch.cat(input_ids_list, dim=0),  # [B, T]
+            'pixel_values': pixel_values_list,               # List[Tensor|None], len B
+            'image_grid_thw': image_grid_list,               # List[Tensor|None], len B
         }
-        
-        if labels:
-            batch_dict['labels'] = torch.concat(labels, dim=0)
+        if len(labels_list):
+            batch_dict['labels'] = torch.cat(labels_list, dim=0)  # [B, T]
 
         return batch_dict
