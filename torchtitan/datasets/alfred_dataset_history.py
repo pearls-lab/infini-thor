@@ -107,7 +107,6 @@ class ALFREDDataset(IterableDataset, Stateful):
         self.img_token = processor.tokenizer.decode([self.img_tok_id])
         self.act_tok_id = processor.tokenizer('<|act|>').input_ids[0]
         self.eos_tok_id = processor.tokenizer.eos_token_id
-        self.pad_tok_id = processor.tokenizer.pad_token_id
         self.ignore_index = ignore_index
         self.eval = eval
         #self.world_size = world_size
@@ -167,7 +166,7 @@ class ALFREDDataset(IterableDataset, Stateful):
             "- OpenObject/CloseObject: Only valid for openable objects (Cabinet, Fridge, Drawer, etc.).\n"
             "- SliceObject: Only valid when you are holding a ButterKnife. You must find and pick up the ButterKnife first before slicing.\n\n"
             
-            "Given the previous states (history) and the current state, predict the next action to complete the task."
+            "Given the history of previous actions and the current state, predict the next action to complete the task."
         )
         
         if len(self.data) == 0:
@@ -220,7 +219,7 @@ class ALFREDDataset(IterableDataset, Stateful):
             N = len(traj['retrieved_image'])
             usable = (N // dp_world) * dp_world
 
-            for si, (low_idx, entry) in enumerate(traj['retrieved_image'].items()):
+            for si, (low_idx, history) in enumerate(traj['history_summary'].items()):
                 if si >= usable:
                     break
                 
@@ -229,20 +228,10 @@ class ALFREDDataset(IterableDataset, Stateful):
                 # Keep only trajectories owned by this shard
                 if (si % dp_world) != dp_rank:
                     continue
-
-                # entry: "low_idx": low_idx,
-                # "top10": [],
-                # "top20": [],
-                # "top30": [],
-                # "top40": [],
-                # "top50": [],
-                # "step50": [],
-
-                memory_imgs = entry['top20']
                 
                 low_act = traj['plan']['low_actions'][int(low_idx)]['api_action']
 
-                content, assistant_response, img_list = self._load_sample(int(low_idx), memory_imgs, low_act, img_dict, lowidx2img)
+                content, assistant_response, img_list = self._load_sample(int(low_idx), history, low_act, img_dict, lowidx2img)
 
                 messages = [
                     {"role": "system", "content": self.system_prompt},
@@ -255,6 +244,8 @@ class ALFREDDataset(IterableDataset, Stateful):
                 )
 
                 output = self.processor(text=prompt, images=img_list, return_tensors="pt")
+
+                labels = output.input_ids.clone()
 
                 # Tokenize assistant response (without special tokens)
                 assistant_tokens = self.processor.tokenizer(
@@ -274,17 +265,22 @@ class ALFREDDataset(IterableDataset, Stateful):
                         break
                 
                 if assistant_start_idx is None:
+                    # Fallback: try finding a partial match or key phrase
                     logger.warning(f"Could not find exact assistant token match")
+                    # You might want to handle this case differently
                     assistant_start_idx = 0   
 
-                labels = output.input_ids.clone()
+                # Default: mask all; if anchor found, unmask only the target span (after anchor)
                 labels[:] = self.ignore_index
                 labels[0, assistant_start_idx:] = output.input_ids[0, assistant_start_idx:]
 
                 shift_input_ids = output.input_ids[..., :-1].contiguous()
                 shift_labels = labels[..., 1:].contiguous()
 
-                shift_input_ids = pad_to_multiple(shift_input_ids, self.pad_to, pad_token=self.pad_tok_id)
+                # input_ids = pad_to_multiple(input_ids, self.pad_to, pad_token=self.eos_tok_id)
+                # labels = pad_to_multiple(labels, self.pad_to, pad_token=self.ignore_index)
+
+                shift_input_ids = pad_to_multiple(shift_input_ids, self.pad_to, pad_token=self.eos_tok_id)
                 shift_labels = pad_to_multiple(shift_labels, self.pad_to, pad_token=self.ignore_index)
 
                 logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] traj_idx: {self._traj_idx} sample_idx: {self._sample_idx} input_ids: {output.input_ids.shape} n_img: {len(img_list)} prompt:\n{prompt}")
@@ -324,7 +320,7 @@ class ALFREDDataset(IterableDataset, Stateful):
         else:
             return va['action']
 
-    def _load_sample(self, low_idx, memory_imgs, low_act, img_dict, lowidx2img):
+    def _load_sample(self, low_idx, history, low_act, img_dict, lowidx2img):
         contents = []
         imgs = []
 
@@ -336,32 +332,13 @@ class ALFREDDataset(IterableDataset, Stateful):
             contents.append({"type": "text", "text": f" Next action: "})
             assistant_response = f"{self.act_dict_to_str(low_act)}"
             return contents, assistant_response, imgs
-
-        contents.append({"type": "text", "text": f"Previous states: "})
         
-        if memory_imgs:
-            for low_idx, entry in enumerate(memory_imgs):
-                key_list =  list(img_dict.keys())
-                if 'jpg' in key_list[0] and 'png' in entry:
-                    entry = entry.replace("png", "jpg")
-                if entry in img_dict:
-                    contents.append({"type": "image", "image": img_dict[entry]})
-                    imgs.append(img_dict[entry])
+        if history:
+            contents.append({"type": "text", "text": f"Action history: {history};\n"})
         else:
-            for x in range(low_idx):
-                imgs_at_step = lowidx2img.get(x, [])
-                if 'png' in imgs_at_step[0]:
-                    imgs_at_step = [x.replace("png", "jpg") for x in imgs_at_step]
-                if len(imgs_at_step) >= 2:
-                    contents.append({"type": "image", "image": img_dict[imgs_at_step[0]]})
-                    imgs.append(img_dict[imgs_at_step[0]])
-                    contents.append({"type": "image", "image": img_dict[imgs_at_step[-1]]})
-                    imgs.append(img_dict[imgs_at_step[-1]])
-                else:
-                    contents.append({"type": "image", "image": img_dict[imgs_at_step[0]]})
-                    imgs.append(img_dict[imgs_at_step[0]])
-        
-        contents.append({"type": "text", "text": f"\nCurrent state: "})
+            contents.append({"type": "text", "text": f"Action history: No history is available.\n"})
+
+        contents.append({"type": "text", "text": f"Current state: "})
 
         # get current state (last low_idx's last image)
         cur_state_img = lowidx2img[low_idx-1][-1]
