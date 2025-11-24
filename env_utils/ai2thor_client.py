@@ -5,7 +5,7 @@ import argparse
 from env_utils.env.tasks import get_task
 import env_utils.gen.constants as constants
 
-from torchtitan.logging import logger
+from torchtitan.tools.logging import logger
 
 #import logging
 #logger = logging.getLogger()

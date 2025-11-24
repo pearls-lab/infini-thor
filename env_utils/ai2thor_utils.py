@@ -1,4 +1,4 @@
-from torchtitan.logging import logger
+from torchtitan.tools.logging import logger
 
 def visible(obj_list):
     return [obj for obj in obj_list if obj['visible']]
