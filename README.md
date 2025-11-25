@@ -227,6 +227,7 @@ Running the evaluation (need to deactivate `ai2thor_env` env if needed):
 
 ```
 export MODEL_LABEL=llava_onevison_7b_32k
+export PYTHONPATH=$PYTHONPATH:{your_directory}/infini-thor/env_utils
 python run_interactive_eval.py \
   --checkpoint checkpoints/$MODEL_LABEL \
   --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf \

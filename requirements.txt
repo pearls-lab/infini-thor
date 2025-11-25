@@ -14,3 +14,4 @@ requests
 pillow==12.0.0
 fuzzywuzzy
 word2number
+qwen_vl_utils==0.0.14
