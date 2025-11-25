@@ -421,6 +421,11 @@ def main(
                 "\nAnswer the question given the state and action sequence of the embodied agent. "
                 "Do not include explanation or reasoning in the answer. Answer with a single word or words.\nQuestion: "
             )
+        elif eval_mode == "text_state":
+            task_instr = (
+                "\nAnswer the question given the description of the environment and the agent's state (the last image). "
+                "Do not include explanation or reasoning in the answer. Answer with a single word or words.\nQuestion: "
+            )
         else:
             task_instr = (
                 "\nAnswer the question given the agent's views in time order. "
@@ -496,6 +501,24 @@ def main(
                             content.append({'type': 'image'})
                             ctx_img_list.append(low_img)
 
+                content.append({'type': 'text', 'text': task_instr})
+                messages = [{"role": "user", "content": content}]
+            elif eval_mode == "text_state":
+                if os.path.exists(os.path.join(traj_dir, f"{row['traj_id']}.txt")):
+                    traj_data = json.load(open(os.path.join(traj_dir, f"{row['traj_id']}.txt")))
+                elif os.path.exists(os.path.join(traj_dir, f"{row['traj_id']}.json")):
+                    traj_data = json.load(open(os.path.join(traj_dir, f"{row['traj_id']}.json")))
+                else:
+                    raise ValueError()
+                content = []
+                ctx_img_list = []
+
+                last_low_idx = len(traj_data['plan']['low_actions']) - 1
+                state_summary = traj_data['state_summary'][str(last_low_idx)]
+
+                content.append({'type': 'text', 'text': f" State: {state_summary}; Last agent's view: "})
+                content.append({'type': 'image'})
+                ctx_img_list.append(img_list[-1])
                 content.append({'type': 'text', 'text': task_instr})
                 messages = [{"role": "user", "content": content}]
             else:
@@ -696,7 +719,7 @@ if __name__ == "__main__":
         "--eval_mode",
         type=str,
         default="full_traj",
-        choices=["full_traj", "interleaved", "clip_retrieval", "truncate_head"],
+        choices=["full_traj", "interleaved", "clip_retrieval", "truncate_head", "text_state"],
         help=(
             "Evaluation mode when --full_traj is enabled. "
             "'full_traj': use entire trajectory; "
