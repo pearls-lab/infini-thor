@@ -5,6 +5,7 @@ import random
 from PIL import Image
 from fuzzywuzzy import fuzz
 from word2number import w2n
+from collections import defaultdict
 
 
 # Optional synonym map for basic matching
@@ -146,6 +147,7 @@ def load_qa_data(traj_id, metadata_dir):
 
     img_list = []
     img_path_list = []
+    imgname2pil = {}
     # iterate over images in img_dir and load PIL and append to img_list
     for img_file in sorted(os.listdir(img_dir)):
         if img_file.endswith(".png"):
@@ -153,11 +155,17 @@ def load_qa_data(traj_id, metadata_dir):
             img = Image.open(img_path).convert("RGB")
             img_list.append(img)
             img_path_list.append(img_path)
-
+            imgname2pil[img_file] = img
+    
     metadata = json.loads(open(metadata_path, 'r').read())
     traj_text = open(traj_text_path, 'r').read()
 
-    return img_list, metadata, traj_text, img_path_list
+    lowidx2imgs = defaultdict(list)
+    for entry in metadata['img_idx']:
+        if entry['low_idx']:
+            lowidx2imgs[entry['low_idx']].append(imgname2pil[entry['img_filename']])
+    #breakpoint()
+    return img_list, metadata, traj_text, img_path_list, lowidx2imgs
 
 
 def is_match(llm_ans, gt_ans, threshold=80) -> bool:
@@ -230,3 +238,16 @@ def build_haystack(ctx_size, depth, gt_img_idx, n_img_token, img_list):
         ctx_img_list = [img_list[x] for x in img_idx_list if x < len(img_list)]
         
         return ctx_img_list, [x for x in img_idx_list if x < len(img_list)]
+
+
+def get_obj_name(obj_id):
+    return obj_id.split("|")[0]
+
+
+def act_dict_to_str(va):
+    if va['action'] == 'PutObject':
+        return f"PutObject {get_obj_name(va['objectId'])} {get_obj_name(va['receptacleObjectId'])}"
+    elif 'Object' in va['action']:
+        return f"{va['action']} {get_obj_name(va['objectId'])}"
+    else:
+        return va['action']
