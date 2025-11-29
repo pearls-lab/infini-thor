@@ -566,7 +566,7 @@ def main(job_config: JobConfig):
                 if (labels + torch.tensor([100], device=labels.device)).sum() == 0:
                     labels[:, -2] = input_ids[:, -1]
                 logger.info(f"logits: {logits.shape} ({type(logits)}), labels: {labels.shape}")
-                logger.info(f"logits: {logits[0][:100]} ({type(logits)}), labels: {labels[0][:100]}")
+                logger.info(f"logits: {logits[0][-20:]} ({type(logits)}), labels: {labels[0][-20:]}")
                 # if isinstance(logits, torch.distributed.tensor.DTensor):
                 #     logits = logits.to_local()
                 loss = loss_fn(logits, labels)

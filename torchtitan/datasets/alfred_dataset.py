@@ -163,7 +163,7 @@ class ALFREDDataset(IterableDataset, Stateful):
             "- PickupObject: Only valid when a target object is visible in your current view.\n"
             "- PutObject: Only valid when you are currently holding an object.\n"
             "- OpenObject/CloseObject: Only valid for openable objects (Cabinet, Fridge, Drawer, etc.).\n"
-            "- SliceObject: Only valid when you are holding a ButterKnife. You must find and pick up the ButterKnife first before slicing.\n\n"
+            "- SliceObject: Only valid when you are holding a Knife or ButterKnife. You must find and pick up the Knife or ButterKnife first before slicing.\n\n"
             
             "Always verify the current state from the image before selecting an action."
         )
