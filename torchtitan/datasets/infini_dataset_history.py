@@ -168,9 +168,9 @@ class ALFREDDataset(IterableDataset, Stateful):
             "- PickupObject: Only valid when a target object is visible in your current view.\n"
             "- PutObject: Only valid when you are currently holding an object.\n"
             "- OpenObject/CloseObject: Only valid for openable objects (Cabinet, Fridge, Drawer, etc.).\n"
-            "- SliceObject: Only valid when you are holding a ButterKnife. You must find and pick up the ButterKnife first before slicing.\n\n"
+            "- SliceObject: Only valid when you are holding a Knife or ButterKnife. You must find and pick up the Knife or ButterKnife first before slicing.\n\n"
             
-            "Given the history of previous actions and the current state, predict the next action to complete the task."
+            "Given the task goal, state description, and current state, predict the next action to complete the task."
         )
         
         if len(self.data) == 0:
@@ -220,10 +220,16 @@ class ALFREDDataset(IterableDataset, Stateful):
             for img_meta in traj['images']:
                 lowidx2img[img_meta['low_idx']].append(img_meta['image_name'])
 
+            lowidx2subtaskgoal = {}
+            for sub_traj in traj['sub_trajs']:
+                low_start, low_end = sub_traj['low_pddl_idx']
+                for lowidx in range(low_start, low_end):
+                    lowidx2subtaskgoal[lowidx] = sub_traj['subgoal']
+
             N = len(traj['retrieved_image'])
             usable = (N // dp_world) * dp_world
 
-            for si, (low_idx, history) in enumerate(traj['history_summary'].items()):
+            for si, (low_idx, state_summary) in enumerate(traj['state_summary'].items()):
                 if si >= usable:
                     break
                 
@@ -234,8 +240,9 @@ class ALFREDDataset(IterableDataset, Stateful):
                     continue
                 
                 low_act = traj['plan']['low_actions'][int(low_idx)]['api_action']
+                task_goal = lowidx2subtaskgoal[int(low_idx)]
 
-                content, assistant_response, img_list = self._load_sample(int(low_idx), history, low_act, img_dict, lowidx2img)
+                content, assistant_response, img_list = self._load_sample(int(low_idx), task_goal, state_summary, low_act, img_dict, lowidx2img)
 
                 messages = [
                     {"role": "system", "content": self.system_prompt},
@@ -282,8 +289,8 @@ class ALFREDDataset(IterableDataset, Stateful):
 
                 logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] traj_idx: {self._traj_idx} sample_idx: {self._sample_idx} input_ids: {output.input_ids.shape} n_img: {len(img_list)} prompt:\n{prompt}")
                 logger.info(f"[rank{self.rank}][dp_rank{self.dp_rank}] labels: {self.processor.tokenizer.decode(labels[0, assistant_start_idx:]).strip()}")
-                # print(f"[rank{self.rank}][dp_rank{self.dp_rank}] traj_idx: {self._traj_idx} sample_idx: {self._sample_idx} input_ids: {output.input_ids.shape} n_img: {len(img_list)} prompt:\n{prompt}")
-                # print(f"[rank{self.rank}][dp_rank{self.dp_rank}] labels: {self.processor.tokenizer.decode(labels[0, assistant_start_idx:]).strip()}")
+                print(f"[rank{self.rank}][dp_rank{self.dp_rank}] traj_idx: {self._traj_idx} sample_idx: {self._sample_idx} input_ids: {output.input_ids.shape} n_img: {len(img_list)} prompt:\n{prompt}")
+                print(f"[rank{self.rank}][dp_rank{self.dp_rank}] labels: {self.processor.tokenizer.decode(labels[0, assistant_start_idx:]).strip()}")
                 
                 yield {
                     'input_ids': shift_input_ids,
@@ -317,9 +324,11 @@ class ALFREDDataset(IterableDataset, Stateful):
         else:
             return va['action']
 
-    def _load_sample(self, low_idx, history, low_act, img_dict, lowidx2img):
+    def _load_sample(self, low_idx, task_goal, state_summary, low_act, img_dict, lowidx2img):
         contents = []
         imgs = []
+
+        contents.append({"type": "text", "text": f"Your task is: {task_goal}.\n"})
 
         if low_idx == 0:
             contents.append({"type": "text", "text": f"Initial state: "})
@@ -330,10 +339,10 @@ class ALFREDDataset(IterableDataset, Stateful):
             assistant_response = f"{self.act_dict_to_str(low_act)}"
             return contents, assistant_response, imgs
         
-        if history:
-            contents.append({"type": "text", "text": f"Action history: {history};\n"})
+        if state_summary:
+            contents.append({"type": "text", "text": f"State: You are in the middle of a room. {state_summary};\n"})
         else:
-            contents.append({"type": "text", "text": f"Action history: No history is available.\n"})
+            contents.append({"type": "text", "text": f"State: You are in the middle of a room.\n"})
 
         contents.append({"type": "text", "text": f"Current state: "})
 
