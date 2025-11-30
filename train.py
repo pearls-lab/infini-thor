@@ -649,27 +649,15 @@ def main(job_config: JobConfig):
                                 job_config.job.hf_repo_id,
                                 f"step-{train_state.step}")
             dist.barrier()  # Ensure all ranks wait for upload to complete
-        
-        # --- sample-based checkpointing: every 10k global samples ---
-        # Use while: a single big step could cross multiple thresholds.
-        # while train_state.samples_seen_global >= train_state._next_samples_ckpt:
-        #     checkpoint.save(train_state.step, force=True)  # keep step-based naming/compat
-        #     dist.barrier()
+
+        # if train_state.step % (N // dp_degree) == 0: # after each epoch
+        #     checkpoint.save(train_state.step, force=True)
+        #     dist.barrier()  # Ensure all ranks finished saving before upload
         #     if local_rank == 0:
         #         upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}",
         #                         job_config.job.hf_repo_id,
-        #                         f"step-{train_state.step}-{train_state.samples_seen_global}")
-        #     dist.barrier()
-        #     train_state._next_samples_ckpt += SAMPLE_CKPT_INTERVAL
-
-        if train_state.step % (N // dp_degree) == 0: # after each epoch
-            checkpoint.save(train_state.step, force=True)
-            dist.barrier()  # Ensure all ranks finished saving before upload
-            if local_rank == 0:
-                upload_ckpt_hf(Path(checkpoint.folder) / f"step-{train_state.step}",
-                                job_config.job.hf_repo_id,
-                                f"step-{train_state.step}")
-            dist.barrier()  # Ensure all ranks wait for upload to complete
+        #                         f"step-{train_state.step}")
+        #     dist.barrier()  # Ensure all ranks wait for upload to complete
 
     logger.info(f"avg input_ids length: {np.array(in_ids).mean()}")
     logger.info(f"avg input_embeds length: {np.array(in_embeds).mean()}")
