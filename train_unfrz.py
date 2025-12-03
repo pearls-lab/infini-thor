@@ -461,7 +461,8 @@ def main(job_config: JobConfig):
         enable_embed_batch = True if (job_config.training.seq_len >= 16384 and job_config.training.batch_size > 1) else False
         enable_embed_batch = False
 
-        with torch.no_grad():
+        # with torch.no_grad():
+        if True:
             if 'qwen' in model_name.lower():
                 # logic for image_grid_thw
                 # grid_t * grid_h * grid_w == pixel_values.shape[1]
@@ -478,17 +479,17 @@ def main(job_config: JobConfig):
                 # logger.info(f"image_grid_thw: {image_grid_thw.shape}")
 
                 image_grid_thw = batch.get("image_grid_thw").to(device, non_blocking=True)
-                inputs_embeds = model.embed(input_ids=input_ids,
-                                            pixel_values=pixel_values,
-                                            image_grid_thw=image_grid_thw)
-                # if parallel_dims.cp_enabled:
-                position_ids, rope_deltas = model.get_rope_index(
-                    input_ids,
-                    image_grid_thw,
-                    None, None, None,
-                )
-                model.rope_deltas = rope_deltas
-                logger.info(f"[rank{global_rank}] position_ids: {type(position_ids)} {position_ids.shape}")
+                # inputs_embeds = model.embed(input_ids=input_ids,
+                #                             pixel_values=pixel_values,
+                #                             image_grid_thw=image_grid_thw)
+                # # if parallel_dims.cp_enabled:
+                # position_ids, rope_deltas = model.get_rope_index(
+                #     input_ids,
+                #     image_grid_thw,
+                #     None, None, None,
+                # )
+                # model.rope_deltas = rope_deltas
+                # logger.info(f"[rank{global_rank}] position_ids: {type(position_ids)} {position_ids.shape}")
             else:
                 inputs_embeds = model.embed(input_ids=input_ids,
                                             pixel_values=pixel_values)
@@ -496,20 +497,20 @@ def main(job_config: JobConfig):
                 position_ids = position_ids.unsqueeze(0)
                 position_ids = position_ids.expand(input_ids.shape[0], position_ids.shape[1])
 
-        logger.info(f"[rank{global_rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.shape}, world_mesh: {world_mesh}")
-        in_ids.append(input_ids.shape[1])
-        in_embeds.append(inputs_embeds.shape[1])
+        # logger.info(f"[rank{global_rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.shape}, world_mesh: {world_mesh}")
+        # in_ids.append(input_ids.shape[1])
+        # in_embeds.append(inputs_embeds.shape[1])
 
         # TODO zero_grad() here ?
         #optimizers.zero_grad()
         
         # # Optional: redistribute inputs for TP if CP is off (as in your code)
-        if parallel_dims.tp_enabled and (not parallel_dims.cp_enabled) and inputs_embeds is not None:
+        # if parallel_dims.tp_enabled and (not parallel_dims.cp_enabled) and inputs_embeds is not None:
             # if not (parallel_dims.pp_enabled and False):  # if not first stage etc., simplified
             # Shard(1) since input_layernorm is applied SequenceParallel()
-            inputs_embeds = distribute_tensor(inputs_embeds, world_mesh['tp'], placements=[Shard(1)]).to_local()
+            # inputs_embeds = distribute_tensor(inputs_embeds, world_mesh['tp'], placements=[Shard(1)]).to_local()
                 
-        logger.info(f"[rank{global_rank}] inputs_embeds (re-dist): {type(inputs_embeds)} {inputs_embeds.shape} {inputs_embeds.device}")
+        # logger.info(f"[rank{global_rank}] inputs_embeds (re-dist): {type(inputs_embeds)} {inputs_embeds.shape} {inputs_embeds.device}")
 
         # --- Context Parallel context ---
         optional_context_parallel_ctx = (
@@ -546,9 +547,12 @@ def main(job_config: JobConfig):
                                     use_cache=False)
                 else:
                     output = model(input_ids=input_ids,
-                                    inputs_embeds=inputs_embeds,
-                                    #position_ids=position_ids,
-                                    use_cache=False)
+                                            pixel_values=pixel_values,
+                                            image_grid_thw=image_grid_thw)
+                    # output = model(input_ids=input_ids,
+                    #                 inputs_embeds=inputs_embeds,
+                    #                 #position_ids=position_ids,
+                    #                 use_cache=False)
                 logits = output if isinstance(output, torch.Tensor) else output.logits
 
                 # CP hack parity
