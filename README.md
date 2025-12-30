@@ -109,6 +109,17 @@ python run_eval_QA_NiEH.py \
     --full_traj
 ```
 
+Run eval_mode = "video"
+```bash
+python run_eval_QA_NiEH.py \
+    --qa_file_path testset/qa_set_nieh_single_clue.csv \
+    --traj_dir testset/traj/ \
+    --metadata_dir testset/metadata/ \
+    --model_name_or_path Qwen/Qwen2.5-VL-7B-Instruct \
+    --full_traj \
+    --eval_mode video
+```
+
 QA performance with the full trajectory as input:
 
 | Model | Single-Evidence | Multi-Evidence |

@@ -22,8 +22,10 @@ from transformers import (
     CLIPProcessor,
 )
 from transformers.utils import is_flash_attn_2_available, is_torch_cuda_available
-
+from qwen_vl_utils import process_vision_info
 import utils.nieh_utils as nieh_utils
+
+#os.environ["FORCE_QWENVL_VIDEO_READER"] = "decord"
 
 logger = logging.getLogger(__name__)
 
@@ -264,23 +266,62 @@ def load_model(model_name_or_path: str,
     return model, cfg, processor
 
 
+# @torch.no_grad()
+# def generate(
+#     img_list: List[Image.Image],
+#     video_path: str,
+#     prompt: str, 
+#     processor: Any, 
+#     model: Any, 
+#     device: torch.device
+# ) -> Tuple[str, Optional[int]]:
+#     if video_path:
+#         inputs = processor(videos=img_list, text=prompt, padding=True, return_tensors="pt").to(device, torch.bfloat16)
+#     else:
+#         inputs = processor(images=img_list, text=prompt, padding=True, return_tensors="pt").to(device, torch.bfloat16)
+    
+#     image_inputs, video_inputs = process_vision_info(prompt_messages)
+    
+#     ctx_len: Optional[int] = None
+#     if "input_ids" in inputs:
+#         try:
+#             ctx_len = int(inputs["input_ids"].shape[1])
+#         except Exception:
+#             ctx_len = None
+    
+#     out = model.generate(**inputs, max_new_tokens=50, pad_token_id=processor.tokenizer.eos_token_id)
+    
+#     decoded_out = processor.batch_decode(out, skip_special_tokens=True)
+#     lm_response = decoded_out[0].strip().split("\n")[-1]
+#     return lm_response, ctx_len
+
+
 @torch.no_grad()
 def generate(
-    img_list: List[Image.Image], 
-    prompt: str, 
+    img_list: List[Image.Image],
+    video_path: Optional[str], # Now potentially a string path
+    prompt_messages: List[Dict], # Pass the messages list instead of the formatted string
     processor: Any, 
     model: Any, 
     device: torch.device
 ) -> Tuple[str, Optional[int]]:
-    inputs = processor(images=img_list, text=prompt, padding=True, return_tensors="pt").to(device, torch.bfloat16)
     
-    ctx_len: Optional[int] = None
-    if "input_ids" in inputs:
-        try:
-            ctx_len = int(inputs["input_ids"].shape[1])
-        except Exception:
-            ctx_len = None
+    # 1. Use the utility to process the messages (extracts frames from .mp4 or uses PIL list)
+    image_inputs, video_inputs = process_vision_info(prompt_messages)
     
+    # 2. Apply chat template for the text part
+    prompt = processor.apply_chat_template(prompt_messages, tokenize=False, add_generation_prompt=True)
+    
+    # 3. Prepare inputs
+    inputs = processor(
+        text=[prompt],
+        images=image_inputs,
+        videos=video_inputs,
+        padding=True,
+        return_tensors="pt"
+    ).to(device, torch.bfloat16)
+    
+    ctx_len = int(inputs["input_ids"].shape[1]) if "input_ids" in inputs else None
     out = model.generate(**inputs, max_new_tokens=50, pad_token_id=processor.tokenizer.eos_token_id)
     
     decoded_out = processor.batch_decode(out, skip_special_tokens=True)
@@ -338,8 +379,8 @@ def main(
         clip_model, clip_processor = load_clip_retriever(clip_model_name, device)
 
     if full_traj:
-        total_match = 0.0
-        total_count = 0.0
+        total_match, total_count = 0.0, 0.0
+        oe_match, oe_count = 0.0, 0.0
     else:
         total_match = [0 for _ in target_depths]
         total_count = [0 for _ in target_depths]
@@ -388,6 +429,10 @@ def main(
                     if score_val is not None:
                         total_match += float(score_val)
                         total_count += 1.0
+
+                        if isinstance(rec.get("gt_answer")[0], str) and not rec.get("gt_answer")[0].lower() in ["no", "yes"]:
+                            oe_match += float(score_val)
+                            oe_count += 1.0
                 else:
                     per_depth = rec.get("per_depth", [])
                     for item in per_depth:
@@ -426,6 +471,11 @@ def main(
                 "\nAnswer the question given the description of the environment and the agent's state (the last image). "
                 "Do not include explanation or reasoning in the answer. Answer with a single word or words.\nQuestion: "
             )
+        elif eval_mode == "video":
+            task_instr = (
+                "\nAnswer the question given the video showing the agent's trajectory over time. "
+                "Do not include explanation or reasoning in the answer. Answer with a single word or words.\nQuestion: "
+            )
         else:
             task_instr = (
                 "\nAnswer the question given the agent's views in time order. "
@@ -447,7 +497,29 @@ def main(
         if full_traj:
             # Select context images based on eval_mode
             selected_indices = list(range(len(img_list)))
-            if eval_mode == "clip_retrieval":
+            video_path = None
+            ctx_img_list = []
+            if eval_mode == "video":
+                # Construct the actual path
+                video_path_str = os.path.join(metadata_dir, row['traj_id'], f"{row['traj_id']}_10fps.mp4")
+                
+                # Check if file exists
+                if not os.path.exists(video_path_str):
+                    logger.warning(f"Video file not found: {video_path_str}, falling back to frames.")
+                    content = [{'type': 'video', 'video': img_list}]
+                else:
+                    # Use the .mp4 path directly
+                    content = [
+                        {
+                            "type": "video",
+                            #"video": f"file://{video_path_str}",
+                            "video": video_path_str,
+                            "fps": 1.0, # Adjust sampling frequency as needed
+                        },
+                        {"type": "text", "text": task_instr}
+                    ]
+                messages = [{"role": "user", "content": content}]             
+            elif eval_mode == "clip_retrieval":
                 if clip_model is None or clip_processor is None:
                     raise RuntimeError("eval_mode='clip_retrieval' requires a loaded CLIP model.")
                 ctx_img_list, selected_indices = retrieve_top_images_clip(
@@ -471,7 +543,6 @@ def main(
             elif eval_mode == "interleaved":
                 traj_data = json.load(open(os.path.join(traj_dir, f"{row['traj_id']}.json")))
                 content = []
-                ctx_img_list = []
 
                 for sub_task, sub_traj in zip(traj_data['sub_tasks'], traj_data['sub_trajs']):
                     subgoal_str = f"Your task goal: {sub_task['task_desc']}. "
@@ -511,7 +582,6 @@ def main(
                 else:
                     raise ValueError()
                 content = []
-                ctx_img_list = []
 
                 last_low_idx = len(traj_data['plan']['low_actions']) - 1
                 state_summary = traj_data['state_summary'][str(last_low_idx)]
@@ -524,14 +594,8 @@ def main(
             else:
                 # Default behaviour: use the full trajectory
                 ctx_img_list = img_list
-                content = [{'type': 'image'} for _ in ctx_img_list] + [{'type': 'text', 'text': task_instr}]
+                content = [{'type': 'image', 'image': im} for im in ctx_img_list] + [{'type': 'text', 'text': task_instr}]
                 messages = [{"role": "user", "content": content}]
-
-            if not ctx_img_list:
-                logger.warning(
-                    f"No images selected for qidx={qidx} in eval_mode='{eval_mode}'. Skipping."
-                )
-                continue
 
             prompt = processor.apply_chat_template(
                 messages,
@@ -548,7 +612,7 @@ def main(
             if eval_mode == "clip_retrieval":
                 logger.info(f"selected_indices: {selected_indices}")
 
-            lm_response, ctx_len = generate(ctx_img_list, prompt, processor, model, device)
+            lm_response, ctx_len = generate(ctx_img_list, video_path, messages, processor, model, device)
             if lm_response:  # Only process if we got a valid response
                 score = nieh_utils.get_score(lm_response, row['answer'])
                 logger.info(
@@ -558,6 +622,10 @@ def main(
                 )
                 total_match += score
                 total_count += 1.0
+                
+                if isinstance(row['answer'][0], str) and not row['answer'][0].lower() in ["no", "yes"]:
+                    oe_match += score
+                    oe_count += 1.0
 
                 record = {
                     "qidx": qidx,
@@ -636,6 +704,10 @@ def main(
             logger.info(
                 f"score: {score:.4f}, total_match: {total_match}, "
                 f"total_count: {total_count}"
+            )
+            logger.info(
+                f"open_ended_score: {score:.4f}, open_ended_match: {oe_match}, "
+                f"open_ended_count: {oe_count}"
             )
     else:
         for depth in target_depths:
@@ -719,7 +791,7 @@ if __name__ == "__main__":
         "--eval_mode",
         type=str,
         default="full_traj",
-        choices=["full_traj", "interleaved", "clip_retrieval", "truncate_head", "text_state"],
+        choices=["full_traj", "interleaved", "clip_retrieval", "truncate_head", "text_state", "video"],
         help=(
             "Evaluation mode when --full_traj is enabled. "
             "'full_traj': use entire trajectory; "
