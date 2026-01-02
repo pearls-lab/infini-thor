@@ -337,6 +337,11 @@ class JobConfig:
             type=int
         )
         self.parser.add_argument(
+            "--training.gradient_accumulation_steps",
+            type=int,
+            default=1
+        )
+        self.parser.add_argument(
             "--experimental.enable_async_tensor_parallel",
             action="store_true",
             help="Whether to apply async tensor parallel (currently only effective when compile is enabled)",

@@ -26,6 +26,7 @@ from torchtitan.datasets import build_data_loader, build_hf_processor
 from torchtitan.tools.logging import init_logger, logger
 from torchtitan.metrics import build_device_memory_monitor, build_metric_logger
 from torchtitan.models import model_name_to_tokenizer
+from torchtitan.loss import rescale_accumulated_loss
 from torchtitan.parallelisms import ParallelDims
 from torchtitan.tools.profiling import maybe_enable_memory_snapshot, maybe_enable_profiling
 from torchtitan.train_spec import get_train_spec
@@ -321,8 +322,11 @@ def main(job_config: JobConfig):
     logger.info(f"Building {train_spec.name} {job_config.model.flavor} with {model_config}")
     logger.info(f"Model {model_name} size: {model_param_count:,} parameters")
 
+    gradient_accumulation_steps = job_config.training.gradient_accumulation_steps
+
     def loss_fn(pred, labels):
         return torch.nn.functional.cross_entropy(pred.flatten(0, 1).float(), labels.flatten(0, 1))
+    loss_fn = rescale_accumulated_loss(loss_fn, gradient_accumulation_steps)
 
     # --- distribute model by PP/TP as requested ---
     model_parts = [model]
@@ -400,19 +404,12 @@ def main(job_config: JobConfig):
 
     checkpoint.reset()
 
-    # sample-based checkpointing state
-    SAMPLE_CKPT_INTERVAL = 10_000  # global samples
-    if not hasattr(train_state, "samples_seen_global"):
-        train_state.samples_seen_global = 0
-    if not hasattr(train_state, "_next_samples_ckpt"):
-        # next multiple of interval strictly greater than current count
-        train_state._next_samples_ckpt = ((train_state.samples_seen_global // SAMPLE_CKPT_INTERVAL) + 1) * SAMPLE_CKPT_INTERVAL
-
     # train loop
     logger.info(
         f"Training starts at step {train_state.step + 1}, "
         f"with local batch size {job_config.training.batch_size}, "
-        f"global batch size {job_config.training.batch_size * dp_degree}, "
+        f"gradeint accumulation steps {gradient_accumulation_steps}, "
+        f"global batch size {job_config.training.batch_size * dp_degree * gradient_accumulation_steps}, "
         f"sequence length {job_config.training.seq_len}, "
         f"total steps {job_config.training.steps} "
         f"(warmup {job_config.training.warmup_steps})"
@@ -426,141 +423,140 @@ def main(job_config: JobConfig):
     import numpy as np
     N = len(data_loader.dataset) # # of trajs
     while train_state.step < job_config.training.steps:
-        try:
-            batch = next(data_iterator)
-        except StopIteration:
-            data_iterator = iter(data_loader)
-            batch = next(data_iterator)
-        
+        optimizers.zero_grad()
+        accumulated_losses = []
         train_state.step += 1
         gc_handler.run(train_state.step)
-
-        # unpack common fields expected by your graphs
-        input_ids = batch["input_ids"].to(device, non_blocking=True) # check `pin_memory`; it starts the transfer and immediately move on to the next operation, overlapping computation and data transfer.
-        labels       = batch["labels"].to(device, non_blocking=True)
-        pixel_values = batch["pixel_values"].to(device, non_blocking=True)
-        n_image      = batch["n_image"].to(device, non_blocking=True)
-
-        # global sample counting
-        local_samples = torch.tensor([input_ids.size(0)], device=device, dtype=torch.int64)
-
-        # Reduce over DP (and CP if present) to get the true global count for this step.
-        # Your loss logging uses world_mesh["dp_cp"]; reuse the same group if available.
-        if parallel_dims.dp_replicate_enabled or parallel_dims.dp_shard_enabled or parallel_dims.cp_enabled:
-            #dist.all_reduce(local_samples, op=dist.ReduceOp.SUM, group=world_mesh["dp_cp"])
-            if dp_pg is not None:
-                dist.all_reduce(local_samples, op=dist.ReduceOp.SUM, group=dp_pg)
-        # else single-process or pure TP/PP case: no reduce needed.
-
-        global_samples_this_step = int(local_samples.item())
-        train_state.samples_seen_global += global_samples_this_step
-
-        logger.info(f"global_samples_this_step: {global_samples_this_step}, input_ids: {input_ids.shape}, pixel_values: {pixel_values.shape}, image_grid_thw: {batch.get("image_grid_thw").shape}")
-
-        # TODO: enable_embed_batch
-        enable_embed_batch = True if (job_config.training.seq_len >= 16384 and job_config.training.batch_size > 1) else False
-        enable_embed_batch = False
-
-        with torch.no_grad():
-            if 'qwen' in model_name.lower():
-                # logic for image_grid_thw
-                # grid_t * grid_h * grid_w == pixel_values.shape[1]
-                # grid_h, grid_w = job_config.training.img_width // 14, job_config.training.img_height // 14
-                # hw = grid_h * grid_w
-                # grid_t = n_image // hw
-                # n_vis_tokens = n_image.squeeze(-1)
-                # assert torch.all(n_vis_tokens % hw == 0), "per-sample tokens must be divisible by H*W"
-                # grid_t = (n_vis_tokens // hw).to(torch.int32).unsqueeze(-1)  # (N,1)
-                # # make per-sample columns for H and W
-                # grid_h_col = torch.full_like(grid_t, grid_h)  # (N,1), int32
-                # grid_w_col = torch.full_like(grid_t, grid_w)  # (N,1), int32
-                # image_grid_thw = torch.cat([grid_t, grid_h_col, grid_w_col], dim=1).to(pixel_values.device)
-                # logger.info(f"image_grid_thw: {image_grid_thw.shape}")
-
-                image_grid_thw = batch.get("image_grid_thw").to(device, non_blocking=True)
-                inputs_embeds = model.embed(input_ids=input_ids,
-                                            pixel_values=pixel_values,
-                                            image_grid_thw=image_grid_thw)
-                # if parallel_dims.cp_enabled:
-                position_ids, rope_deltas = model.get_rope_index(
-                    input_ids,
-                    image_grid_thw,
-                    None, None, None,
-                )
-                model.rope_deltas = rope_deltas
-                logger.info(f"[rank{global_rank}] position_ids: {type(position_ids)} {position_ids.shape}")
-            else:
-                inputs_embeds = model.embed(input_ids=input_ids,
-                                            pixel_values=pixel_values)
-                position_ids = torch.arange(0, input_ids.shape[1], device=input_ids.device)
-                position_ids = position_ids.unsqueeze(0)
-                position_ids = position_ids.expand(input_ids.shape[0], position_ids.shape[1])
-
-        logger.info(f"[rank{global_rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.shape}, world_mesh: {world_mesh}")
-        in_ids.append(input_ids.shape[1])
-        in_embeds.append(inputs_embeds.shape[1])
-
-        # TODO zero_grad() here ?
-        #optimizers.zero_grad()
         
-        # # Optional: redistribute inputs for TP if CP is off (as in your code)
-        if parallel_dims.tp_enabled and (not parallel_dims.cp_enabled) and inputs_embeds is not None:
-            # if not (parallel_dims.pp_enabled and False):  # if not first stage etc., simplified
-            # Shard(1) since input_layernorm is applied SequenceParallel()
-            inputs_embeds = distribute_tensor(inputs_embeds, world_mesh['tp'], placements=[Shard(1)]).to_local()
-                
-        logger.info(f"[rank{global_rank}] inputs_embeds (re-dist): {type(inputs_embeds)} {inputs_embeds.shape} {inputs_embeds.device}")
+        for _microbatch in range(gradient_accumulation_steps):
+            try:
+                batch = next(data_iterator)
+            except StopIteration:
+                data_iterator = iter(data_loader)
+                batch = next(data_iterator)
+            
+            # unpack common fields expected by your graphs
+            input_ids = batch["input_ids"].to(device, non_blocking=True) # check `pin_memory`; it starts the transfer and immediately move on to the next operation, overlapping computation and data transfer.
+            labels       = batch["labels"].to(device, non_blocking=True)
+            pixel_values = batch["pixel_values"].to(device, non_blocking=True)
+            n_image      = batch["n_image"].to(device, non_blocking=True)
 
-        # --- Context Parallel context ---
-        optional_context_parallel_ctx = (
-            utils.create_context_parallel_ctx(
-                cp_mesh=world_mesh["cp"],
-                cp_buffers=[input_ids, inputs_embeds, labels, position_ids],
-                cp_seq_dims=[1, 1, 1, 2],
-                cp_no_restore_buffers={input_ids, inputs_embeds, labels, position_ids},
-                cp_rotate_method=job_config.experimental.context_parallel_rotate_method,
-            )
-            if parallel_dims.cp_enabled else None
-        )
+            # global sample counting
+            local_samples = torch.tensor([input_ids.size(0)], device=device, dtype=torch.int64)
 
-        # model_parts = [model]  # for grad clip below
+            # Reduce over DP (and CP if present) to get the true global count for this step.
+            # Your loss logging uses world_mesh["dp_cp"]; reuse the same group if available.
+            if parallel_dims.dp_replicate_enabled or parallel_dims.dp_shard_enabled or parallel_dims.cp_enabled:
+                #dist.all_reduce(local_samples, op=dist.ReduceOp.SUM, group=world_mesh["dp_cp"])
+                if dp_pg is not None:
+                    dist.all_reduce(local_samples, op=dist.ReduceOp.SUM, group=dp_pg)
+            # else single-process or pure TP/PP case: no reduce needed.
 
-        # --- forward/backward (PP vs non-PP) ---
-        if parallel_dims.pp_enabled:
-            # Placeholder PP schedule hook: your original uses pp_schedule.step(...).
-            # Here we call the model directly; in your env, wire the pp_schedule just like originals.
-            with train_context(optional_context_parallel_ctx):
-                logits = model.language_model(inputs_embeds=inputs_embeds, position_ids=position_ids, use_cache=False) if hasattr(model, "language_model") else model(input_ids=input_ids, use_cache=False)
-                # CP hack parity
-                if (labels + torch.tensor([100], device=labels.device)).sum() == 0:
-                    labels[:, -2] = input_ids[:, -1]
-                loss = loss_fn(logits, labels)
-                del logits
-                loss.backward()
-        else:
-            with train_context(optional_context_parallel_ctx):
-                if parallel_dims.cp_enabled:
-                    output = model(input_ids=input_ids,
-                                    inputs_embeds=inputs_embeds,
-                                    position_ids=position_ids,
-                                    use_cache=False)
+            logger.info(f"step: {train_state.step} input_ids: {input_ids.shape}, pixel_values: {pixel_values.shape}, image_grid_thw: {batch.get("image_grid_thw").shape}")
+
+            # TODO: enable_embed_batch
+            enable_embed_batch = True if (job_config.training.seq_len >= 16384 and job_config.training.batch_size > 1) else False
+            enable_embed_batch = False
+
+            with torch.no_grad():
+                if 'qwen' in model_name.lower():
+                    # logic for image_grid_thw
+                    # grid_t * grid_h * grid_w == pixel_values.shape[1]
+                    # grid_h, grid_w = job_config.training.img_width // 14, job_config.training.img_height // 14
+                    # hw = grid_h * grid_w
+                    # grid_t = n_image // hw
+                    # n_vis_tokens = n_image.squeeze(-1)
+                    # assert torch.all(n_vis_tokens % hw == 0), "per-sample tokens must be divisible by H*W"
+                    # grid_t = (n_vis_tokens // hw).to(torch.int32).unsqueeze(-1)  # (N,1)
+                    # # make per-sample columns for H and W
+                    # grid_h_col = torch.full_like(grid_t, grid_h)  # (N,1), int32
+                    # grid_w_col = torch.full_like(grid_t, grid_w)  # (N,1), int32
+                    # image_grid_thw = torch.cat([grid_t, grid_h_col, grid_w_col], dim=1).to(pixel_values.device)
+                    # logger.info(f"image_grid_thw: {image_grid_thw.shape}")
+
+                    image_grid_thw = batch.get("image_grid_thw").to(device, non_blocking=True)
+                    inputs_embeds = model.embed(input_ids=input_ids,
+                                                pixel_values=pixel_values,
+                                                image_grid_thw=image_grid_thw)
+                    # if parallel_dims.cp_enabled:
+                    position_ids, rope_deltas = model.get_rope_index(
+                        input_ids,
+                        image_grid_thw,
+                        None, None, None,
+                    )
+                    model.rope_deltas = rope_deltas
+                    logger.info(f"[rank{global_rank}] position_ids: {type(position_ids)} {position_ids.shape}")
                 else:
-                    output = model(input_ids=input_ids,
-                                    inputs_embeds=inputs_embeds,
-                                    #position_ids=position_ids,
-                                    use_cache=False)
-                logits = output if isinstance(output, torch.Tensor) else output.logits
+                    inputs_embeds = model.embed(input_ids=input_ids,
+                                                pixel_values=pixel_values)
+                    position_ids = torch.arange(0, input_ids.shape[1], device=input_ids.device)
+                    position_ids = position_ids.unsqueeze(0)
+                    position_ids = position_ids.expand(input_ids.shape[0], position_ids.shape[1])
 
-                # CP hack parity
-                if (labels + torch.tensor([100], device=labels.device)).sum() == 0:
-                    labels[:, -2] = input_ids[:, -1]
-                logger.info(f"logits: {logits.shape} ({type(logits)}), labels: {labels.shape}")
-                logger.info(f"logits: {logits[0][-20:]} ({type(logits)}), labels: {labels[0][-20:]}")
-                # if isinstance(logits, torch.distributed.tensor.DTensor):
-                #     logits = logits.to_local()
-                loss = loss_fn(logits, labels)
-                del logits
-                loss.backward()
+            logger.info(f"[rank{global_rank}] inputs_embeds: {type(inputs_embeds)} {inputs_embeds.device} {inputs_embeds.shape}, world_mesh: {world_mesh}")
+            in_ids.append(input_ids.shape[1])
+            in_embeds.append(inputs_embeds.shape[1])
+            
+            # # Optional: redistribute inputs for TP if CP is off (as in your code)
+            if parallel_dims.tp_enabled and (not parallel_dims.cp_enabled) and inputs_embeds is not None:
+                # if not (parallel_dims.pp_enabled and False):  # if not first stage etc., simplified
+                # Shard(1) since input_layernorm is applied SequenceParallel()
+                inputs_embeds = distribute_tensor(inputs_embeds, world_mesh['tp'], placements=[Shard(1)]).to_local()
+                    
+            logger.info(f"[rank{global_rank}] inputs_embeds (re-dist): {type(inputs_embeds)} {inputs_embeds.shape} {inputs_embeds.device}")
+
+            # --- Context Parallel context ---
+            optional_context_parallel_ctx = (
+                utils.create_context_parallel_ctx(
+                    cp_mesh=world_mesh["cp"],
+                    cp_buffers=[input_ids, inputs_embeds, labels, position_ids],
+                    cp_seq_dims=[1, 1, 1, 2],
+                    cp_no_restore_buffers={input_ids, inputs_embeds, labels, position_ids},
+                    cp_rotate_method=job_config.experimental.context_parallel_rotate_method,
+                )
+                if parallel_dims.cp_enabled else None
+            )
+
+            # model_parts = [model]  # for grad clip below
+
+            # --- forward/backward (PP vs non-PP) ---
+            if parallel_dims.pp_enabled:
+                # Placeholder PP schedule hook: your original uses pp_schedule.step(...).
+                # Here we call the model directly; in your env, wire the pp_schedule just like originals.
+                with train_context(optional_context_parallel_ctx):
+                    logits = model.language_model(inputs_embeds=inputs_embeds, position_ids=position_ids, use_cache=False) if hasattr(model, "language_model") else model(input_ids=input_ids, use_cache=False)
+                    # CP hack parity
+                    if (labels + torch.tensor([100], device=labels.device)).sum() == 0:
+                        labels[:, -2] = input_ids[:, -1]
+                    loss = loss_fn(logits, labels)
+                    del logits
+                    loss.backward()
+            else:
+                with train_context(optional_context_parallel_ctx):
+                    if parallel_dims.cp_enabled:
+                        output = model(input_ids=input_ids,
+                                        inputs_embeds=inputs_embeds,
+                                        position_ids=position_ids,
+                                        use_cache=False)
+                    else:
+                        output = model(input_ids=input_ids,
+                                        inputs_embeds=inputs_embeds,
+                                        #position_ids=position_ids,
+                                        use_cache=False)
+                    logits = output if isinstance(output, torch.Tensor) else output.logits
+
+                    # CP hack parity
+                    if (labels + torch.tensor([100], device=labels.device)).sum() == 0:
+                        labels[:, -2] = input_ids[:, -1]
+                    logger.info(f"logits: {logits.shape} ({type(logits)}), labels: {labels.shape}")
+                    logger.info(f"logits: {logits[0][-10:]} ({type(logits)}), labels: {labels[0][-10:]}")
+                    # if isinstance(logits, torch.distributed.tensor.DTensor):
+                    #     logits = logits.to_local()
+                    loss = loss_fn(logits, labels)
+                    del logits
+                    loss.backward()
+            
+            accumulated_losses.append(loss.detach().clone())
 
         # --- grad clip & step ---
         # utils.clip_grad_norm_(
@@ -589,7 +585,8 @@ def main(job_config: JobConfig):
                 or parallel_dims.dp_shard_enabled
                 or parallel_dims.cp_enabled
             ):
-                loss = loss.detach()
+                #loss = loss.detach()
+                loss = torch.sum(torch.stack(accumulated_losses))
                 global_avg_loss, global_max_loss = (
                     utils.dist_mean(loss, world_mesh["dp_cp"]),
                     utils.dist_max(loss, world_mesh["dp_cp"]),
