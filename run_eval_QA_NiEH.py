@@ -512,7 +512,6 @@ def main(
                     content = [
                         {
                             "type": "video",
-                            #"video": f"file://{video_path_str}",
                             "video": video_path_str,
                             "fps": 1.0, # Adjust sampling frequency as needed
                         },
