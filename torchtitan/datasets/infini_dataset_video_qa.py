@@ -299,13 +299,13 @@ class ALFREDDataset(IterableDataset, Stateful):
             imgs.append(img)
         
         # pre-prompt
-        contents.append({"type": "text", "text": f"These are frames of a video. "})
+        contents.append({"type": "text", "text": f"These are frames of a video.\n"})
         # question
-        contents.append({"type": "text", "text": f"{question} "})
+        contents.append({"type": "text", "text": f"{question}\n"})
         
         # post-prompt
         if question_type in ["relative_direction", "relative_distance"]:
-            contents.append({"type": "text", "text": f"Answer with the option's letter from the given choices directly. "})
+            contents.append({"type": "text", "text": f"Answer with the option's letter from the given choices directly."})
         else:
             contents.append({"type": "text", "text": f"Please answer the question using a single word or phrase."})
         
