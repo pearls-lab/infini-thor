@@ -380,7 +380,7 @@ def main(
     env = ThorEnv()
 
     log_path = os.path.join(
-        "outputs",
+        "output",
         f"eval_longhrz_{checkpoint_path.replace(os.sep, "_").replace(":", "_")}.log"
     )
     
@@ -459,8 +459,8 @@ def main(
         expert.add_log(log_type="t_reward", log_data=0)
         expert.add_log(log_type="high_idx", log_data=0)
 
-        #for sub_task, sub_traj in zip(traj_data['sub_tasks'][:-1], traj_data['sub_trajs'][:-1]):
-        for sub_task, sub_traj in zip(traj_data['sub_tasks'][:1], traj_data['sub_trajs'][:1]):
+        for sub_task, sub_traj in zip(traj_data['sub_tasks'][:-1], traj_data['sub_trajs'][:-1]):
+        #for sub_task, sub_traj in zip(traj_data['sub_tasks'][:1], traj_data['sub_trajs'][:1]):
             goal_str = sub_task['task_desc']
             expert.append_traj(goal_str)
             buffer = io.BytesIO(base64.b64decode(last_event['frame_bytes']))
@@ -543,7 +543,7 @@ def main(
         prefix.append({"type": "text", "text": f"Your task is: {goal_str}.\n"})
         prefix.append({"type": "text", "text": f"Previous states: "})
 
-        memory_imgs = traj_data['retrieved_image'][str(low_start)]['top20']
+        memory_imgs = traj_data['retrieved_image'][str(low_start)][f'top{top_k}']
         imgs = []
         logger.info(memory_imgs)
         for low_idx, entry in enumerate(memory_imgs):

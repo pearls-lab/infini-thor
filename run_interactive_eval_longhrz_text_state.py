@@ -350,7 +350,7 @@ def main(
     env = ThorEnv()
 
     log_path = os.path.join(
-        "outputs",
+        "output",
         f"eval_longhrz_{checkpoint_path.replace(os.sep, "_").replace(":", "_")}.log"
     )
     

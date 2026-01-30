@@ -274,7 +274,11 @@ def main(
     processor.tokenizer.model_max_length = 1048576
     processor.tokenizer.add_special_tokens({"additional_special_tokens": ['<|act|>', '<|plan|>', '<|goal|>']})
 
-    log_dir = f"logs/{checkpoint_path.replace("/", "_")}"
+    run_name = checkpoint_path.replace(os.sep, "_").replace(":", "_")
+    if ctx_extension:
+        run_name += f"_{ctx_extension}_{ctx_extension_factor}"
+    
+    log_dir = f"logs/{run_name}"
     os.makedirs(log_dir, exist_ok=True)
 
     model_dtype = torch.bfloat16
@@ -302,6 +306,29 @@ def main(
     else:
         model_cls = Qwen2_5_VLForConditionalGeneration
         llm_config = AutoConfig.from_pretrained(checkpoint_path, trust_remote_code=True)
+
+        if ctx_extension:
+            logger.info(f"Using dynamic context length: {ctx_extension}")
+            
+            new_rope_scaling = llm_config.rope_scaling.copy() if llm_config.rope_scaling else {}
+            
+            if ctx_extension == "longrope":
+                new_rope_scaling.update({
+                    "rope_type": ctx_extension,
+                    "long_factor": ctx_extension_factor,
+                    "short_factor": 1,
+                    "factor": 1.0,
+                    "original_max_position_embeddings": llm_config.max_position_embeddings,
+                })
+            else:
+                new_rope_scaling.update({
+                    "rope_type": ctx_extension,
+                    "factor": ctx_extension_factor,
+                    "original_max_position_embeddings": llm_config.max_position_embeddings,
+                })
+                
+            llm_config.rope_scaling = new_rope_scaling
+
         model = Qwen2_5_VLForConditionalGeneration.from_pretrained(checkpoint_path, 
             torch_dtype=model_dtype, 
             device_map="auto",
@@ -354,8 +381,8 @@ def main(
     env = ThorEnv()
 
     log_path = os.path.join(
-        "outputs",
-        f"eval_longhrz_{checkpoint_path.replace(os.sep, "_").replace(":", "_")}.log"
+        "output",
+        f"eval_longhrz_{run_name}.log"
     )
     
     existing_id = set()
@@ -568,6 +595,8 @@ def main(
                     break
             
             logger.info(f"\tSR: {round(metric['success_count']/metric['total_count'], 4)}, {metric}")
+            if (not success) or done:
+                    break
         
         json.dump({"traj_id": traj_id, "metric": metric}, log_f, ensure_ascii=False)
         log_f.write("\n")

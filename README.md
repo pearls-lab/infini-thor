@@ -202,7 +202,15 @@ conda activate ai2thor_env
 python env_utils/ai2thor_service.py
 ```
 
-Running the evaluation (need to deactivate `ai2thor_env` env if needed):
+
+Evaluate "Long-horizon Task" (the final sub-task)
+```
+python run_interactive_eval_longhrz.py 
+
+```
+
+
+Evaluate from `t=0` (need to deactivate `ai2thor_env` env if needed):
 
 ```
 export MODEL_LABEL=llava_onevison_7b_32k
