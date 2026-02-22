@@ -14,7 +14,7 @@ To enable this capability, we explore architectural adaptations, including inter
 
 
 <p align="center">
-| <a href="https://arxiv.org/pdf/2505.16928"><b>Paper</b></a> | <a href="https://huggingface.co/datasets/PEARLS-Lab/infini-thor"> <b>Dataset</b> </a> | <a href="https://x.com/rajammanabrolu/status/1925945858664604025"> <b>Tweet</b> </a> |
+| <a href="https://arxiv.org/pdf/2505.16928"><b>Paper</b></a> | <a href="https://huggingface.co/datasets/PEARLS-Lab/infini-thor-nieh"> <b>Dataset</b> </a> | <a href="https://x.com/rajammanabrolu/status/1925945858664604025"> <b>Tweet</b> </a> |
 </p>
 
 
