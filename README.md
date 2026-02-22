@@ -18,13 +18,13 @@ To enable this capability, we explore architectural adaptations, including inter
 </p>
 
 
-## Setup
+# Setup
 
 We provide a Dockerfile for setting up the environment. To build the image:
 ```
 docker build -t infini-thor -f Dockerfile .
 ```
-or pull iamge from the hub
+or pull image from the hub
 ```
 docker pull bosung17/infini-thor
 ```
@@ -33,7 +33,7 @@ docker pull bosung17/infini-thor
 Then clone the code and install packages:
 
 ```bash
-git clone https://github.com/pearls-lab/infini-thor.gitmodel_name_or_path
+git clone https://github.com/pearls-lab/infini-thor.git
 cd infini-thor
 ```
 
@@ -47,24 +47,18 @@ Note: We highly recommend using FlashAttention 2 for faster training and evaluat
 pip install --no-build-isolation flash-attn
 ```
 
-## Static Evaluation: Needle(s) in the Embodied Haystack (NiEH)
+# Static Evaluation: Needle(s) in the Embodied Haystack (NiEH)
 
 ### Download and unzip QA Data
 Download the NiEH set from huggingface dataset hub (you may need to set HF_TOKEN or login with `huggingface-cli login`)
 ```
 pip install -U "huggingface_hub[cli]"
-huggingface-cli download PEARLS-Lab/infini-thor --repo-type dataset --local-dir /path/to/directory
-```
-or
-```
-python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='PEARLS-Lab/infini-thor', repo_type='dataset', local_dir='/path/to/directory')" 
-
+huggingface-cli download PEARLS-Lab/infini-thor-nieh --repo-type dataset --local-dir /path/to/directory
 ```
 
-Download images and metadata and uncompress
+Unzip metadata
 ```
-wget https://huggingface.co/PEARLS-Lab/infini-thor/resolve/main/dataset/testset.tar
-tar xvf testset.tar
+tar xvf metadata.tar
 ```
 
 ---
@@ -72,8 +66,8 @@ tar xvf testset.tar
 ### Data Format
 
 **NiEH Data File (CSV)**:
-- `qa_set_nieh_single_clue.csv`: Single-evidence QA set (Needle in the Emboided Haystack task)
-- `qa_set_nsieh_multi_clue.csv`: Multi-evidnece QA set (Needle**s** int the Embodied Haystack task)
+- `qa_set_nieh_single_clue.csv`: Single-evidence QA set (Needle in the Embodied Haystack task)
+- `qa_set_nieh_multi_clue.csv`: Multi-evidence QA set (Needle**s** in the Embodied Haystack task)
 
 Each CSV file should contain the following columns:
 - `traj_id`: Trajectory identifier
@@ -82,7 +76,7 @@ Each CSV file should contain the following columns:
 - `answer`: List of acceptable answers
 
 
-We also need GT images and metadata to build embodied haystacks. The 
+We also need GT images and metadata to build embodied haystacks. The
 **metadata directory structure** is:
 ```
 metadata/
@@ -98,14 +92,27 @@ metadata/
 
 ### Run evaluation
 
-Run the Needle(s) in the Embodied Haystack evaluation with **a full trajectory**.
-In this setting, the model receives the entire trajectory as input and answers the question. 
+The evaluation script supports multiple modes via `--eval_mode`:
+
+| Mode | Description |
+|------|-------------|
+| `full_traj` | Feed the entire trajectory image sequence (default with `--full_traj`) |
+| `haystack` | Build a controlled haystack context at varying needle depths (default without `--full_traj`) |
+| `clip_retrieval` | Retrieve top-K images via CLIP similarity before prompting |
+| `truncate_head` | Keep only the tail of the trajectory that fits in `--ctx_size` |
+| `interleaved` | Interleave state images with action text from trajectory data |
+| `text_state` | Use a text state summary + last frame |
+| `video` | Pass the trajectory as a video file |
+
+---
+
+**Full trajectory evaluation** — the model receives the entire trajectory as input:
 
 ```bash
 python run_eval_QA_NiEH.py \
     --qa_file_path path/to/qa_data.csv \
     --metadata_dir path/to/metadata \
-    --model_name_or_path llava-hf/llava-onevision-qwen2-7b-ov-hf \
+    --model_name_or_path Qwen/Qwen2.5-VL-7B-Instruct \
     --full_traj
 ```
 
@@ -125,29 +132,61 @@ Note: To run the DeepSeek-VL model, follow the instruction [here](https://github
 
 ---
 
-Run the evaluation with different input context sizes (e.g., `--ctx_size 256` means 256K tokens used as the model's input). 
-
+**Haystack evaluation** — build a controlled context at varying needle depths with a given context size (e.g., `--ctx_size 256` means 256K tokens):
 
 ```bash
 python run_eval_QA_NiEH.py \
     --qa_file_path path/to/qa_data.csv \
     --metadata_dir path/to/metadata \
-    --model_name_or_path llava-hf/llava-onevision-qwen2-7b-ov-hf \
+    --model_name_or_path Qwen/Qwen2.5-VL-7B-Instruct \
     --ctx_size 256
 ```
 
 ---
 
-Run the evaluation with a context extension method, e.g.:
+**Context extension** — apply RoPE scaling (e.g., YaRN) to extend the model's effective context:
+
 ```bash
 python run_eval_QA_NiEH.py \
     --qa_file_path path/to/qa_data.csv \
     --metadata_dir path/to/metadata \
-    --model_name_or_path llava-hf/llava-onevision-qwen2-7b-ov-hf \
+    --model_name_or_path Qwen/Qwen2.5-VL-7B-Instruct \
     --ctx_size 256 \
     --ctx_extension yarn \
     --ctx_extension_factor 4.0
 ```
+
+---
+
+**Interleaved evaluation** — interleave state images with action text (requires `--traj_dir`):
+
+```bash
+python run_eval_QA_NiEH.py \
+    --qa_file_path path/to/qa_data.csv \
+    --metadata_dir path/to/metadata \
+    --model_name_or_path Qwen/Qwen2.5-VL-7B-Instruct \
+    --full_traj --eval_mode interleaved \
+    --traj_dir path/to/traj_jsons
+```
+
+---
+
+**Evaluate a local checkpoint** — use `--base_model` to specify the base architecture:
+
+```bash
+python run_eval_QA_NiEH.py \
+    --qa_file_path path/to/qa_data.csv \
+    --metadata_dir path/to/metadata \
+    --model_name_or_path path/to/local/checkpoint \
+    --base_model Qwen/Qwen2.5-VL-7B-Instruct \
+    --full_traj
+```
+
+**Additional flags:**
+- `--n_img_token <int>`: Override the per-image token count (auto-detected for known models)
+- `--attn_impl {flash_attention_2,sdpa,eager}`: Attention implementation (default: `flash_attention_2`)
+- `--clip_model_name <name>`: CLIP model for `clip_retrieval` mode (default: `openai/clip-vit-large-patch14`)
+- `--clip_top_k <int>`: Number of top images to retrieve with CLIP (default: 10)
 
 ## Interactive Evaluation
 
@@ -197,11 +236,11 @@ Running the evaluation (need to deactivate `ai2thor_env` env if needed):
 export MODEL_LABEL=llava_onevison_7b_32k
 python run_interactive_eval.py \
   --checkpoint checkpoints/$MODEL_LABEL \
-  --model_name llava-hf/llava-onevision-qwen2-7b-ov-hf \
+  --model_name Qwen/Qwen2.5-VL-7B-Instruct \
   --flash_attn
 ```
 
-## Generating $\infty$ trajectories
+# Generating $\infty$ trajectories
 1. Start X Server
 ```
 # use tmux or run in background
@@ -220,5 +259,79 @@ python generate_traj.py --min_step 500
 
 Output: Generated trajectories are saved to the `new_trajectories/` directory.
 
-## Fine-tuning VLA
-(coming soon!)
+# Training
+
+We provide a distributed training script built on [torchtitan](https://github.com/pytorch/torchtitan) that supports Tensor Parallelism (TP), Data Parallelism (DP), and Context Parallelism (CP).
+
+### Download training data
+
+Download the training set from the HuggingFace dataset hub:
+```bash
+huggingface-cli download PEARLS-Lab/infini-thor --repo-type dataset --local-dir /path/to/infini-thor-data
+```
+
+### Config files
+
+Pre-built config files are provided in `configs/`:
+
+**LLaVA-OneVision 7B**
+
+| Config | Parallelism | Sequence Length | Use Case |
+|--------|-------------|-----------------|----------|
+| `ft_llava_ov_7B_tp4_dp2.toml` | TP4 x DP2 | 32K | Default 8-GPU setup |
+| `ft_llava_ov_7B_tp2_dp4.toml` | TP2 x DP4 | 32K | Higher data throughput |
+| `ft_llava_ov_7B_tp2_cp2_dp2.toml` | TP2 x CP2 x DP2 | 64K | Long-context training |
+
+**Qwen2.5-VL 7B**
+
+| Config | Parallelism | Sequence Length | Use Case |
+|--------|-------------|-----------------|----------|
+| `ft_qwen_25vl_7B_infini_tp4_dp2.toml` | TP4 x FSDP | 42K | Default multi-GPU setup |
+| `ft_qwen_25vl_7B_infini_cp8.toml` | CP8 x FSDP | 32K | 8-way context parallelism |
+| `ft_qwen_25vl_7B_infini_cp16.toml` | CP16 x FSDP | 128K | 16-way context parallelism for very long sequences |
+
+### Create seed checkpoint
+
+Before training, create a seed checkpoint that converts the pretrained model weights into the distributed checkpoint format:
+
+```bash
+export CONFIG_FILE=./configs/ft_llava_ov_7B_tp4_dp2.toml
+torchrun --nproc_per_node 1 \
+    create_seed_ckpt.py --job.config_file $CONFIG_FILE
+```
+
+This saves the initial checkpoint to `{dump_folder}/{checkpoint.folder}/step-0/`.
+
+### Run training
+
+```bash
+torchrun --nproc_per_node 8 \
+    --local-ranks-filter 0 \
+    train.py --job.config_file $CONFIG_FILE \
+    --training.traj_data_dir /path/to/infini-thor-data/train/train_traj \
+    --training.img_data_dir /path/to/infini-thor-data/train/img_tar
+```
+
+To upload checkpoints to HuggingFace Hub during training, add:
+```bash
+    --job.hf_repo_id your-username/your-repo-name
+```
+
+### Key training options
+
+All options can be set in the TOML config file or overridden via command line (`--section.key value`):
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--training.seq_len` | Max sequence length | 32768 |
+| `--training.batch_size` | Per-GPU batch size | 1 |
+| `--training.gradient_accumulation_steps` | Gradient accumulation steps | 4 |
+| `--training.steps` | Total training steps | 500 |
+| `--training.tensor_parallel_degree` | Tensor parallelism degree | 4 |
+| `--training.data_parallel_replicate_degree` | Data parallelism degree | 2 |
+| `--experimental.context_parallel_degree` | Context parallelism degree | 1 |
+| `--training.attn_impl` | Attention implementation (`flash_attention_2`, `sdpa`) | `flash_attention_2` |
+| `--optimizer.lr` | Learning rate | 2e-5 |
+| `--checkpoint.interval` | Checkpoint save interval (steps) | 100 |
+| `--training.rope_type` | RoPE scaling type (e.g., `yarn`, `longrope`) | None |
+| `--training.rope_factor` | RoPE scaling factor | 1.0 |

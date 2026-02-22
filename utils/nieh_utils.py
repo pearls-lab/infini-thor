@@ -135,6 +135,18 @@ def get_score(lm_response, gt_ans):
     return match
 
 
+def act_dict_to_str(act_dict):
+    """Convert an action dictionary to a human-readable string."""
+    action = act_dict.get("action", "")
+    obj = act_dict.get("objectId", "").split("|")[0] if "objectId" in act_dict else ""
+    recep = act_dict.get("receptacleObjectId", "").split("|")[0] if "receptacleObjectId" in act_dict else ""
+    if recep:
+        return f"{action} {obj} {recep}"
+    elif obj:
+        return f"{action} {obj}"
+    return action
+
+
 def load_qa_data(traj_id, metadata_dir):
     img_dir = os.path.join(metadata_dir, traj_id, 'img')
 
@@ -146,7 +158,6 @@ def load_qa_data(traj_id, metadata_dir):
 
     img_list = []
     img_path_list = []
-    # iterate over images in img_dir and load PIL and append to img_list
     for img_file in sorted(os.listdir(img_dir)):
         if img_file.endswith(".png"):
             img_path = os.path.join(img_dir, img_file)
@@ -154,10 +165,28 @@ def load_qa_data(traj_id, metadata_dir):
             img_list.append(img)
             img_path_list.append(img_path)
 
-    metadata = json.loads(open(metadata_path, 'r').read())
-    traj_text = open(traj_text_path, 'r').read()
+    with open(metadata_path, 'r') as f:
+        metadata = json.load(f)
+    with open(traj_text_path, 'r') as f:
+        traj_text = f.read()
 
-    return img_list, metadata, traj_text, img_path_list
+    # Build low_idx -> list of images mapping from expert_log if available
+    lowidx2imgs = {}
+    expert_log_path = os.path.join(metadata_dir, traj_id, 'expert_log.json')
+    if os.path.exists(expert_log_path):
+        with open(expert_log_path, 'r') as f:
+            expert_log = json.load(f)
+        if 'images' in expert_log:
+            from collections import defaultdict
+            lowidx2imgs = defaultdict(list)
+            for im_info in expert_log['images']:
+                low_idx = im_info.get('low_idx', -1)
+                img_name = im_info.get('image_name', '')
+                img_path = os.path.join(img_dir, img_name)
+                if os.path.exists(img_path):
+                    lowidx2imgs[low_idx].append(Image.open(img_path).convert("RGB"))
+
+    return img_list, metadata, traj_text, img_path_list, lowidx2imgs
 
 
 def is_match(llm_ans, gt_ans, threshold=80) -> bool:

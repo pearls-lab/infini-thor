@@ -86,6 +86,12 @@ class JobConfig:
             action="store_true",
             help="Print the args to terminal",
         )
+        self.parser.add_argument(
+            "--job.hf_repo_id",
+            type=str,
+            default="",
+            help="HuggingFace repo ID for uploading checkpoints",
+        )
 
         # profiling configs
         self.parser.add_argument(
@@ -217,7 +223,25 @@ class JobConfig:
                 loaded from this path instead of downloaded.""",
         )
         self.parser.add_argument(
+            "--training.traj_data_dir",
+            type=str,
+            default="",
+            help="Directory containing trajectory text files for training",
+        )
+        self.parser.add_argument(
+            "--training.img_data_dir",
+            type=str,
+            default="",
+            help="Directory containing image tar files for training",
+        )
+        self.parser.add_argument(
             "--training.batch_size", type=int, default=8, help="Batch size"
+        )
+        self.parser.add_argument(
+            "--training.gradient_accumulation_steps",
+            type=int,
+            default=1,
+            help="Number of gradient accumulation steps",
         )
         self.parser.add_argument(
             "--training.seq_len", type=int, default=2048, help="Sequence length"

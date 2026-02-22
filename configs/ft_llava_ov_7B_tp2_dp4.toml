@@ -1,0 +1,41 @@
+# LLaVA-OneVision 7B fine-tuning — TP2 x DP4 (8 GPUs)
+# torchrun --nproc_per_node 8 train.py --job.config_file ./configs/ft_llava_ov_7B_tp2_dp4.toml
+
+[job]
+dump_folder = "./outputs"
+description = "LLaVA-OneVision 7B fine-tuning (TP2 x DP4)"
+
+[model]
+name = "llava-hf/llava-onevision-qwen2-7b-ov-hf"
+flavor = "7B"
+tokenizer_path = "llava-hf/llava-onevision-qwen2-7b-ov-hf"
+
+[training]
+dataset = "alfred_dataset"
+batch_size = 1
+seq_len = 32768
+steps = 500
+warmup_steps = 100
+max_norm = 1.0
+tensor_parallel_degree = 2
+data_parallel_replicate_degree = 4
+data_parallel_shard_degree = 1
+gradient_accumulation_steps = 4
+attn_impl = "flash_attention_2"
+
+[optimizer]
+name = "AdamW"
+lr = 2e-5
+
+[checkpoint]
+enable_checkpoint = true
+folder = "checkpoint"
+interval = 100
+
+[metrics]
+log_freq = 1
+enable_tensorboard = true
+
+[activation_checkpoint]
+mode = "selective"
+selective_ac_option = "2"
