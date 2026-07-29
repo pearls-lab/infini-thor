@@ -79,15 +79,15 @@ Our work provides a foundation for the next generation of embodied AI systems ca
 
   <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
     <video controls autoplay muted loop style="max-width: 240px; width: 100%;">
-      <source src="../assets/video/fp323_940s.mp4" type="video/mp4">
+      <source src="../assets/video/fp323_940_look.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
     <video controls autoplay muted loop style="max-width: 240px; width: 100%;">
-      <source src="../assets/video/fp218_1547s.mp4" type="video/mp4">
+      <source src="../assets/video/fp218_1547_look.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
     <video controls autoplay muted loop style="max-width: 240px; width: 100%;">
-      <source src="../assets/video/fp210_815s.mp4" type="video/mp4">
+      <source src="../assets/video/fp210_815_look.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
   </div>

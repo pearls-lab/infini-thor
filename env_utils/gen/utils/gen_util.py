@@ -898,6 +898,7 @@ def insert_look_around(low_actions, min_run=6, base_horizon=30):
     """
     out = []
     horizon = base_horizon
+    holding = False
     i = 0
     n = len(low_actions)
     while i < n:
@@ -907,6 +908,10 @@ def insert_look_around(low_actions, min_run=6, base_horizon=30):
 
         if name in ('LookUp', 'LookDown'):
             horizon += -constants.AGENT_HORIZON_ADJ if name == 'LookUp' else constants.AGENT_HORIZON_ADJ
+        elif name == 'PickupObject':
+            holding = True
+        elif name == 'PutObject':
+            holding = False
 
         # measure the navigation run that follows this action
         j = i + 1
@@ -916,14 +921,27 @@ def insert_look_around(low_actions, min_run=6, base_horizon=30):
         run = j - i - 1
         # only lift the head when there is enough walking to be worth it, and only
         # from the default tilted-down pose (never stack looks out of range)
-        if run >= min_run and horizon >= constants.AGENT_HORIZON_ADJ and j < n:
+        # Look up to a level view (horizon 0) and come back symmetrically.
+        # AI2THOR clamps the camera to [-30, 60]; the planner leaves the agent at
+        # 30 or 60 (tilted down), so 1-2 LookUps reach level. Restoring with the
+        # same count keeps the pair legal even if this static model has drifted
+        # from the simulator by one step in either direction.
+        # Never look around while carrying something: AI2THOR collision-checks the
+        # HELD object, and its height follows the camera horizon. Raising the head
+        # mid-carry sweeps the object into walls and furniture, so navigation that
+        # succeeded at horizon 60 starts failing ("Walls is blocking the Agent from
+        # moving with <object>") and the whole replay unravels from there.
+        n_up = int(horizon // constants.AGENT_HORIZON_ADJ)
+        if run >= min_run and 1 <= n_up <= 2 and j < n and not holding:
             hi = act.get('high_idx', 0)
-            out.append({'api_action': {'action': 'LookUp', 'renderImage': True},
-                        'high_idx': hi, 'inserted': 'look_around'})
+            for _ in range(n_up):
+                out.append({'api_action': {'action': 'LookUp', 'renderImage': True},
+                            'high_idx': hi, 'inserted': 'look_around'})
             out.extend(low_actions[i + 1:j])
-            out.append({'api_action': {'action': 'LookDown', 'renderImage': True},
-                        'high_idx': low_actions[j].get('high_idx', hi),
-                        'inserted': 'look_around'})
+            for _ in range(n_up):
+                out.append({'api_action': {'action': 'LookDown', 'renderImage': True},
+                            'high_idx': low_actions[j].get('high_idx', hi),
+                            'inserted': 'look_around'})
             i = j
             continue
         i += 1

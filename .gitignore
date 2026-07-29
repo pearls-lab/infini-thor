@@ -5,3 +5,6 @@ __pycache__/
 # trajectory generation scratch (planner PDDL files, local outputs)
 logs_gen/
 new_trajectories/
+
+# paper sources (kept out of the public repo)
+colm2026/
