@@ -1,7 +1,7 @@
 ---
 layout: default
 title: About
-permalink: /
+permalink: /v1/
 subtitle: 
 
 abstract: >
@@ -70,7 +70,7 @@ Our work provides a foundation for the next generation of embodied AI systems ca
   <h3 style="font-size: 2.0rem; font-weight: bold;">Demo Video</h3>
 
   <video controls autoplay style="max-width: 800px; width: 100%; margin: 0 auto; display: block;">
-    <source src="assets/video/intro_vid.mp4" type="video/mp4">
+    <source src="../assets/video/intro_vid.mp4" type="video/mp4">
     Your browser does not support the video tag.
   </video>
   <p class="abstract-text" style="margin-top: 20px; margin-bottom: 20px;">
@@ -79,15 +79,15 @@ Our work provides a foundation for the next generation of embodied AI systems ca
 
   <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
     <video controls autoplay muted loop style="max-width: 240px; width: 100%;">
-      <source src="assets/video/floorplan323_19_932.mp4" type="video/mp4">
+      <source src="../assets/video/fp323_940s.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
     <video controls autoplay muted loop style="max-width: 240px; width: 100%;">
-      <source src="assets/video/floorplan218_17_889.mp4" type="video/mp4">
+      <source src="../assets/video/fp218_1547s.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
     <video controls autoplay muted loop style="max-width: 240px; width: 100%;">
-      <source src="assets/video/floorplan210_26_870.mp4" type="video/mp4">
+      <source src="../assets/video/fp210_815s.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
   </div>
@@ -123,14 +123,14 @@ Our work provides a foundation for the next generation of embodied AI systems ca
   </div>
 
   <figure style="max-width: 1000px; margin: 0 auto 40px; text-align: center;">
-    <img src="assets/img/example_NiEH.png" alt="First Image" style="width: 100%; height: auto; display: block; margin: 0 auto;">
+    <img src="../assets/img/example_NiEH.png" alt="First Image" style="width: 100%; height: auto; display: block; margin: 0 auto;">
     <figcaption style="margin-top: 10px; font-size: 1.1rem; color: #555;">
        <span style="font-weight: bold;">Figure 1.</span> Example of Needle in the Embodied Haystack: Single-evidence question types.
     </figcaption>
   </figure>
 
   <figure style="max-width: 1000px; margin: 0 auto; text-align: center;">
-    <img src="assets/img/example_NiSSSEH.png" alt="Second Image" style="width: 100%; height: auto; display: block; margin: 0 auto;">
+    <img src="../assets/img/example_NiSSSEH.png" alt="Second Image" style="width: 100%; height: auto; display: block; margin: 0 auto;">
     <figcaption style="margin-top: 10px; font-size: 1.1rem; color: #555;">
        <span style="font-weight: bold;">Figure 2.</span> Example of Needles in the Embodied Haystack: Multi-evidence question types.
     </figcaption>
@@ -153,7 +153,7 @@ This setup highlights the challenge of long-horizon dependency, where key object
   </div>
 
   <figure style="max-width: 1000px; margin: 0 auto 40px; text-align: center;">
-    <img src="assets/img/long-horizon.png" alt="First Image" style="width: 100%; height: auto; display: block; margin: 0 auto;">
+    <img src="../assets/img/long-horizon.png" alt="First Image" style="width: 100%; height: auto; display: block; margin: 0 auto;">
     <figcaption style="margin-top: 10px; font-size: 1.1rem; color: #555;">
      <span style="font-weight: bold;">Figure 3.</span> Example of the trajectory and a long-horizon embodied task generated from <span>\(\infty\)</span>-THOR. The
 final goal (“Put the tomato on the counter top” at t=670) requires recalling both the tomato (seen at

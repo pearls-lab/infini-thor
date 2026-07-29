@@ -257,7 +257,63 @@ python generate_traj.py --min_step 500
 
 `--testset`: Test examples include the synthetic task at the end of the trajectory. Run an additional loop to create final synthetic tasks. Use this flag to generate valid or test sets. 
 
+`--scene_ids`: Comma-separated floor plans to generate for (e.g. `--scene_ids 230,210`). By default the script sweeps every scene in `constants.SCENE_TYPE`.
+
+`--num_traj_per_scene`: How many trajectories to generate per floor plan (default 1). Note that each attempt (successful or not) consumes one slot.
+
+`--seed`: Random seed. Useful when running several workers in parallel so they explore different task sequences.
+
+`--max_fail`: How many *executed-then-failed* plans to tolerate before rolling back the last subgoal (default 20). Unsatisfiable task samples and planner failures no longer consume this budget — they retry freely under a separate generous cap.
+
+`--save_floor`: If set (e.g. `--save_floor 700`), an attempt that gives up — or whose final validation replay fails — rolls back to the longest prefix that replays cleanly and saves it if it has at least this many steps, instead of discarding the whole episode. Recommended for long-horizon generation.
+
+`--replay_every`: Run the full validation replay every N accepted subgoals instead of after every one (default 1). Replays cost O(episode length), so this substantially speeds up long trajectories; the episode is always fully replayed before saving.
+
+`--no_scene_goal_filter`: By default only goal types marked achievable for the scene's room type in `constants.GOALS_VALID` are sampled (e.g. no `pick_heat_then_place_in_recep` in a living room). Pass this flag to restore unfiltered sampling over all 7 goal types.
+
+Each saved trajectory embeds a `gen_info` block (generation settings, per-subgoal RNG seeds, git revision) and the script maintains a `status.json` in the save directory for monitoring. If the AI2THOR/Unity process crashes mid-run, the controller is restarted automatically and generation resumes from the last accepted state.
+
 Output: Generated trajectories are saved to the `new_trajectories/` directory.
+
+### Running several generation workers in parallel
+
+Generation is CPU-bound and one worker uses a single GPU lightly, so it is usually worth running
+several at once. Give each worker its own X screen, its own save path, and its own planner scratch
+dir (`INFINI_LOG_DIR`, otherwise workers overwrite each other's PDDL problem files):
+
+```bash
+for i in 0 1 2 3; do
+  INFINI_LOG_DIR=/tmp/gen_$i \
+  python generate_traj.py --scene_ids 230 --min_step 2000 --min_subgoal 40 \
+      --seed $((i+1)) --x_display 0.$i --save_path new_trajectories_$i &
+done
+```
+
+Longer trajectories take super-linearly longer to generate: after every subgoal the whole episode is
+replayed from step 0 to verify it still reproduces, so a 2,000-step trajectory costs far more than
+4x a 500-step one.
+
+### Rendering a trajectory back into frames
+
+Generation stores action plans only — no images — so that the search is not slowed down by
+rendering. `render_traj.py` deterministically replays a saved trajectory and writes one frame per
+low-level action plus a `timeline.json` with the per-step action, subgoal and object observations:
+
+```bash
+python env_utils/render_traj.py \
+    --traj_json new_trajectories/floorplan230/floorplan230_58_2043_*.json \
+    --out_dir   render/fp230 \
+    --width 960 --height 540 --quality Ultra
+```
+
+`docs/` hosts the [project website](https://pearls-lab.github.io/infini-thor). To rebuild the
+trajectory it plays (video, poster, slit-scan strip and `_data/trajectories.json`) from one or more
+render directories:
+
+```bash
+python scripts/build_web_traj_assets.py \
+    --hero render/fp230 --gallery render/fp210 render/fp323
+```
 
 # Training
 

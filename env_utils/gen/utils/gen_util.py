@@ -14,6 +14,7 @@ from pathlib import Path
 
 import gen.constants as constants
 from gen.agents.planner_agent import DeterministicPlannerAgent
+from gen.utils import game_util
 from gen.utils.game_util import object_id_to_name, get_objects_with_name_and_prop
 
 
@@ -409,6 +410,7 @@ def sample_and_simulate(env, agent, traj_manager, scene_id,
 
     # Agent reset to new scene. This is necessary for DeterministicPlannerAgent to use PDDL
     scene_info = {'scene_num': scene_id, 'random_seed': random.randint(0, 2 ** 32)}
+    traj_manager._pending_seed = scene_info['random_seed']
     constraint_objs = get_constraint_obj(scene_id, gtype, pickup_obj, receptacle_obj, 
                                          movable_obj, pickup_candidates)
     info = agent.reset(scene=scene_info, objs=constraint_objs)
@@ -427,7 +429,8 @@ def sample_and_simulate(env, agent, traj_manager, scene_id,
     
     try:
         agent.setup_problem({'info': info}, scene=scene_info, objs=task_objs)
-    except:
+    except Exception:
+        traj_manager.last_sample_executed = False
         return False, "FAIL at agent.setup_problem()"
     
     # Now that objects are in their initial places, record them.
@@ -489,12 +492,24 @@ def sample_and_simulate(env, agent, traj_manager, scene_id,
                         constants.data_dict['plan']['low_actions'].append(put_action)
                         constants.data_dict['plan']['low_actions'].append({'high_idx': put_action['high_idx'], 'api_action': {'action': 'CloseObject', 'objectId': recep_obj}})
             
+    # cheap failures (no env action ran) should not count against the rollback
+    # budget in the caller -- expose which kind this sample was.
+    traj_manager.last_sample_executed = len(constants.data_dict['plan']['low_actions']) > 0
+
     if terminal and env.last_event.metadata['lastActionSuccess']:
         # add to save structure.
         new_row = {"goal": gtype, "movable": movable_obj, "pickup": pickup_obj,
                     "receptacle": receptacle_obj, "scene": str(scene_id)}
 
         succ_traj = pd.concat([succ_traj, pd.DataFrame([new_row])], ignore_index=True)
+
+        if getattr(constants, 'INSERT_LOOK_AROUND', False):
+            plan = constants.data_dict['plan']
+            before = len(plan['low_actions'])
+            plan['low_actions'] = insert_look_around(plan['low_actions'])
+            added = len(plan['low_actions']) - before
+            if added:
+                print(f"## look-around: +{added} Look actions in this subgoal")
 
         traj_manager.add_sub_traj(constants.data_dict['plan'])
         traj_manager.add_sub_task(task_info=new_row,
@@ -526,15 +541,49 @@ class TrajManager:
         self.n_steps = 0
         self.long_horizon_task = {}
         self.object_logs = []
+        self.sample_seeds = []          # RNG seed used to set up each accepted subgoal
+        self._pending_seed = None
+        self.last_sample_executed = False
 
     def add_last_event(self, event):
         self.last_event_list.append(event)
+
+    def checkpoint(self):
+        '''Snapshot the trajectory right after a successful validation replay.
+
+        Later replays repair objectIds by MUTATING the stored plans in place;
+        occasionally that drifts an early subgoal into a configuration that no
+        longer reproduces from a fresh restore, poisoning the whole episode.
+        The snapshot preserves the last plan state that provably replayed.'''
+        self._good = {
+            'sub_trajs': copy.deepcopy(self.sub_traj_list),
+            'sub_tasks': copy.deepcopy(self.sub_task_list),
+            'seeds': list(self.sample_seeds),
+            'events': list(self.last_event_list),
+            'n_steps': self.n_steps,
+        }
+
+    def restore_checkpoint(self):
+        '''Roll the trajectory back to the last checkpointed (known-good) state.'''
+        g = getattr(self, '_good', None)
+        if g is None:
+            return False
+        self.sub_traj_list = copy.deepcopy(g['sub_trajs'])
+        self.sub_task_list = copy.deepcopy(g['sub_tasks'])
+        self.sample_seeds = list(g['seeds'])
+        self.last_event_list = list(g['events'])
+        self.n_steps = g['n_steps']
+        print(f"## restored last-known-good checkpoint: {self.n_steps} steps, "
+              f"{len(self.sub_traj_list)} subgoals")
+        return True
 
     def add_sub_task(self, task_info, task_desc, pddl_params):
         self.sub_task_list.append(dict(task_info=task_info, task_desc=task_desc, pddl_params=pddl_params))
 
     def add_sub_traj(self, sub_traj):
         self.sub_traj_list.append(sub_traj)
+        self.sample_seeds.append(self._pending_seed)
+        self._pending_seed = None
         self.n_steps += len(sub_traj['low_actions'])
         
     def discard_dead_end(self):
@@ -542,13 +591,17 @@ class TrajManager:
             return False
         self.last_event_list.pop(-1)
         self.sub_task_list.pop(-1)
+        if self.sample_seeds:
+            self.sample_seeds.pop(-1)
         last_traj = self.sub_traj_list.pop(-1)
         self.n_steps -= len(last_traj['low_actions'])
         print("### discard the dead end -- # steps: ", self.n_steps)
         return True
 
-    def save_traj(self, json_save_path):
+    def save_traj(self, json_save_path, gen_info=None):
         data_dict = setup_data_dict(self.scene_id)
+        if gen_info is not None:
+            data_dict['gen_info'] = dict(gen_info, sample_seeds=list(self.sample_seeds))
         data_dict['scene']['init_action'] = self.init_action
 
         # Now that objects are in their initial places, record them.
@@ -592,9 +645,79 @@ class TrajManager:
         with open(json_save_path, "w") as fp:
             json.dump(data_dict, fp, sort_keys=True, indent=4)
     
+    def _realign_nonpickupables(self, env, ref_metadata, eps=0.05):
+        '''Teleport nudged non-pickupable moveables (garbage cans, lamps, ...)
+        back to their reference poses.
+
+        SetObjectPoses only covers pickupable objects, but the agent displaces
+        other objects by collision -- including during *discarded* subgoal
+        attempts that a from-scratch replay never performs. Left uncorrected,
+        those phantom nudges make replays fail with "X is blocking Agent"
+        errors. TeleportObject does work on non-pickupables in THOR 2.1.0.'''
+        ref = {o['objectId']: o for o in ref_metadata['objects']
+               if not o['pickupable'] and not o.get('isPickedUp')}
+        fixed = 0
+        for obj in env.last_event.metadata['objects']:
+            r = ref.get(obj['objectId'])
+            if r is None:
+                continue
+            p0, p1 = r['position'], obj['position']
+            d = ((p0['x'] - p1['x']) ** 2 + (p0['y'] - p1['y']) ** 2 + (p0['z'] - p1['z']) ** 2) ** 0.5
+            if d > eps:
+                # forceAction: the engine's overlap check rejects even an
+                # object's own settled resting pose
+                ev = env.step(dict(action='TeleportObject', objectId=obj['objectId'],
+                                   x=p0['x'], y=p0['y'], z=p0['z'],
+                                   rotation=r['rotation']['y'], forceAction=True))
+                if ev.metadata['lastActionSuccess']:
+                    fixed += 1
+                else:
+                    print(f"## realign: could not restore {obj['objectId']} "
+                          f"(off by {d:.3f}m): {ev.metadata['errorMessage'][:60]}")
+        if fixed:
+            print(f"## realigned {fixed} nudged non-pickupable object(s)")
+
+    def _restore_object_poses(self, env, object_poses, resnaps=2, settle_steps=3, eps=0.02, ref_metadata=None):
+        '''Snap -> settle -> re-snap object restore.
+
+        SetObjectPoses hands the objects to Unity physics, which settles them
+        nondeterministically (PhysX). The recorded poses are themselves settled
+        poses, so letting physics act and then snapping again converges: after a
+        couple of rounds the settle step is a no-op and objects sit where the
+        trajectory recorded them. Reports the worst deviation for diagnosis.'''
+        for _ in range(max(1, resnaps)):
+            env.step(dict(action='SetObjectPoses', objectPoses=object_poses))
+            for _ in range(settle_steps):
+                env.step(dict(action='Pass'))
+        env.step(dict(action='SetObjectPoses', objectPoses=object_poses))
+        if ref_metadata is not None:
+            self._realign_nonpickupables(env, ref_metadata)
+
+        # verify: nearest live instance per recorded pose
+        live = {}
+        for obj in env.last_event.metadata['objects']:
+            if obj['pickupable']:
+                live.setdefault(obj['name'].split('(Clone)')[0], []).append(obj['position'])
+        worst, worst_name = 0.0, None
+        for rec in object_poses:
+            cands = live.get(rec['objectName'], [])
+            if not cands:
+                continue
+            p0 = rec['position']
+            d = min(((c['x'] - p0['x']) ** 2 + (c['y'] - p0['y']) ** 2 +
+                     (c['z'] - p0['z']) ** 2) ** 0.5 for c in cands)
+            if d > worst:
+                worst, worst_name = d, rec['objectName']
+        if worst > eps:
+            print(f"## restore deviation: {worst_name} off by {worst:.3f}m")
+        return worst
+
     def replay_and_fix_objectIds(self, env):
         print("Replaying ...")
-        env.reset(self.scene_id)
+        # replay only reads metadata; skip the depth/class/instance buffers
+        # (~3x faster). The next agent.reset() restores full render settings.
+        env.reset(self.scene_id, render_depth_image=False,
+                  render_class_image=False, render_object_image=False)
         env.step(self.init_action)
 
         init_event = self.last_event_list[0]
@@ -602,13 +725,15 @@ class TrajManager:
                         'position': obj['position'],
                         'rotation': obj['rotation']}
                         for obj in init_event.metadata['objects'] if obj['pickupable']]
-        env.step((dict(action='SetObjectPoses', objectPoses=object_poses)))
+        self._restore_object_poses(env, object_poses, ref_metadata=init_event.metadata)
 
         self.object_logs = []
 
         replay_success = True
         fail_at = -1
-        for subtraj in self.sub_traj_list:
+        self.last_fail_subtraj = -1     # which subtraj the replay failed in (for banking)
+        for st_idx, subtraj in enumerate(self.sub_traj_list):
+            self.last_fail_subtraj = st_idx
             for lidx, la in enumerate(subtraj['low_actions']):
                 traj_api_cmd = la['api_action']
                 traj_api_cmd['renderImage'] = True
@@ -668,7 +793,8 @@ class TrajManager:
         return replay_success, fail_at
 
     def replay(self, env):
-        env.reset(self.scene_id)
+        env.reset(self.scene_id, render_depth_image=False,
+                  render_class_image=False, render_object_image=False)
         env.step(self.init_action)
 
         init_event = self.last_event_list[0]
@@ -676,7 +802,7 @@ class TrajManager:
                         'position': obj['position'],
                         'rotation': obj['rotation']}
                         for obj in init_event.metadata['objects'] if obj['pickupable']]
-        env.step((dict(action='SetObjectPoses', objectPoses=object_poses)))
+        self._restore_object_poses(env, object_poses, ref_metadata=init_event.metadata)
 
         replay_success = True
         fail_at = -1
@@ -700,9 +826,35 @@ class TrajManager:
                 #return True, fail_at
         return False, fail_at
 
+    def _realign_inventory(self, env, ref_metadata):
+        '''Make the agent's hand match the reference state.
+
+        Discarded subgoal attempts can leave an object in the agent's hand (or
+        take one out of it). Poses get restored on rollback, but a phantom held
+        object silently poisons every later subgoal: generation-time Put actions
+        succeed using it, and a from-scratch replay -- whose agent holds nothing
+        -- fails with "Can't place an object if Agent isn't holding anything".'''
+        ref_ids = [o['objectId'] for o in ref_metadata.get('inventoryObjects', [])]
+        live_ids = [o['objectId'] for o in env.last_event.metadata.get('inventoryObjects', [])]
+        if live_ids and live_ids != ref_ids:
+            ev = env.step(dict(action='DropHandObject', forceAction=True))
+            print(f"## realign: dropped phantom held object {live_ids[0]} "
+                  f"(success={ev.metadata['lastActionSuccess']})")
+        return ref_ids
+
+    def _regrab_inventory(self, env, ref_ids):
+        live_ids = [o['objectId'] for o in env.last_event.metadata.get('inventoryObjects', [])]
+        for oid in ref_ids:
+            if oid not in live_ids:
+                ev = env.step(dict(action='PickupObject', objectId=oid,
+                                   forceAction=True, forceVisible=True))
+                print(f"## realign: re-grabbed {oid} "
+                      f"(success={ev.metadata['lastActionSuccess']})")
+
     def teleport_to_last_state(self, env):
         print("## Tellport to the previous state and restore object poses")
         pre_state_metadata = self.last_event_list[-1].metadata
+        ref_inventory = self._realign_inventory(env, pre_state_metadata)
         pre_objectposes = [{'objectName': obj['name'].split('(Clone)')[0],
                             'position': obj['position'],
                             'rotation': obj['rotation']}
@@ -715,6 +867,159 @@ class TrajManager:
                             'rotateOnTeleport': True,
                             'horizon': pre_state_metadata['agent']['cameraHorizon']})
         env.step((dict(action='SetObjectPoses', objectPoses=pre_objectposes)))
+        # discarded attempts may have nudged non-pickupables; undo that too,
+        # otherwise the accepted plan lives in a world replays cannot recreate
+        self._realign_nonpickupables(env, pre_state_metadata)
+        self._regrab_inventory(env, ref_inventory)
+
+
+
+
+NAV_ONLY = {"MoveAhead", "RotateLeft", "RotateRight"}
+INTERACTIONS = {"PickupObject", "PutObject", "OpenObject", "CloseObject",
+                "ToggleObjectOn", "ToggleObjectOff", "SliceObject"}
+
+
+def insert_look_around(low_actions, min_run=6, base_horizon=30):
+    """Insert LookUp/LookDown around navigation stretches.
+
+    The planner keeps the agent at horizon 30 (tilted down at the floor) for the
+    whole episode, so egocentric frames show almost nothing above table height --
+    no walls, windows or room context. That is poor both for the replay video and
+    for the NiEH haystack, which is built from what the agent actually observed.
+
+    For every run of pure navigation of at least `min_run` actions we look up to
+    horizon 0 for the traversal and look back down before the next interaction.
+    The pair is balanced, so every interaction still executes at the exact horizon
+    the planner chose -- only the walking happens with the head up, which is what
+    makes the resulting trajectory show the room.
+
+    Returns a new action list; the caller re-indexes low_idx.
+    """
+    out = []
+    horizon = base_horizon
+    i = 0
+    n = len(low_actions)
+    while i < n:
+        act = low_actions[i]
+        name = act['api_action']['action']
+        out.append(act)
+
+        if name in ('LookUp', 'LookDown'):
+            horizon += -constants.AGENT_HORIZON_ADJ if name == 'LookUp' else constants.AGENT_HORIZON_ADJ
+
+        # measure the navigation run that follows this action
+        j = i + 1
+        while j < n and low_actions[j]['api_action']['action'] in NAV_ONLY:
+            j += 1
+
+        run = j - i - 1
+        # only lift the head when there is enough walking to be worth it, and only
+        # from the default tilted-down pose (never stack looks out of range)
+        if run >= min_run and horizon >= constants.AGENT_HORIZON_ADJ and j < n:
+            hi = act.get('high_idx', 0)
+            out.append({'api_action': {'action': 'LookUp', 'renderImage': True},
+                        'high_idx': hi, 'inserted': 'look_around'})
+            out.extend(low_actions[i + 1:j])
+            out.append({'api_action': {'action': 'LookDown', 'renderImage': True},
+                        'high_idx': low_actions[j].get('high_idx', hi),
+                        'inserted': 'look_around'})
+            i = j
+            continue
+        i += 1
+    return out
+
+
+def put_down_held_object(env, agent, traj_manager, openable_objs, scene_id, max_tries=8):
+    """Walk the agent to a receptacle and put down whatever it is holding.
+
+    Some goals (notably `pick_clean/heat/cool` and any sliced-object task in a
+    kitchen) legitimately end with the agent still holding something -- after
+    SliceObject the knife stays in hand. The next subgoal is planned from a
+    state with a full hand, so the held object has to be disposed of first.
+
+    This is a REAL subgoal, not a bookkeeping fix-up: it navigates with ordinary
+    MoveAhead/Rotate/Look actions via the game state's navigation graph, so every
+    step is recorded into constants.data_dict['plan']['low_actions'] by
+    GameStateBase.store_ll_action and the whole thing replays from step 0 like
+    any other subgoal. (The previous implementation teleported the agent and
+    force-put the object, recording a high-level PDDL entry but ZERO low-level
+    actions -- so replay skipped it entirely and every later subgoal was
+    generated in a world the replay could not reproduce.)
+
+    Returns (success, receptacle_type, held_object_id).
+    """
+    game_state = agent.game_state
+    held = env.last_event.metadata['inventoryObjects']
+    if not held:
+        return True, None, None
+    inv_obj_id = held[0]['objectId']
+    inv_obj_name = inv_obj_id.split('|')[0]
+
+    start_metadata = copy.deepcopy(env.last_event.metadata)
+    candidates = list(openable_objs)
+    random.shuffle(candidates)
+
+    for recep_type, point in candidates[:max_tries]:
+        start_pose = game_util.get_pose(env.last_event)
+        end_pose = (int(np.round(point[0] / constants.AGENT_STEP_SIZE)),
+                    int(np.round(point[1] / constants.AGENT_STEP_SIZE)),
+                    int(np.round(point[2] / 90)) % 4,
+                    int(np.round(point[3])))
+
+        # the high-level entry must exist before the low-level actions, because
+        # store_ll_action stamps each one with high_idx = len(high_pddl) - 1
+        n_high_before = len(constants.data_dict['plan']['high_pddl'])
+        n_low_before = len(constants.data_dict['plan']['low_actions'])
+        constants.data_dict['plan']['high_pddl'].append({
+            "discrete_action": {"action": "PutObject", "args": [inv_obj_name, recep_type]},
+            "high_idx": n_high_before,
+            "planner_action": {"action": "PutObject", "objectId": inv_obj_name,
+                               "receptacleObjectId": recep_type},
+        })
+
+        try:
+            game_state.gt_graph.navigate_to_goal(game_state, start_pose, end_pose)
+        except Exception as e:
+            print(f"## put-down: cannot walk to {recep_type} ({e})")
+            _rollback_partial_subgoal(n_high_before, n_low_before)
+            teleport(env, start_metadata)
+            continue
+
+        recep = next((o for o in env.last_event.metadata['objects']
+                      if o['visible'] and o['receptacle'] and o['name'].startswith(recep_type)), None)
+        if recep is None:
+            print(f"## put-down: reached {recep_type} but no visible receptacle instance")
+            _rollback_partial_subgoal(n_high_before, n_low_before)
+            teleport(env, start_metadata)
+            continue
+
+        # step through the game state (not env) so the action is recorded
+        game_state.step({'action': 'PutObject',
+                         'objectId': inv_obj_id,
+                         'receptacleObjectId': recep['objectId'],
+                         'forceAction': True,
+                         'placeStationary': True})
+
+        if env.last_event.metadata['lastActionSuccess'] and not env.last_event.metadata['inventoryObjects']:
+            n_low = len(constants.data_dict['plan']['low_actions']) - n_low_before
+            print(f"## put-down: placed {inv_obj_name} on {recep_type} in {n_low} low-level actions")
+            return True, recep_type, inv_obj_id
+
+        print(f"## put-down: PutObject on {recep_type} failed: "
+              f"{env.last_event.metadata['errorMessage'][:60]}")
+        _rollback_partial_subgoal(n_high_before, n_low_before)
+        teleport(env, start_metadata)
+
+    print("## put-down: no reachable receptacle -- agent still holding "
+          + inv_obj_name)
+    return False, None, inv_obj_id
+
+
+def _rollback_partial_subgoal(n_high, n_low):
+    """Drop plan entries recorded by a failed put-down attempt."""
+    del constants.data_dict['plan']['high_pddl'][n_high:]
+    del constants.data_dict['plan']['low_actions'][n_low:]
 
 
 def navigate_to(env, openable_objs, inv_obj=None, hasObjectToPut=False):

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>{{ page.og_title | default: "∞-THOR — Beyond Needle(s) in the Embodied Haystack" }}</title>
+  <meta name="description" content="{{ page.og_desc }}">
+  <meta name="keywords" content="long-context, embodied AI, AI2THOR, long-horizon, benchmark, needle in a haystack, VLM, context parallelism">
+  <meta name="author" content="Bosung Kim, Prithviraj Ammanabrolu">
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ page.og_title | default: '∞-THOR — Beyond Needle(s) in the Embodied Haystack' }}">
+  <meta property="og:description" content="{{ page.og_desc }}">
+  <meta property="og:url" content="{{ site.url }}">
+  <meta property="og:image" content="{{ site.url }}/assets/img/og-card.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ page.og_title | default: '∞-THOR — Beyond Needle(s) in the Embodied Haystack' }}">
+  <meta name="twitter:description" content="{{ page.og_desc }}">
+  <meta name="twitter:image" content="{{ site.url }}/assets/img/og-card.jpg">
+
+  <link rel="icon" href="assets/img/Logo-1.png">
+  <link rel="canonical" href="{{ site.url }}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/infini.css">
+
+  {%- assign traj = site.data.trajectories -%}
+</head>
+
+<body>
+
+<!-- ============================================================ trajectory stage
+     One <video> for the whole page: full-bleed behind the intro, then docked
+     bottom-right so the run keeps going while the rest of the page is read. -->
+<div class="traj-stage" id="trajStage" aria-hidden="true">
+  <video id="trajVideo"
+         src="{{ traj.hero.video }}"
+         poster="{{ traj.hero.poster }}"
+         muted loop playsinline autoplay preload="auto"
+         disablepictureinpicture></video>
+  <div class="scanlines"></div>
+  <div class="veil"></div>
+  <div class="dock-hud">
+    <span class="live">{{ traj.hero.scene }}</span>
+    <span id="dockStep">t=0000</span>
+  </div>
+  <button class="dock-min" id="dockMin" type="button" title="Collapse — the trajectory keeps running" aria-label="Collapse trajectory player">–</button>
+</div>
+
+<nav class="topnav" id="topnav">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="inf">∞</span>-THOR</a>
+    <div class="links">
+      <a href="#length">length</a>
+      <a href="#generator">generator</a>
+      <a href="#nieh">NiEH</a>
+      <a href="#results">results</a>
+      <a href="#data">data</a>
+      <a class="go" href="https://arxiv.org/pdf/2505.16928" target="_blank" rel="noopener">Paper ↗</a>
+      <a class="go" href="https://github.com/pearls-lab/infini-thor" target="_blank" rel="noopener">Code ↗</a>
+    </div>
+  </div>
+</nav>
+
+{{ content }}
+
+<footer class="site">
+  <div class="wrap fl">
+    <div>
+      <strong style="color:var(--text)">∞-THOR</strong> · PEARLS Lab, UC San Diego ·
+      <a href="https://github.com/pearls-lab/infini-thor">github.com/pearls-lab/infini-thor</a>
+    </div>
+    <div>Built on <a href="https://ai2thor.allenai.org">AI2-THOR</a> and <a href="https://github.com/askforalfred/alfred">ALFRED</a>.</div>
+  </div>
+</footer>
+
+<script>window.TRAJ = {{ site.data.trajectories | jsonify }};</script>
+<script src="assets/js/infini.js"></script>
+</body>
+</html>

@@ -1,3 +1,4 @@
+import os
 from collections import OrderedDict
 
 ########################################################################################################################
@@ -5,7 +6,9 @@ from collections import OrderedDict
 
 DEBUG = True
 EVAL = False
-LOG_FILE = 'logs_gen'
+# scratch dir for the PDDL problem files written by the planner. Per-PID by default so
+# parallel workers can't clobber each other's files; override with INFINI_LOG_DIR.
+LOG_FILE = os.environ.get('INFINI_LOG_DIR') or ('logs_gen/pid%d' % os.getpid())
 
 RECORD_VIDEO_IMAGES = True
 RECORD_SMOOTHING_FACTOR = 1

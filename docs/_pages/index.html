@@ -1,0 +1,481 @@
+---
+layout: infini
+title: "∞-THOR"
+permalink: /
+og_title: "∞-THOR — Beyond Needle(s) in the Embodied Haystack"
+og_desc: "A framework for generating unlimited long-horizon embodied trajectories, a Needle(s)-in-the-Embodied-Haystack QA benchmark, and long-context agent architectures. UC San Diego, PEARLS Lab."
+---
+
+{%- assign traj = site.data.trajectories -%}
+{%- assign hero = traj.hero -%}
+
+<!-- ═══════════════════════════════════════════════════════════════ HERO ═══ -->
+<header class="hero" id="top">
+
+  <div class="hud hud--top">
+    <div class="hud-tag">
+      <span class="dot"></span>
+      live replay
+      <span class="scene">· {{ hero.scene }} · expert trajectory</span>
+    </div>
+    <div class="readouts">
+      <div class="readout">
+        <span class="k">step</span>
+        <span class="v" id="roStep">0000<span class="sub">/{{ hero.steps }}</span></span>
+      </div>
+      <div class="readout">
+        <span class="k">subgoal</span>
+        <span class="v" id="roSub">1<span class="sub">/{{ hero.n_subgoals }}</span></span>
+      </div>
+      <div class="readout">
+        <span class="k">context</span>
+        <span class="v" id="roTok">≈0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap hero-inner">
+    <h1 class="title"><span class="inf">∞</span>-THOR</h1>
+    <p class="subtitle">Beyond Needle(s) in the Embodied Haystack</p>
+    <p class="venue">Environment, Architecture &amp; Training Considerations for Long-Context Reasoning</p>
+
+    <p class="authors">
+      <a href="http://bosung.github.io/" target="_blank" rel="noopener">Bosung Kim</a> ·
+      <a href="https://prithvirajva.com" target="_blank" rel="noopener">Prithviraj Ammanabrolu</a>
+    </p>
+    <p class="affil">University of California, San Diego</p>
+
+    <div class="cta-row">
+      <a class="btn btn--primary" href="https://arxiv.org/pdf/2505.16928" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6V2zm8 1.5V8h4.5L14 3.5zM8 12h8v1.6H8V12zm0 3.4h8V17H8v-1.6z"/></svg>
+        Paper
+      </a>
+      <a class="btn" href="https://github.com/pearls-lab/infini-thor" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.78 1.2 1.78 1.2 1.03 1.78 2.7 1.27 3.36.97.1-.75.4-1.27.73-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.2.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/></svg>
+        Code
+      </a>
+      <a class="btn" href="https://huggingface.co/datasets/PEARLS-Lab/infini-thor" target="_blank" rel="noopener">
+        🤗 Dataset
+      </a>
+      <a class="btn" href="https://huggingface.co/datasets/PEARLS-Lab/infini-thor-nieh" target="_blank" rel="noopener">
+        🪡 NiEH benchmark
+      </a>
+    </div>
+  </div>
+
+  <div class="hud hud--bottom">
+    <div class="wrap" style="padding:0">
+      <div class="ticker">
+        <span class="idx" id="tickIdx">subgoal 01</span>
+        <span class="txt" id="tickTxt">replaying a single, uninterrupted expert trajectory</span>
+      </div>
+      <div class="bar" id="bar"><div class="fill" id="barFill"></div></div>
+      <div class="scroll-hint"><span>scroll — it keeps going ↓</span></div>
+    </div>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════════════════════════ ABSTRACT ═══ -->
+<section class="band intro-copy" style="padding-top:0">
+  <div class="wrap narrow">
+    <div class="glass reveal">
+      <div class="eyebrow">Abstract</div>
+      <div class="abstract-body">
+        <p>
+          <b class="inf">∞</b>-THOR is a framework for <strong>long-horizon embodied tasks</strong> that pushes
+          long-context understanding in embodied AI. It provides:
+        </p>
+        <ol>
+          <li><b>A generation framework</b> for synthesizing scalable, reproducible and
+              <em>unlimited</em> long-horizon trajectories.</li>
+          <li><b>Needle(s) in the Embodied Haystack (NiEH)</b>, an embodied QA task where multiple
+              clues scattered across an extended trajectory test an agent's long-context reasoning.</li>
+          <li><b>A dataset and benchmark suite</b> of complex tasks spanning hundreds of environment
+              steps, each paired with ground-truth action sequences.</li>
+        </ol>
+        <p>
+          To make agents capable of this, we explore architectural adaptations — interleaved
+          Goal-State-Action modeling, context extension, and Context Parallelism — to equip
+          LLM-based agents for extreme long-context reasoning and interaction. Our results
+          highlight the difficulty of the benchmark and give insight into training strategies and
+          model behaviour under long-horizon conditions.
+        </p>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="num" data-count="{{ hero.steps }}" data-pretty="{{ hero.steps }}">0</div>
+          <div class="lbl">steps in the trajectory playing behind this page</div>
+        </div>
+        <div class="stat">
+          <div class="num" data-count="{{ hero.tokens }}" data-human="1">0</div>
+          <div class="lbl">tokens of visual context it costs an agent</div>
+        </div>
+        <div class="stat">
+          <div class="num" data-count="{{ hero.n_subgoals }}" data-pretty="{{ hero.n_subgoals }}">0</div>
+          <div class="lbl">chained subgoals, no resets in between</div>
+        </div>
+        <div class="stat">
+          <div class="num">∞</div>
+          <div class="lbl">length the generator can keep going to</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- marker: everything above is the "intro"; past this the video docks -->
+<div id="introEnd"></div>
+
+
+<!-- ═══════════════════════════════════════════════════ HOW LONG IS LONG ═══ -->
+<section class="band band--alt" id="length" style="scroll-margin-top:64px">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">the length problem</div>
+      <h2 class="sec-title">How long is <em>long-horizon</em>?</h2>
+      <p class="sec-lead">
+        Existing embodied benchmarks use episodes of a few dozen steps, which rarely require an
+        agent to retain information across the episode. <strong>∞-THOR trajectories run for
+        thousands of steps</strong>, so the observations relevant to the final task typically fall
+        outside the context window of current models.
+      </p>
+    </div>
+
+    {%- comment -%} bar widths are scaled against the trajectory playing on this page {%- endcomment -%}
+    <div class="ruler">
+      <div class="ruler-row reveal" data-grow="{{ 50 | times: 88 | divided_by: hero.steps | at_least: 3 }}">
+        <div class="name"><b>ALFRED</b> expert demo</div>
+        <div class="ruler-track"><div class="ruler-fill"></div><div class="ruler-val">≈50 steps</div></div>
+      </div>
+      <div class="ruler-row reveal is-ours" data-grow="88">
+        <div class="name"><b>∞-THOR</b> {{ hero.scene }}</div>
+        <div class="ruler-track"><div class="ruler-fill"></div><div class="ruler-val">{{ hero.steps }} steps · ≈{{ hero.tokens | divided_by: 1000 }}K tokens</div></div>
+      </div>
+      <div class="ruler-row reveal is-inf" data-grow="100">
+        <div class="name"><b>The generator</b> keeps sampling</div>
+        <div class="ruler-track"><div class="ruler-fill"></div><div class="ruler-val">∞ — run it until you run out of disk</div></div>
+      </div>
+    </div>
+    <p class="ruler-note">
+      Context is counted the same way as in the paper — roughly 1.45K tokens per interleaved
+      state–action step once a trajectory is converted into the LLM input space. Nothing here is
+      stitched or fast-forwarded: every step is one executed low-level action inside a single
+      continuous episode.
+    </p>
+
+    {%- if hero.barcode %}
+    <!-- slit-scan of the whole episode: one pixel column per step -->
+    <div class="strip-block reveal">
+      <div class="strip-head">
+        <span>the entire {{ hero.scene }} episode — {{ hero.steps }} steps, one continuous run</span>
+        <span class="strip-hint">drag / hover to scrub</span>
+      </div>
+      <div class="strip" id="strip" role="slider" tabindex="0"
+           aria-label="Scrub the trajectory" aria-valuemin="0" aria-valuemax="{{ hero.steps }}" aria-valuenow="0">
+        <img src="{{ hero.barcode }}" alt="Keyframes spanning the entire {{ hero.scene }} trajectory" loading="lazy">
+        <div class="strip-head-line" id="stripHead"></div>
+        <div class="strip-tip" id="stripTip">t=0</div>
+      </div>
+      <div class="strip-axis">
+        <span>t = 0</span><span>t = {{ hero.steps | divided_by: 2 }}</span><span>t = {{ hero.steps }}</span>
+      </div>
+    </div>
+    {%- endif %}
+  </div>
+</section>
+
+
+<!-- ═════════════════════════════════════════════════════════ GENERATION ═══ -->
+<section class="band" id="generator" style="scroll-margin-top:64px">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">1 · the generator</div>
+      <h2 class="sec-title">Unlimited trajectories</h2>
+      <p class="sec-lead">
+        Instead of collecting long demonstrations, we <strong>grow</strong> them. The generator
+        samples a new task from what the agent can currently reach, plans it symbolically, and
+        executes it in AI2-THOR — appending subgoal after subgoal to a single continuous episode.
+      </p>
+    </div>
+
+    <div class="flow">
+      <div class="step-card reveal">
+        <div class="n">01 / SAMPLE</div>
+        <h4>Pick a reachable goal</h4>
+        <p>A goal type, pickup object, movable receptacle and target receptacle are sampled from the objects the agent can actually see and reach in the current scene state.</p>
+      </div>
+      <div class="step-card reveal">
+        <div class="n">02 / PLAN</div>
+        <h4>Solve it with PDDL</h4>
+        <p>The task is compiled into a PDDL problem and solved by a Metric-FF planner into a high-level plan, then expanded into low-level navigation and interaction actions.</p>
+      </div>
+      <div class="step-card reveal">
+        <div class="n">03 / EXECUTE</div>
+        <h4>Run it in AI2-THOR</h4>
+        <p>Actions are executed in the simulator. Every step logs which objects were visible, pickupable and open — the record that later becomes the haystack.</p>
+      </div>
+      <div class="step-card reveal">
+        <div class="n">04 / REVALIDATE</div>
+        <h4>Replay from step 0</h4>
+        <p>The full episode is replayed and object IDs repaired. If it no longer reproduces, the last subgoal is discarded and the agent is teleported back to the last valid state.</p>
+      </div>
+    </div>
+
+    <p class="ruler-note" style="margin-top:34px">
+      One command grows trajectories in any floor plan; a second deterministically replays a saved
+      episode into frames at any resolution. Details in the
+      <a href="https://github.com/pearls-lab/infini-thor#generating--trajectories">repository README</a>.
+    </p>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ NiEH ═══ -->
+<section class="band band--alt" id="nieh" style="scroll-margin-top:64px">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">2 · the benchmark</div>
+      <h2 class="sec-title">Needle(s) in the Embodied Haystack</h2>
+      <p class="sec-lead">
+        Text needle-in-a-haystack tests hide one sentence in a wall of prose. NiEH is harder in two
+        ways: <strong>the clues are multiple and scattered</strong>, and <strong>the haystack is
+        embodied</strong> — a stream of egocentric frames interleaved with the actions that produced
+        them. To answer, an agent has to recall what it saw, where it was, and what it did, hundreds
+        of steps ago.
+      </p>
+    </div>
+
+    <figure class="fig reveal">
+      <img src="assets/img/example_NiEH.png" alt="Single-evidence NiEH question types" loading="lazy">
+      <figcaption><b>Single-evidence.</b> The answer is recoverable from one observation somewhere in
+        the trajectory — the agent must find that one frame among thousands.</figcaption>
+    </figure>
+
+    <figure class="fig reveal">
+      <img src="assets/img/example_NiSSSEH.png" alt="Multi-evidence NiEH question types" loading="lazy">
+      <figcaption><b>Multi-evidence.</b> Several temporally distant observations have to be combined —
+        counting, comparing or ordering events that are hundreds of steps apart.</figcaption>
+    </figure>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════ LONG-HORIZON TASKS ═══ -->
+<section class="band">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">3 · interactive evaluation</div>
+      <h2 class="sec-title">Final goals depend on distant observations</h2>
+      <p class="sec-lead">
+        Each test episode ends with a <strong>synthetic final task</strong> deliberately built from
+        objects the agent encountered at distant, unrelated moments. Below, the tomato is seen at
+        <span style="font-family:var(--mono);color:var(--mint)">t = 17</span> and the counter top at
+        <span style="font-family:var(--mono);color:var(--mint)">t = 560</span>; the goal arrives at
+        <span style="font-family:var(--mono);color:var(--mint)">t = 670</span>. Completing the task
+        therefore requires retaining observations across the full episode, rather than reasoning
+        over recent context alone.
+      </p>
+    </div>
+
+    <figure class="fig reveal">
+      <img src="assets/img/long-horizon.png" alt="Long-horizon task example from infini-THOR" loading="lazy">
+      <figcaption><b>Figure.</b> A trajectory and long-horizon task generated by ∞-THOR. The final goal
+        (“put the tomato on the counter top”) requires recalling both the tomato (t=17) and the counter
+        (t=560). Context size is the input token length once the trajectory is converted into the LLM
+        input space.</figcaption>
+    </figure>
+
+    <div class="reveal" style="margin-top:72px">
+      <h2 class="sec-title" style="font-size:clamp(24px,3vw,34px)">
+        <span class="hl">Online evaluation</span>: long-horizon execution remains an open challenge
+      </h2>
+      <p class="sec-lead">
+        Beyond QA, agents are evaluated <strong>online in AI2-THOR</strong> on the final long-horizon
+        task of each test trajectory — acting in the environment with the preceding hundreds of steps
+        as their history. Results are reported for fine-tuned Qwen2.5-VL.
+      </p>
+    </div>
+
+    <div class="table-wrap reveal">
+      <table class="res">
+        <thead>
+          <tr><th>Method</th><th>Go to</th><th>Pick up</th><th>Put</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Memory-Augmented (Text)</td><td class="num">10.8</td><td class="num">1.5</td><td class="num zeroc">0.0</td><td class="num">6.1</td></tr>
+          <tr><td>Memory-Augmented (Image, Top-20)</td><td class="num">6.2</td><td class="num zeroc">0.0</td><td class="num zeroc">0.0</td><td class="num">3.1</td></tr>
+          <tr><td>Interleaved Goal-State-Action (32K)</td><td class="num">11.3</td><td class="num">1.5</td><td class="num zeroc">0.0</td><td class="num">6.4</td></tr>
+          <tr><td>Interleaved Goal-State-Action (128K)</td><td class="num">18.5</td><td class="num">2.3</td><td class="num zeroc">0.0</td><td class="num">9.2</td></tr>
+          <tr><td>&nbsp;&nbsp;+ Dynamic Scaling</td><td class="num">20.0</td><td class="num">2.3</td><td class="num zeroc">0.0</td><td class="num">9.9</td></tr>
+          <tr class="best"><td>&nbsp;&nbsp;+ YaRN (&times;4)</td><td class="num">23.1</td><td class="num">2.6</td><td class="num zeroc">0.0</td><td class="num">11.5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="ruler-note">
+      Success rate (%) on the long-horizon task; 32K / 128K is the context length used during
+      fine-tuning. Two things stand out. <b style="color:var(--text)">Interleaved beats retrieval</b> —
+      processing the continuous history works better than searching a memory of it. And
+      <b style="color:var(--text)">more context is worth a lot</b>: 32K → 128K nearly doubles the
+      total, with YaRN pushing it to 11.5%. But the <b style="color:var(--rose)">Put column is zero
+      everywhere</b> — it is the last stage of the task, and agents almost never survive the earlier
+      ones to reach it. Long-horizon embodied control is wide open.
+    </p>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════ RESULTS ═══ -->
+<section class="band band--alt" id="results" style="scroll-margin-top:64px">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">4 · results</div>
+      <h2 class="sec-title">Long context is still an open problem</h2>
+      <p class="sec-lead">
+        Feeding the <strong>entire</strong> trajectory to a VLM and asking a NiEH question. Models
+        whose pretraining context cannot span the episode do not degrade gracefully — they collapse
+        to zero. Even the strongest models lose most of their accuracy the moment an answer needs
+        <em>two</em> distant observations instead of one.
+      </p>
+    </div>
+
+    <div class="table-wrap reveal">
+      <table class="res">
+        <thead>
+          <tr><th>Model</th><th>Single-evidence</th><th>Multi-evidence</th></tr>
+        </thead>
+        <tbody>
+          <tr class="zero">
+            <td>LLaVA-OneVision (7B)</td>
+            <td class="num">0.00%<span class="meter"><i style="width:0%"></i></span></td>
+            <td class="num">0.00%<span class="meter"><i style="width:0%"></i></span></td>
+          </tr>
+          <tr class="zero">
+            <td>DeepSeek-VL (7B)</td>
+            <td class="num">0.00%<span class="meter"><i style="width:0%"></i></span></td>
+            <td class="num">0.00%<span class="meter"><i style="width:0%"></i></span></td>
+          </tr>
+          <tr>
+            <td>Qwen2.5-VL (7B)</td>
+            <td class="num">47.35%<span class="meter"><i style="width:47.35%"></i></span></td>
+            <td class="num">36.60%<span class="meter"><i style="width:36.6%"></i></span></td>
+          </tr>
+          <tr class="best">
+            <td>Gemini 2.0 Flash</td>
+            <td class="num">67.36%<span class="meter"><i style="width:67.36%"></i></span></td>
+            <td class="num">30.94%<span class="meter"><i style="width:30.94%"></i></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="ruler-note">
+      LLaVA-OneVision and DeepSeek-VL fail to handle contexts beyond their pretraining limits.
+      Note that the best single-evidence model is <em>not</em> the best multi-evidence one:
+      retrieving one needle and reasoning over several are different abilities.
+    </p>
+
+    <div style="margin-top:60px" class="reveal">
+      <div class="eyebrow">training for it</div>
+      <h2 class="sec-title" style="font-size:clamp(24px,3vw,34px)">Context Parallelism, up to 128K</h2>
+      <p class="sec-lead">
+        We ship a torchtitan-based trainer with Tensor, Data and Context Parallelism so a 7B VLM can
+        be fine-tuned on sequences long enough to hold a real trajectory.
+      </p>
+    </div>
+
+    <div class="table-wrap reveal">
+      <table class="res">
+        <thead>
+          <tr><th>Config</th><th>Parallelism</th><th>Sequence length</th><th>Use case</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ft_llava_ov_7B_tp4_dp2</td><td>TP4 × DP2</td><td class="num">32K</td><td>default 8-GPU setup</td></tr>
+          <tr><td>ft_llava_ov_7B_tp2_cp2_dp2</td><td>TP2 × CP2 × DP2</td><td class="num">64K</td><td>long-context training</td></tr>
+          <tr><td>ft_qwen_25vl_7B_infini_cp8</td><td>CP8 × FSDP</td><td class="num">32K</td><td>8-way context parallelism</td></tr>
+          <tr class="best"><td>ft_qwen_25vl_7B_infini_cp16</td><td>CP16 × FSDP</td><td class="num">128K</td><td>very long sequences</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════ GALLERY ═══ -->
+<section class="band" id="data" style="scroll-margin-top:64px">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">5 · the data</div>
+      <h2 class="sec-title">More trajectories, all of them long</h2>
+      <p class="sec-lead">
+        Every episode below was generated by the same script, in a different floor plan, with no
+        human in the loop. Hover to play.
+      </p>
+    </div>
+
+    <div class="gal">
+      {%- for t in traj.gallery %}
+      <div class="gal-card reveal">
+        <video src="{{ t.video }}" muted loop playsinline preload="none"
+               {% if t.poster != "" %}poster="{{ t.poster }}"{% endif %}></video>
+        <div class="gal-meta">
+          <div class="scene">{{ t.scene }}</div>
+          {%- if t.task != "" %}<div style="font-size:13.5px;color:var(--muted);margin-top:6px">“{{ t.task }}”</div>{% endif %}
+          <div class="figs">
+            <div><b>{{ t.steps }}</b>steps</div>
+            <div><b>{{ t.n_subgoals }}</b>subgoals</div>
+            <div><b>{{ t.tokens | divided_by: 1000 }}K</b>tokens</div>
+          </div>
+        </div>
+      </div>
+      {%- endfor %}
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════ QUICKSTART ═══ -->
+<section class="band band--alt">
+  <div class="wrap narrow" style="text-align:center">
+    <div class="reveal">
+      <div class="eyebrow" style="justify-content:center">6 · get started</div>
+      <h2 class="sec-title">Everything is open</h2>
+      <p class="sec-lead" style="margin:0 auto">
+        Generation framework, NiEH benchmark, long-horizon training data, model checkpoints and the
+        torchtitan-based training stack — all public. The README walks through evaluation,
+        generation and training end to end.
+      </p>
+    </div>
+    <div class="cta-row reveal" style="margin-top:34px">
+      <a class="btn btn--primary" href="https://github.com/pearls-lab/infini-thor" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.78 1.2 1.78 1.2 1.03 1.78 2.7 1.27 3.36.97.1-.75.4-1.27.73-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.2.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/></svg>
+        Code &amp; README
+      </a>
+      <a class="btn" href="https://huggingface.co/datasets/PEARLS-Lab/infini-thor" target="_blank" rel="noopener">🤗 Training data</a>
+      <a class="btn" href="https://huggingface.co/datasets/PEARLS-Lab/infini-thor-nieh" target="_blank" rel="noopener">🪡 NiEH benchmark</a>
+      <a class="btn" href="https://hub.docker.com/r/bosung17/infini-thor" target="_blank" rel="noopener">🐳 Docker image</a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═════════════════════════════════════════════════════════════ BIBTEX ═══ -->
+<section class="band">
+  <div class="wrap narrow">
+    <div class="reveal" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+      <div>
+        <div class="eyebrow">cite</div>
+        <h2 class="sec-title" style="font-size:clamp(26px,3.2vw,36px)">BibTeX</h2>
+      </div>
+      <button class="btn" id="citeBtn" style="cursor:pointer;font-family:var(--mono);font-size:13px">copy</button>
+    </div>
+<pre class="code reveal" id="bibtex">@article{kim2025infinithor,
+  title   = {Beyond Needle(s) in the Embodied Haystack: Environment,
+             Architecture, and Training Considerations for Long Context Reasoning},
+  author  = {Kim, Bosung and Ammanabrolu, Prithviraj},
+  journal = {arXiv preprint arXiv:2505.16928},
+  year    = {2025},
+  url     = {https://arxiv.org/abs/2505.16928}
+}</pre>
+  </div>
+</section>

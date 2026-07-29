@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 *.pyo
+
+# trajectory generation scratch (planner PDDL files, local outputs)
+logs_gen/
+new_trajectories/
